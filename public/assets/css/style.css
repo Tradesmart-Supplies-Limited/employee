@@ -1194,6 +1194,15 @@ html[data-theme="dark"] .profile-avatar {
   gap: 0.55rem;
 }
 
+.section-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    font-weight: 600;
+    color: #6c757d;
+    margin-bottom: 6px;
+}
+
 .section-title i {
   width: 34px;
   height: 34px;

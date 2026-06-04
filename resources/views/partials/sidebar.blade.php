@@ -28,7 +28,7 @@
         </a>
 
         <a class="nav-link"
-           href="">
+           href="{{ route('employees.index') }}">
             <span class="nav-icon">
                 <i class="bi bi-people"></i>
             </span>
