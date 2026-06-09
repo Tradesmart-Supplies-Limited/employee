@@ -5,9 +5,7 @@
 
         <a class="brand-mark" href="{{ route('dashboard') }}">
 
-            <span class="brand-icon">
-                <i class="bi bi-grid-1x2-fill"></i>
-            </span>
+            <img src="http://misc.tradesmartzm.com/logo.png" width="36" height="36" alt="Tradesmart Supplies Logo" class="brand-logo">
 
             <span class="brand-copy">
                 <span class="brand-title">Tradesmart Supplies</span>
