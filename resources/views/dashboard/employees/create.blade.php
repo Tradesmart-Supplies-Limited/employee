@@ -140,6 +140,11 @@
           </div>
 
           <div class="col-md-6">
+            <label class="form-label">Branch</label>
+            <input class="form-control" name="branch">
+          </div>
+
+          <div class="col-md-6">
             <label class="form-label">Supervisor</label>
             <input class="form-control" name="supervisor">
           </div>

@@ -170,6 +170,12 @@
 
         <div class="col-md-6">
           <input class="form-control"
+                 name="branch"
+                 value="{{ old('branch', $employee->branch) }}">
+        </div>
+
+        <div class="col-md-6">
+          <input class="form-control"
                  name="supervisor"
                  value="{{ old('supervisor', $employee->supervisor) }}">
         </div>

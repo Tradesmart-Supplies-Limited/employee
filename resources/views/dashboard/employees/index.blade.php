@@ -18,6 +18,13 @@
                    oninput="empFilter()">
         </div>
 
+        {{-- IMPORT BUTTON --}}
+        <button class="btn btn-outline-secondary btn-sm"
+                data-bs-toggle="modal"
+                data-bs-target="#importEmployeesModal">
+            <i class="bi bi-upload"></i> Import
+        </button>
+
         <a href="{{ route('employees.create') }}" class="btn btn-primary btn-sm">
             <i class="bi bi-plus-lg"></i> Add Employee
         </a>
@@ -118,7 +125,7 @@
             <tr class="emp-row"
                 data-dept="{{ $employee->department }}"
                 data-status="{{ $employee->employment_status }}"
-                data-search="{{ strtolower($employee->first_name . ' ' . $employee->last_name . ' ' . $employee->employee_id . ' ' . $employee->position . ' ' . $employee->department) }}"
+                data-search="{{ strtolower($employee->first_name . ' ' . $employee->last_name . ' ' . $employee->employee_id . ' ' . $employee->position . ' ' . $employee->department . ' ' . $employee->branch) }}"
                 onclick="window.location='{{ route('employees.show', $employee->id) }}'">
 
                 {{-- EIN --}}
@@ -138,7 +145,7 @@
                         <div>
                             <div class="emp-name">{{ $employee->first_name }} {{ $employee->last_name }}</div>
                             <div class="emp-pos">
-                                <i class="bi bi-briefcase"></i> {{ $employee->position }}
+                                <i class="bi bi-briefcase"></i> {{ $employee->position }} 
                             </div>
                         </div>
                     </div>
@@ -149,6 +156,11 @@
                     <span class="emp-dept-badge emp-dept-{{ Str::slug($employee->department ?? 'default') }}">
                         {{ $employee->department ?? '—' }}
                     </span>
+                </td>
+
+                {{-- Branch --}}
+                <td>
+                    <span class="emp-branch">{{ $employee->branch ?? '—' }}</span>
                 </td>
 
                 {{-- Phone --}}

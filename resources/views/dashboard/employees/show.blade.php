@@ -190,6 +190,9 @@
             @if($employee->department)
                 &nbsp;•&nbsp; {{ $employee->department }}
             @endif
+            @if($employee->branch)
+                &nbsp;•&nbsp; {{ $employee->branch }}
+            @endif
         </div>
 
         <hr class="resume-divider">
@@ -252,6 +255,13 @@
             <div class="resume-entry">
                 <div class="resume-entry-label">Department</div>
                 <div class="resume-entry-value">{{ $employee->department }}</div>
+            </div>
+            @endif
+
+            @if($employee->branch)
+            <div class="resume-entry">
+                <div class="resume-entry-label">Branch</div>
+                <div class="resume-entry-value">{{ $employee->branch }}</div>
             </div>
             @endif
 

@@ -146,22 +146,36 @@
     initThemeToggle();
 
     // Initialize user profile values in UI. Provide a window.adminHMDUser object to override defaults.
-    function initUserProfile() {
-      var user = window.adminHMDUser || { name: "Admin Hasan", workspace: "Active Workspace", avatar: "../assets/images/avatar/avatar.jpg" };
+function initUserProfile() {
 
-      var sidebarNameEl = document.querySelector(".sidebar-user strong");
-      var sidebarWorkspaceEl = document.querySelector(".sidebar-user small");
-      var sidebarAvatar = document.querySelector(".sidebar-user .avatar-img");
-      var profileNameEls = document.querySelectorAll(".profile-name");
-      var profileAvatarEls = document.querySelectorAll(".profile-button .avatar-img, .profile-button img");
+  const user = window.adminHMDUser || {
+    name: document.body.dataset.userName || "Guest",
+    workspace: "HR Workspace",
+    avatar: document.body.dataset.userAvatar || "../assets/images/avatar/avatar.jpg"
+  };
 
-      if (sidebarNameEl) sidebarNameEl.textContent = user.name;
-      if (sidebarWorkspaceEl) sidebarWorkspaceEl.textContent = user.workspace;
-      if (sidebarAvatar && user.avatar) { sidebarAvatar.src = user.avatar; sidebarAvatar.alt = user.name; }
+  const sidebarNameEl = document.querySelector(".sidebar-user strong");
+  const sidebarWorkspaceEl = document.querySelector(".sidebar-user small");
+  const sidebarAvatar = document.querySelector(".sidebar-user .avatar-img");
 
-      Array.prototype.forEach.call(profileNameEls, function (el) { el.textContent = user.name; });
-      Array.prototype.forEach.call(profileAvatarEls, function (img) { if (user.avatar) img.src = user.avatar; if (user.name) img.alt = user.name; });
-    }
+  const profileNameEls = document.querySelectorAll(".profile-name");
+  const profileAvatarEls = document.querySelectorAll(".profile-button img, .profile-button .avatar-img");
+
+  if (sidebarNameEl) sidebarNameEl.textContent = user.name;
+  if (sidebarWorkspaceEl) sidebarWorkspaceEl.textContent = user.workspace;
+
+  if (sidebarAvatar && user.avatar) {
+    sidebarAvatar.src = user.avatar;
+    sidebarAvatar.alt = user.name;
+  }
+
+  profileNameEls.forEach(el => el.textContent = user.name);
+
+  profileAvatarEls.forEach(img => {
+    if (user.avatar) img.src = user.avatar;
+    if (user.name) img.alt = user.name;
+  });
+}
 
     initUserProfile();
 

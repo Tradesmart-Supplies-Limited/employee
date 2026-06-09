@@ -75,6 +75,7 @@ class EmployeeController extends Controller
 
             'position' => $request->position,
             'department' => $request->department,
+            'branch' => $request->branch,
             'supervisor' => $request->supervisor,
             'employment_status' => 'Active',
 
@@ -184,6 +185,7 @@ public function update(Request $request, Employee $employee)
     $employee->position = $request->position;
     $employee->department = $request->department;
     $employee->supervisor = $request->supervisor;
+    $employee->branch = $request->branch;
     // $employee->employment_status = $request->employment_status;
     $employee->employment_status = $request->employment_status ?? 'Active';
 
@@ -252,4 +254,158 @@ public function update(Request $request, Employee $employee)
         return redirect()->route('employees.index')
             ->with('success', 'Employee deleted successfully');
     }
+
+
+
+    
+public function downloadSampleCsv()
+{
+    $headers = [
+        'employee_id',
+        'first_name',
+        'middle_name',
+        'last_name',
+        'date_of_birth',
+        'gender',
+        'nationality',
+        'national_id_number',
+        'passport_number',
+        'personal_email',
+        'primary_phone',
+        'secondary_phone',
+        'position',
+        'department',
+        'branch',
+        'supervisor',
+        'employment_status',
+        'probation_start',
+        'probation_end',
+        'contract_start',
+        'contract_end',
+        'emergency_name',
+        'emergency_relationship',
+        'emergency_phone',
+        'next_of_kin_name',
+        'next_of_kin_phone',
+        'next_of_kin_address',
+        'bank_name',
+        'bank_account_number',
+        'nssf_number',
+        'tin_number',
+        'salary',
+    ];
+
+    $filename = 'employee_import_template.csv';
+
+    $callback = function () use ($headers) {
+        $file = fopen('php://output', 'w');
+
+        // header row
+        fputcsv($file, $headers);
+
+        // sample row
+        fputcsv($file, [
+            'EMP001',
+            'John',
+            'Michael',
+            'Doe',
+            '1995-06-10',
+            'Male',
+            'Zambian',
+            '123456/78/9',
+            'P1234567',
+            'john@example.com',
+            '0977000000',
+            '0966000000',
+            'Accountant',
+            'Finance',
+            'Head Office',
+            'Jane Manager',
+            'Active',
+            '2025-01-01',
+            '2025-03-01',
+            '2025-04-01',
+            '2027-04-01',
+            'Mary Doe',
+            'Mother',
+            '0977000001',
+            'Peter Doe',
+            '0977000002',
+            'Lusaka',
+            'Zanaco',
+            '1234567890',
+            'NSSF12345',
+            'TIN98765',
+            '5000',
+        ]);
+
+        fclose($file);
+    };
+
+    return response()->streamDownload($callback, $filename);
+}
+
+public function import(Request $request)
+{
+    $request->validate([
+        'file' => 'required|mimes:csv,txt'
+    ]);
+
+    $file = fopen($request->file('file')->getRealPath(), 'r');
+
+    $header = array_map('trim', fgetcsv($file));
+
+    while ($row = fgetcsv($file)) {
+
+        $data = array_combine($header, $row);
+
+        Employee::create([
+            'employee_id' => $data['employee_id'] ?? null,
+            'first_name' => $data['first_name'] ?? null,
+            'middle_name' => $data['middle_name'] ?? null,
+            'last_name' => $data['last_name'] ?? null,
+            'date_of_birth' => $data['date_of_birth'] ?? null,
+            'gender' => $data['gender'] ?? null,
+            'nationality' => $data['nationality'] ?? null,
+            'national_id_number' => $data['national_id_number'] ?? null,
+            'passport_number' => $data['passport_number'] ?? null,
+            'passport_photo' => $data['passport_photo'] ?? null,
+
+            'personal_email' => $data['personal_email'] ?? null,
+            'company_email' => $data['company_email'] ?? null,
+            'primary_phone' => $data['primary_phone'] ?? null,
+            'secondary_phone' => $data['secondary_phone'] ?? null,
+
+            'position' => $data['position'] ?? null,
+            'department' => $data['department'] ?? null,
+            'branch' => $data['branch'] ?? null,
+            'supervisor' => $data['supervisor'] ?? null,
+            'employment_status' => $data['employment_status'] ?? 'Active',
+
+            'probation_start' => $data['probation_start'] ?? null,
+            'probation_end' => $data['probation_end'] ?? null,
+            'contract_start' => $data['contract_start'] ?? null,
+            'contract_end' => $data['contract_end'] ?? null,
+
+            'emergency_name' => $data['emergency_name'] ?? null,
+            'emergency_relationship' => $data['emergency_relationship'] ?? null,
+            'emergency_phone' => $data['emergency_phone'] ?? null,
+
+            'next_of_kin_name' => $data['next_of_kin_name'] ?? null,
+            'next_of_kin_phone' => $data['next_of_kin_phone'] ?? null,
+            'next_of_kin_address' => $data['next_of_kin_address'] ?? null,
+
+            'bank_name' => $data['bank_name'] ?? null,
+            'bank_account_number' => $data['bank_account_number'] ?? null,
+            'nssf_number' => $data['nssf_number'] ?? null,
+            'tin_number' => $data['tin_number'] ?? null,
+            'salary' => $data['salary'] ?? null,
+        ]);
+    }
+
+    fclose($file);
+
+    return back()->with('success', 'Employees imported successfully.');
+}
+
 }

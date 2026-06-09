@@ -48,6 +48,7 @@ class Employee extends Model
         */
         'position',
         'department',
+        'branch',
         'supervisor',
         'employment_status',
 

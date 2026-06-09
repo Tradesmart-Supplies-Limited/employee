@@ -2,17 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
     /**
-     * Show admin dashboard
+     * Dashboard
      */
     public function index()
     {
-        // placeholder data (replace later with DB queries)
         $stats = [
             'employees' => 0,
             'branches' => 0,
@@ -20,5 +18,53 @@ class DashboardController extends Controller
         ];
 
         return view('dashboard.index', compact('stats'));
+    }
+
+    /**
+     * Departments
+     */
+    public function departments()
+    {
+        return view('dashboard.departments.index');
+    }
+
+    /**
+     * Leave
+     */
+    public function leave()
+    {
+        return view('dashboard.leave.index');
+    }
+
+    /**
+     * Attendance
+     */
+    public function attendance()
+    {
+        return view('dashboard.attendance.index');
+    }
+
+    /**
+     * Payroll
+     */
+    public function payroll()
+    {
+        return view('dashboard.payroll.index');
+    }
+
+    /**
+     * Reports
+     */
+    public function reports()
+    {
+        return view('dashboard.reports.index');
+    }
+
+    /**
+     * Settings
+     */
+    public function settings()
+    {
+        return view('dashboard.settings.index');
     }
 }

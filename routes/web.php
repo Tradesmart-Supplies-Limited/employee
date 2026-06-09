@@ -1,53 +1,55 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmployeeController;
 
-Route::get('/', function () {
-    return view('welcome');
+/*
+|--------------------------------------------------------------------------
+| GUEST ROUTES (NOT LOGGED IN)
+|--------------------------------------------------------------------------
+*/
+Route::middleware('guest')->group(function () {
+
+    Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
+    Route::post('/login', [AuthController::class, 'login']);
+
+    Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
+    Route::post('/register', [AuthController::class, 'register']);
 });
 
-// Dashboard
-Route::get('/dashboard', [DashboardController::class, 'index'])
-    ->name('dashboard');
 
-// Profile (static view for now)
-Route::get('/profile', function () {
-    return view('dashboard.profile');
-})->name('profile.index');
+/*
+|--------------------------------------------------------------------------
+| AUTHENTICATED ROUTES (LOGGED IN USERS ONLY)
+|--------------------------------------------------------------------------
+*/
+Route::middleware('auth')->group(function () {
 
-// Settings (static view for now)
-Route::get('/settings', function () {
-    return view('dashboard.settings');
-})->name('settings.index');
+    // ✅ STATIC ROUTES FIRST
+    Route::get('/employees/sample-csv', [EmployeeController::class, 'downloadSampleCsv'])
+        ->name('employees.sample-csv');
 
-// Logout placeholder (optional for now)
-Route::post('/logout', function () {
-    return redirect('/dashboard');
-})->name('logout');
+    Route::post('/employees/import', [EmployeeController::class, 'import'])
+        ->name('employees.import');
 
+    // Dashboard
+    Route::get('/dashboard', [DashboardController::class, 'index'])
+        ->name('dashboard');
 
+    // Employees
+    Route::resource('employees', EmployeeController::class);
 
+    // Others
+    Route::get('/departments', [DashboardController::class, 'departments'])->name('departments.index');
+    Route::get('/leave', [DashboardController::class, 'leave'])->name('leave.index');
+    Route::get('/attendance', [DashboardController::class, 'attendance'])->name('attendance.index');
+    Route::get('/payroll', [DashboardController::class, 'payroll'])->name('payroll.index');
+    Route::get('/reports', [DashboardController::class, 'reports'])->name('reports.index');
 
+    Route::view('/profile', 'dashboard.profile')->name('profile.index');
+    Route::view('/settings', 'dashboard.settings')->name('settings.index');
 
-Route::get('/employees', [EmployeeController::class, 'index'])
-    ->name('employees.index');
-
-Route::get('/employees/create', [EmployeeController::class, 'create'])
-    ->name('employees.create');
-
-Route::post('/employees', [EmployeeController::class, 'store'])
-    ->name('employees.store');
-
-Route::get('/employees/{employee}', [EmployeeController::class, 'show'])
-    ->name('employees.show');
-
-Route::get('/employees/{employee}/edit', [EmployeeController::class, 'edit'])
-    ->name('employees.edit');
-
-Route::put('/employees/{employee}', [EmployeeController::class, 'update'])
-    ->name('employees.update');
-
-Route::delete('/employees/{employee}', [EmployeeController::class, 'destroy'])
-    ->name('employees.destroy');
+    Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+});
