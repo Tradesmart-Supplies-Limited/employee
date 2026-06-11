@@ -7,6 +7,7 @@ use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\LeaveController;
 use App\Http\Controllers\PayrollController;
 use App\Http\Controllers\PayrollRunController;
+use App\Http\Controllers\PayrollRuleController;
 
 /*
 |--------------------------------------------------------------------------
@@ -138,5 +139,16 @@ Route::middleware('auth')->prefix('payroll')->name('payroll.')->group(function (
     Route::post('/runs/{run}/finalize', [PayrollRunController::class, 'finalize'])->name('runs.finalize');
 
     Route::get('/runs/{run}/payslips', [PayrollRunController::class, 'payslips'])->name('runs.payslips');
+
+    // LIST (optional page later if you want full screen manager)
+    // Route::get('/', [PayrollRuleController::class, 'index'])->name('index');
+
+    Route::post('/rules/store', [PayrollRuleController::class, 'store'])->name('rules.store');
+
+    Route::post('/rules/bulk-update', [PayrollRuleController::class, 'bulkUpdate'])->name('rules.bulkUpdate');
+
+    Route::post('/runs/{run}/adjustments', [PayrollRunController::class, 'storeAdjustment'])->name('runs.adjustments.store');
+
+
 
 });

@@ -29,6 +29,20 @@
                 </button>
             </form>
 
+            <button class="btn btn-warning btn-sm"
+                    data-bs-toggle="modal"
+                    data-bs-target="#adjustmentModal">
+                Add Adjustment
+            </button>
+
+            <button class="btn btn-outline-primary btn-sm"
+                    data-bs-toggle="modal"
+                    data-bs-target="#payrollRulesModal">
+
+                <i class="bi bi-sliders"></i>
+                Payroll Rules
+            </button>
+
             {{-- FINALIZE --}}
             <form action="{{ route('payroll.runs.finalize', $run->id) }}" method="POST">
                 @csrf
@@ -175,5 +189,11 @@
     </div>
 
 </div>
+
+@push('modals')
+
+@include('dashboard.payroll.runs.partials.modals', ['run' => $run])
+
+@endpush
 
 @endsection

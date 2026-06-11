@@ -7,6 +7,7 @@ use App\Models\Payroll;
 use App\Models\Employee;
 use App\Services\PayrollEngine;
 use Illuminate\Http\Request;
+use App\Models\PayrollRunAdjustment;
 
 class PayrollRunController extends Controller
 {
@@ -113,18 +114,75 @@ class PayrollRunController extends Controller
     |--------------------------------------------------------------------------
     */
     public function finalize(PayrollRun $run)
-    {
-        $income = $run->payrolls()->sum('total_income');
-        $deductions = $run->payrolls()->sum('total_deductions');
-        $net = $run->payrolls()->sum('net_pay');
+{
+    $run->load('payrolls.items');
 
-        $run->update([
+    $totalIncome = 0;
+    $totalDeductions = 0;
+    $totalNet = 0;
+
+    foreach ($run->payrolls as $payroll) {
+
+        // 🔥 RECALCULATE FROM ITEMS (source of truth)
+        $income = $payroll->items
+            ->where('type', 'earning')
+            ->sum('amount');
+
+        $deductions = $payroll->items
+            ->where('type', 'deduction')
+            ->sum('amount');
+
+        $net = $income - $deductions;
+
+        // 🔥 UPDATE PAYROLL
+        $payroll->update([
             'total_income' => $income,
             'total_deductions' => $deductions,
             'net_pay' => $net,
-            'status' => 'Completed'
+            'status' => 'Processed'
         ]);
 
-        return back()->with('success', 'Payroll run finalized.');
+        // 🔥 RUN TOTALS
+        $totalIncome += $income;
+        $totalDeductions += $deductions;
+        $totalNet += $net;
     }
+
+    // 🔥 UPDATE RUN
+    $run->update([
+        'total_income' => $totalIncome,
+        'total_deductions' => $totalDeductions,
+        'net_pay' => $totalNet,
+        'status' => 'Processed'
+    ]);
+
+    return back()->with('success', 'Payroll run Processed successfully.');
+}
+
+
+
+public function storeAdjustment(Request $request, PayrollRun $run)
+{
+    $request->validate([
+        'employee_id' => 'required',
+        'name' => 'required',
+        'type' => 'required|in:earning,deduction',
+        'formula_type' => 'required|in:fixed,percentage',
+        'value' => 'required|numeric',
+    ]);
+
+    PayrollRunAdjustment::create([
+        'payroll_run_id' => $run->id,
+        'employee_id' => $request->employee_id,
+        'name' => $request->name,
+        'type' => $request->type,
+        'formula_type' => $request->formula_type,
+        'value' => $request->value,
+        'active' => true,
+    ]);
+
+    return back()->with('success', 'Adjustment added successfully.');
+}
+
+
 }
