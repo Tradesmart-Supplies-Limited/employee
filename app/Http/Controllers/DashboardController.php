@@ -49,7 +49,7 @@ class DashboardController extends Controller
      */
     public function payroll()
     {
-        return view('dashboard.payroll.index');
+        return view('dashboard.payroll.runs.index');
     }
 
     /**

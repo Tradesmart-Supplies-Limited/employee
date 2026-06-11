@@ -1,55 +1,73 @@
-<div class="modal fade" id="adjustmentModal" tabindex="-1">
+<div class="modal fade"
+     id="adjustmentModal"
+     tabindex="-1">
 
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-xl">
 
         <div class="modal-content">
 
             <div class="modal-header">
-                <h5>Add Payroll Adjustment</h5>
-                <button class="btn-close" data-bs-dismiss="modal"></button>
+
+                <h5 class="modal-title">
+                    Payroll Adjustment Manager
+                </h5>
+
+                <button class="btn-close"
+                        data-bs-dismiss="modal"></button>
+
             </div>
 
-            <form action="{{ route('payroll.runs.adjustments.store', $run->id) }}" method="POST">
-                @csrf
+            <div class="modal-body">
 
-                <div class="modal-body">
+                {{-- EMPLOYEE --}}
+                <div class="mb-3">
 
-                    <select name="employee_id" class="form-select mb-2" required>
-                        <option value="">Select Employee</option>
+                    <label class="form-label">
+                        Employee
+                    </label>
+
+                    <select id="employeeSelector"
+                            class="form-select">
+
+                        <option value="">
+                            Select Employee
+                        </option>
+
                         @foreach($run->payrolls as $payroll)
-                            <option value="{{ $payroll->employee->id }}">
+
+                            <option value="{{ $payroll->id }}">
+                                {{ $payroll->employee->employee_id }}
+                                -
                                 {{ $payroll->employee->first_name }}
+                                {{ $payroll->employee->last_name }}
                             </option>
+
                         @endforeach
+
                     </select>
-
-                    <input type="text" name="name" class="form-control mb-2" placeholder="Name (e.g Overtime)" required>
-
-                    <select name="type" class="form-select mb-2">
-                        <option value="earning">Earning</option>
-                        <option value="deduction">Deduction</option>
-                    </select>
-
-                    <select name="formula_type" class="form-select mb-2">
-                        <option value="fixed">Fixed</option>
-                        <option value="percentage">Percentage</option>
-                    </select>
-
-                    <input type="number" name="value" class="form-control mb-2" placeholder="Value" required>
 
                 </div>
 
-                <div class="modal-footer">
-                    <button class="btn btn-primary">Save</button>
+                {{-- AJAX CONTENT --}}
+                <div id="employeePayrollSummary">
+
+                    <div class="text-center text-muted py-5">
+
+                        Select employee to view payslip.
+
+                    </div>
+
                 </div>
 
-            </form>
+            </div>
 
         </div>
 
     </div>
 
 </div>
+
+
 
 <div class="modal fade" id="payrollRulesModal" tabindex="-1">
 

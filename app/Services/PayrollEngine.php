@@ -127,7 +127,7 @@ public function build(Payroll $payroll)
 
     foreach ($runAdjustments as $adjustment) {
 
-        $amount = $adjustment->amount ?? 0;
+        $amount = $adjustment->value ?? 0;
 
         $this->addItem($payroll, [
             'code' => strtoupper($adjustment->name),

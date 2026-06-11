@@ -194,6 +194,134 @@
 
 @include('dashboard.payroll.runs.partials.modals', ['run' => $run])
 
+{{-- IMPORTANT: RUN ID FOR JS --}}
+<script>
+    const runId = @json($run->id);
+</script>
+
+<script>
+
+
+function addItem() {
+
+    const description = document.getElementById('newDesc').value;
+    const type = document.getElementById('newType').value;
+    const amount = document.getElementById('newAmount').value;
+
+    const payrollId = document.querySelector('[data-payroll-id]').dataset.payrollId;
+
+    fetch(`/payroll/${payrollId}/items/store`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({ description, type, amount })
+    })
+    .then(res => res.json())
+    .then(data => {
+
+        if (!data.success) return;
+
+        const item = data.item;
+
+        const row = `
+        <tr data-id="${item.id}">
+            <td>
+                <input type="text" value="${item.description}"
+                    class="form-control form-control-sm"
+                    onblur="updateItem(this, ${item.id}, 'description')">
+            </td>
+
+            <td>
+                <input type="number" value="${item.amount}"
+                    class="form-control form-control-sm text-end"
+                    onblur="updateItem(this, ${item.id}, 'amount')">
+            </td>
+
+            <td class="text-end">
+                <button class="btn btn-sm btn-outline-danger"
+                        onclick="deleteItem(${item.id})">
+                    Delete
+                </button>
+            </td>
+        </tr>`;
+
+        const target = type === 'earning'
+            ? document.querySelector('#earningsTable')
+            : document.querySelector('#deductionsTable');
+
+        if (target) {
+            target.insertAdjacentHTML('beforeend', row);
+        }
+
+    });
+
+}
+
+
+function updateItem(input, id, field) {
+
+    fetch(`/payroll/items/${id}/update-field`, {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            field: field,
+            value: input.value
+        })
+    })
+    .then(res => res.json())
+    .then((data) => {
+        console.log(data);
+    })
+    .catch((data) => {
+        console.log(data);
+    });
+}
+
+
+
+
+
+function deleteItem(id) {
+
+    // if (!confirm('Delete this item?')) return;
+
+    fetch(`/payroll/adjustments/${id}`, {
+        method: 'DELETE',
+        headers: {
+            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        }
+    })
+    .then(res => res.json())
+    .then(data => {
+
+        if (data.success) {
+
+            // remove row instantly (no reload)
+            document.querySelector(`[data-id="${id}"]`)?.remove();
+
+        }
+    });
+
+}
+
+function refreshOnModalClose(modalId) {
+    const modalEl = document.getElementById(modalId);
+    if (!modalEl) return;
+
+    modalEl.addEventListener('hidden.bs.modal', function () {
+        location.reload();
+    });
+}
+
+refreshOnModalClose('adjustmentModal');
+refreshOnModalClose('payrollRulesModal');
+</script>
+
 @endpush
 
 @endsection

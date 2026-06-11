@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\PayrollRun;
 use App\Models\Payroll;
 use App\Models\Employee;
+use App\Models\PayrollItem;
+use App\Models\PayrollRunAdjustment;
 use App\Services\PayrollEngine;
 use Illuminate\Http\Request;
-use App\Models\PayrollRunAdjustment;
+use Illuminate\Support\Facades\Log;
 
 class PayrollRunController extends Controller
 {
@@ -79,34 +81,43 @@ class PayrollRunController extends Controller
     | GENERATE PAYROLL FOR ALL EMPLOYEES
     |--------------------------------------------------------------------------
     */
-    public function generate(PayrollRun $run, PayrollEngine $engine)
-    {
-        $employees = Employee::all();
+public function generate(PayrollRun $run, PayrollEngine $engine)
+{
+    $employees = Employee::where('employment_status', 'Active')
+        ->get();
 
-        foreach ($employees as $employee) {
+    foreach ($employees as $employee) {
 
-            $payroll = Payroll::create([
-                'employee_id' => $employee->id,
+        $payroll = Payroll::updateOrCreate(
+
+            [
                 'payroll_run_id' => $run->id,
+                'employee_id' => $employee->id,
+            ],
+
+            [
                 'pay_period' => $run->period,
                 'company' => 'TRADESMART SUPPLIES LIMITED',
                 'branch' => $employee->branch,
                 'cost_centre' => $employee->department,
                 'date_engaged' => $employee->contract_start,
                 'salary_rate' => $employee->salary ?? 0,
-                'status' => 'Draft'
-            ]);
+                'status' => 'Draft',
+            ]
+        );
 
-            // build items via engine
-            $engine->build($payroll);
-        }
-
-        $run->update([
-            'status' => 'Processed'
-        ]);
-
-        return back()->with('success', 'Payroll run generated successfully.');
+        $engine->build($payroll);
     }
+
+    $run->update([
+        'status' => 'Processed'
+    ]);
+
+    return back()->with(
+        'success',
+        'Payroll regenerated successfully.'
+    );
+}
 
     /*
     |--------------------------------------------------------------------------
@@ -115,11 +126,20 @@ class PayrollRunController extends Controller
     */
     public function finalize(PayrollRun $run)
 {
+
+
     $run->load('payrolls.items');
 
     $totalIncome = 0;
     $totalDeductions = 0;
     $totalNet = 0;
+
+    if ($run->payrolls()->count() == 0) {
+    return back()->with(
+        'error',
+        'Generate payroll before finalizing.'
+    );
+}
 
     foreach ($run->payrolls as $payroll) {
 
@@ -161,7 +181,11 @@ class PayrollRunController extends Controller
 
 
 
-public function storeAdjustment(Request $request, PayrollRun $run)
+public function storeAdjustment(
+    Request $request,
+    PayrollRun $run,
+    PayrollEngine $engine
+)
 {
     $request->validate([
         'employee_id' => 'required',
@@ -181,8 +205,117 @@ public function storeAdjustment(Request $request, PayrollRun $run)
         'active' => true,
     ]);
 
-    return back()->with('success', 'Adjustment added successfully.');
+    // Rebuild employee payroll
+    $payroll = Payroll::where('payroll_run_id', $run->id)
+        ->where('employee_id', $request->employee_id)
+        ->first();
+
+    if ($payroll) {
+        $engine->build($payroll);
+    }
+
+    return back()->with(
+        'success',
+        'Adjustment added and payroll recalculated.'
+    );
 }
+
+public function employeeSummary(
+    PayrollRun $run,
+    Payroll $payroll
+)
+{
+    $payroll->load([
+        'employee',
+        'items'
+    ]);
+
+    return view(
+        'dashboard.payroll.runs.partials.employee-summary',
+        compact('payroll')
+    );
+}
+
+private function recalculatePayroll($payroll)
+{
+    $income = $payroll->items()->where('type', 'earning')->sum('amount');
+    $deductions = $payroll->items()->where('type', 'deduction')->sum('amount');
+
+    $payroll->update([
+        'total_income' => $income,
+        'total_deductions' => $deductions,
+        'net_pay' => $income - $deductions,
+    ]);
+}
+
+
+public function updateField(Request $request, PayrollItem $item)
+{
+    $request->validate([
+        'field' => 'required',
+        'value' => 'required'
+    ]);
+
+Log::info('Payroll item field updated', [
+        'item_id' => $item->id,
+        'payroll_id' => $item->payroll_id,
+        'field' => $request->field,
+        'value' => $request->value,
+    ]);
+
+    $item->{$request->field} = $request->value;
+    $item->save();
+
+    // optional: recalc payroll totals
+    $this->recalculatePayroll($item->payroll);
+
+    return response()->json(['success' => true, 'message' => $request->value]);
+}
+
+public function deleteAdjustment(PayrollItem $adjustment)
+{
+    $payroll = Payroll::where('payroll_run_id', $adjustment->payroll_run_id)
+        ->where('employee_id', $adjustment->employee_id)
+        ->first();
+
+    $adjustment->delete();
+
+    if ($payroll) {
+        app(\App\Services\PayrollEngine::class)->build($payroll);
+    }
+
+    // recalc totals
+    $this->recalculatePayroll($payroll);
+
+
+    return response()->json(['success' => true]);
+}
+
+public function storeItem(Request $request, Payroll $payroll)
+{
+    $request->validate([
+        'description' => 'required',
+        'type' => 'required|in:earning,deduction',
+        'amount' => 'required|numeric',
+    ]);
+
+    $item = $payroll->items()->create([
+        'code' => $request->description,
+        'description' => $request->description,
+        'type' => $request->type,
+        'amount' => $request->amount,
+    ]);
+
+    // recalc totals
+    $this->recalculatePayroll($payroll);
+
+    return response()->json([
+        'success' => true,
+        'item' => $item
+    ]);
+}
+
+
 
 
 }

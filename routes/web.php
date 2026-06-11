@@ -49,7 +49,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/departments', [DashboardController::class, 'departments'])->name('departments.index');
     Route::get('/leave', [LeaveController::class, 'index'])->name('leave.index');
     Route::get('/attendance', [DashboardController::class, 'attendance'])->name('attendance.index');
-    Route::get('/payroll', [DashboardController::class, 'payroll'])->name('payroll.index');
+    Route::get('/payroll/runs/all', [DashboardController::class, 'payroll'])->name('payroll.index');
     Route::get('/reports', [DashboardController::class, 'reports'])->name('reports.index');
 
     Route::view('/profile', 'dashboard.profile')->name('profile.index');
@@ -149,6 +149,20 @@ Route::middleware('auth')->prefix('payroll')->name('payroll.')->group(function (
 
     Route::post('/runs/{run}/adjustments', [PayrollRunController::class, 'storeAdjustment'])->name('runs.adjustments.store');
 
+    
+
+    Route::get(
+        '/runs/{run}/employee/{payroll}/summary',
+        [PayrollRunController::class, 'employeeSummary']
+    )->name('runs.employee.summary');
+
+
+
+Route::post('/items/{item}/update-field', [PayrollRunController::class, 'updateField']);
+
+Route::delete('/adjustments/{adjustment}', [PayrollRunController::class, 'deleteAdjustment']);
+
+Route::post('/{payroll}/items/store', [PayrollRunController::class, 'storeItem']);
 
 
 });

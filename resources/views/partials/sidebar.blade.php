@@ -50,7 +50,7 @@
         </a>
 
         <a class="nav-link {{ request()->routeIs('payroll.*') ? 'active' : '' }}"
-           href="{{ route('payroll.index') }}">
+           href="{{ route('payroll.runs.index') }}">
             <i class="bi bi-cash-stack nav-icon"></i>
             <span class="nav-text">Payroll</span>
         </a>

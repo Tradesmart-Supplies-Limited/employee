@@ -83,7 +83,51 @@
     }
 });
 
+
+
 </script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    const selector = document.getElementById('employeeSelector');
+    const container = document.getElementById('employeePayrollSummary');
+
+    selector.addEventListener('change', function () {
+
+        const payrollId = this.value;
+
+        if (!payrollId) return;
+
+        const url = `/payroll/runs/${runId}/employee/${payrollId}/summary`;
+
+        container.innerHTML = `
+            <div class="text-center py-3">
+                Loading payroll...
+            </div>
+        `;
+
+        fetch(url)
+            .then(res => res.text())
+            .then(html => {
+                container.innerHTML = html;
+            })
+            .catch(() => {
+                container.innerHTML = `
+                    <div class="text-danger text-center">
+                        Failed to load payroll
+                    </div>
+                `;
+            });
+
+    });
+
+});
+</script>
+
+
+
+
 
 
 <div id="global-loader" class="global-loader d-none">
@@ -152,6 +196,8 @@
 </div>
 
 @stack('modals')
+
+
 
 </body>
 </html>
