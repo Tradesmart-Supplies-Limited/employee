@@ -5,6 +5,8 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\LeaveController;
+use App\Http\Controllers\PayrollController;
+use App\Http\Controllers\PayrollRunController;
 
 /*
 |--------------------------------------------------------------------------
@@ -98,7 +100,43 @@ Route::middleware('auth')->group(function () {
     Route::patch('/leave/{leave}/supervisor', [LeaveController::class, 'updateSupervisor'])
     ->name('leave.supervisor.update');
 
-Route::patch('/leave/{leave}/hr', [LeaveController::class, 'updateHr'])
-    ->name('leave.hr.update');
+    Route::patch('/leave/{leave}/hr', [LeaveController::class, 'updateHr'])
+        ->name('leave.hr.update');
+
+});
+
+
+Route::middleware('auth')->prefix('payroll')->name('payroll.')->group(function () {
+
+    // -------------------------
+    // PAYROLL (EMPLOYEE LEVEL)
+    // -------------------------
+    Route::get('/', [PayrollController::class, 'index'])->name('index');
+    Route::get('/create', [PayrollController::class, 'create'])->name('create');
+    Route::post('/store', [PayrollController::class, 'store'])->name('store');
+
+    Route::get('/{payroll}', [PayrollController::class, 'show'])->name('show');
+    Route::get('/{payroll}/edit', [PayrollController::class, 'edit'])->name('edit');
+    Route::put('/{payroll}', [PayrollController::class, 'update'])->name('update');
+    Route::delete('/{payroll}', [PayrollController::class, 'destroy'])->name('destroy');
+
+    Route::post('/{payroll}/process', [PayrollController::class, 'process'])->name('process');
+    Route::get('/{payroll}/print', [PayrollController::class, 'print'])->name('print');
+
+
+    // -------------------------
+    // PAYROLL RUNS (BATCH LEVEL)
+    // -------------------------
+    Route::get('/runs/all', [PayrollRunController::class, 'index'])->name('runs.index');
+    Route::get('/runs/create', [PayrollRunController::class, 'create'])->name('runs.create');
+    Route::post('/runs', [PayrollRunController::class, 'store'])->name('runs.store');
+
+    Route::get('/runs/{run}', [PayrollRunController::class, 'show'])->name('runs.show');
+
+    Route::post('/runs/{run}/generate', [PayrollRunController::class, 'generate'])->name('runs.generate');
+
+    Route::post('/runs/{run}/finalize', [PayrollRunController::class, 'finalize'])->name('runs.finalize');
+
+    Route::get('/runs/{run}/payslips', [PayrollRunController::class, 'payslips'])->name('runs.payslips');
 
 });
