@@ -293,6 +293,8 @@ private function recalculatePayroll($payroll)
 
 public function updateField(Request $request, PayrollItem $item)
 {
+
+
     $request->validate([
         'field' => 'required',
         'value' => 'required'
@@ -311,28 +313,22 @@ public function updateField(Request $request, PayrollItem $item)
     // optional: recalc payroll totals
     $this->recalculatePayroll($item->payroll);
 
-    return response()->json(['success' => true, 'message' => $request->value + ' Updated Successfully']);
+    return response()->json(['success' => true, 'message' => ' Updated Successfully']);
 }
 
-public function deleteAdjustment(PayrollItem $adjustment)
+public function deleteItem(PayrollItem $item, PayrollEngine $engine)
 {
-    $payroll = Payroll::where('payroll_run_id', $adjustment->payroll_run_id)
-        ->where('employee_id', $adjustment->employee_id)
-        ->first();
+    $payroll = $item->payroll;
 
-    $adjustment->delete();
+    $item->delete();
 
     if ($payroll) {
-        app(\App\Services\PayrollEngine::class)->build($payroll);
+        $this->recalculatePayroll($payroll);
     }
-
-    // recalc totals
-    $this->recalculatePayroll($payroll);
-
 
     return response()->json([
         'success' => true,
-        'message' => 'Deleted successfully'
+        'message' => 'Item deleted successfully'
     ]);
 }
 

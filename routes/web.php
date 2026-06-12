@@ -160,7 +160,7 @@ Route::middleware('auth')->prefix('payroll')->name('payroll.')->group(function (
 
 Route::post('/items/{item}/update-field', [PayrollRunController::class, 'updateField']);
 
-Route::delete('/adjustments/{adjustment}', [PayrollRunController::class, 'deleteAdjustment']);
+Route::delete('/items/{item}', [PayrollRunController::class, 'deleteItem']);
 
 Route::post('/{payroll}/items/store', [PayrollRunController::class, 'storeItem']);
 

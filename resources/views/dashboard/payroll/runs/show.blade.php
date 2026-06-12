@@ -299,6 +299,8 @@ function addItem() {
 
 function updateItem(input, id, field) {
 
+    console.log('Updating item', { id, field, value: input.value });
+
     fetch(`/payroll/items/${id}/update-field`, {
         method: 'POST',
         headers: {
@@ -330,16 +332,23 @@ function updateItem(input, id, field) {
 
 function deleteItem(id) {
 
+console.log('Deleting item with id:', id);
+
     // if (!confirm('Delete this item?')) return;
 
-    fetch(`/payroll/adjustments/${id}`, {
+    var respo = null;
+
+    fetch(`/payroll/items/${id}`, {
         method: 'DELETE',
         headers: {
             'X-CSRF-TOKEN': '{{ csrf_token() }}'
+
         }
     })
     .then(res => res.json())
     .then(data => {
+
+        respo = data;
 
         if (data.success) {
 
@@ -349,8 +358,10 @@ function deleteItem(id) {
 
         }
 
-        showToast(data.message, 'error');
+        // showToast(data.message, 'error');
     });
+
+    console.log(respo);
 
 }
 
