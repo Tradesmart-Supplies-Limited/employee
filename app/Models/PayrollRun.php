@@ -12,10 +12,17 @@ class PayrollRun extends Model
         'total_income',
         'total_deductions',
         'net_pay',
+        'finalized_at',
+        'finalized_by',
     ];
 
     public function payrolls()
     {
         return $this->hasMany(Payroll::class);
     }
+
+    public function finalizedBy()
+{
+    return $this->belongsTo(User::class, 'finalized_by');
+}
 }

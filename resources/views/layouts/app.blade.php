@@ -9,6 +9,8 @@
   data-user-name="{{ auth()->user()->name }}"
   data-user-avatar="{{ asset('assets/images/avatar/avatar.jpg') }}">
 
+  <div id="toast-container" class="position-fixed top-0 end-0 p-3" style="z-index: 9999;"></div>
+
 <div class="admin-shell">
 
   
@@ -82,6 +84,38 @@
         }, 150);
     }
 });
+
+function showToast(message, type = 'success') {
+
+    const colors = {
+        success: 'bg-success',
+        error: 'bg-danger',
+        warning: 'bg-warning',
+        info: 'bg-primary'
+    };
+
+    const toast = document.createElement('div');
+
+    toast.className = `toast align-items-center text-white ${colors[type]} border-0 show mb-2`;
+    toast.role = 'alert';
+
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">
+                ${message}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto"
+                    onclick="this.parentElement.parentElement.remove()"></button>
+        </div>
+    `;
+
+    document.getElementById('toast-container').appendChild(toast);
+
+    // auto remove after 3 seconds
+    setTimeout(() => {
+        toast.remove();
+    }, 3000);
+}
 
 
 

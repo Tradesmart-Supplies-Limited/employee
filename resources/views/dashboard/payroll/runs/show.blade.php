@@ -115,7 +115,9 @@
 
             @forelse($run->payrolls as $payroll)
 
-                <tr>
+                <tr class="employee-row"
+                        
+                        style="cursor:pointer">
 
                     {{-- EMPLOYEE --}}
                     <td>
@@ -201,6 +203,39 @@
 
 <script>
 
+    document.addEventListener('DOMContentLoaded', function () {
+
+    document.querySelectorAll('.employee-row').forEach(row => {
+
+        row.addEventListener('click', function (e) {
+
+            // don't trigger when clicking View Payslip button
+            if (e.target.closest('a,button,form')) {
+                return;
+            }
+
+            const payrollId = this.dataset.payrollId;
+
+            // select employee in dropdown
+            const selector = document.getElementById('employeeSelector');
+            selector.value = payrollId;
+
+            // open modal
+            const modal = new bootstrap.Modal(
+                document.getElementById('adjustmentModal')
+            );
+
+            modal.show();
+
+            // trigger existing AJAX loader
+            selector.dispatchEvent(new Event('change'));
+
+        });
+
+    });
+
+});
+
 
 function addItem() {
 
@@ -222,6 +257,8 @@ function addItem() {
     .then(data => {
 
         if (!data.success) return;
+
+        showToast(data.message, 'success');
 
         const item = data.item;
 
@@ -275,9 +312,14 @@ function updateItem(input, id, field) {
     })
     .then(res => res.json())
     .then((data) => {
-        console.log(data);
+        if(data.success){
+            showToast(data.message, 'success');
+            console.log(data);
+        }
+        
     })
     .catch((data) => {
+        showToast(data.message, 'error');
         console.log(data);
     });
 }
@@ -303,8 +345,11 @@ function deleteItem(id) {
 
             // remove row instantly (no reload)
             document.querySelector(`[data-id="${id}"]`)?.remove();
+            showToast(data.message, 'success');
 
         }
+
+        showToast(data.message, 'error');
     });
 
 }
@@ -320,6 +365,7 @@ function refreshOnModalClose(modalId) {
 
 refreshOnModalClose('adjustmentModal');
 refreshOnModalClose('payrollRulesModal');
+
 </script>
 
 @endpush

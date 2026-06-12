@@ -83,6 +83,14 @@ class PayrollRunController extends Controller
     */
 public function generate(PayrollRun $run, PayrollEngine $engine)
 {
+
+if ($run->status === 'Approved') {
+    return back()->with(
+        'error',
+        'This payroll run has already been finalized.'
+    );
+}
+
     $employees = Employee::where('employment_status', 'Active')
         ->get();
 
@@ -124,101 +132,135 @@ public function generate(PayrollRun $run, PayrollEngine $engine)
     | FINALIZE RUN (CALCULATE TOTALS)
     |--------------------------------------------------------------------------
     */
-    public function finalize(PayrollRun $run)
+    // public function finalize(PayrollRun $run)
+    // {
+
+
+    //     $run->load('payrolls.items');
+
+    //     $totalIncome = 0;
+    //     $totalDeductions = 0;
+    //     $totalNet = 0;
+
+    //     if ($run->payrolls()->count() == 0) {
+    //         return back()->with(
+    //             'error',
+    //             'Generate payroll before finalizing.'
+    //         );
+    //     }
+
+    //     foreach ($run->payrolls as $payroll) {
+
+    //         // 🔥 RECALCULATE FROM ITEMS (source of truth)
+    //         $income = $payroll->items
+    //             ->where('type', 'earning')
+    //             ->sum('amount');
+
+    //         $deductions = $payroll->items
+    //             ->where('type', 'deduction')
+    //             ->sum('amount');
+
+    //         $net = $income - $deductions;
+
+    //         // 🔥 UPDATE PAYROLL
+    //         $payroll->update([
+    //             'total_income' => $income,
+    //             'total_deductions' => $deductions,
+    //             'net_pay' => $net,
+    //             'status' => 'Processed'
+    //         ]);
+
+    //         // 🔥 RUN TOTALS
+    //         $totalIncome += $income;
+    //         $totalDeductions += $deductions;
+    //         $totalNet += $net;
+    //     }
+
+    //     // 🔥 UPDATE RUN
+    //     $run->update([
+    //         'total_income' => $totalIncome,
+    //         'total_deductions' => $totalDeductions,
+    //         'net_pay' => $totalNet,
+    //         'status' => 'Processed'
+    //     ]);
+
+    //     return back()->with('success', 'Payroll run Processed successfully.');
+    // }
+
+public function finalize(PayrollRun $run)
 {
-
-
-    $run->load('payrolls.items');
-
-    $totalIncome = 0;
-    $totalDeductions = 0;
-    $totalNet = 0;
-
     if ($run->payrolls()->count() == 0) {
-    return back()->with(
-        'error',
-        'Generate payroll before finalizing.'
-    );
-}
-
-    foreach ($run->payrolls as $payroll) {
-
-        // 🔥 RECALCULATE FROM ITEMS (source of truth)
-        $income = $payroll->items
-            ->where('type', 'earning')
-            ->sum('amount');
-
-        $deductions = $payroll->items
-            ->where('type', 'deduction')
-            ->sum('amount');
-
-        $net = $income - $deductions;
-
-        // 🔥 UPDATE PAYROLL
-        $payroll->update([
-            'total_income' => $income,
-            'total_deductions' => $deductions,
-            'net_pay' => $net,
-            'status' => 'Processed'
-        ]);
-
-        // 🔥 RUN TOTALS
-        $totalIncome += $income;
-        $totalDeductions += $deductions;
-        $totalNet += $net;
+        return back()->with(
+            'error',
+            'Generate payroll before finalizing.'
+        );
     }
 
-    // 🔥 UPDATE RUN
+    // Lock all payslips
+    Payroll::where('payroll_run_id', $run->id)
+        ->update([
+            'status' => 'Approved'
+        ]);
+
+    // Calculate run summary from payroll records
+    $totalIncome = $run->payrolls()->sum('total_income');
+    $totalDeductions = $run->payrolls()->sum('total_deductions');
+    $totalNet = $run->payrolls()->sum('net_pay');
+
+    // Lock payroll run
     $run->update([
         'total_income' => $totalIncome,
         'total_deductions' => $totalDeductions,
         'net_pay' => $totalNet,
-        'status' => 'Processed'
+        'status' => 'Approved',
+        'finalized_at' => now(),
+        'finalized_by' => auth()->id(),
     ]);
-
-    return back()->with('success', 'Payroll run Processed successfully.');
-}
-
-
-
-public function storeAdjustment(
-    Request $request,
-    PayrollRun $run,
-    PayrollEngine $engine
-)
-{
-    $request->validate([
-        'employee_id' => 'required',
-        'name' => 'required',
-        'type' => 'required|in:earning,deduction',
-        'formula_type' => 'required|in:fixed,percentage',
-        'value' => 'required|numeric',
-    ]);
-
-    PayrollRunAdjustment::create([
-        'payroll_run_id' => $run->id,
-        'employee_id' => $request->employee_id,
-        'name' => $request->name,
-        'type' => $request->type,
-        'formula_type' => $request->formula_type,
-        'value' => $request->value,
-        'active' => true,
-    ]);
-
-    // Rebuild employee payroll
-    $payroll = Payroll::where('payroll_run_id', $run->id)
-        ->where('employee_id', $request->employee_id)
-        ->first();
-
-    if ($payroll) {
-        $engine->build($payroll);
-    }
 
     return back()->with(
         'success',
-        'Adjustment added and payroll recalculated.'
+        'Payroll run finalized successfully.'
     );
 }
+
+// public function storeAdjustment(
+//     Request $request,
+//     PayrollRun $run,
+//     PayrollEngine $engine
+// )
+// {
+//     $request->validate([
+//         'employee_id' => 'required',
+//         'name' => 'required',
+//         'type' => 'required|in:earning,deduction',
+//         'formula_type' => 'required|in:fixed,percentage',
+//         'value' => 'required|numeric',
+//     ]);
+
+//     PayrollRunAdjustment::create([
+//         'payroll_run_id' => $run->id,
+//         'employee_id' => $request->employee_id,
+//         'name' => $request->name,
+//         'type' => $request->type,
+//         'formula_type' => $request->formula_type,
+//         'value' => $request->value,
+//         'active' => true,
+//     ]);
+
+//     // Rebuild employee payroll
+//     $payroll = Payroll::where('payroll_run_id', $run->id)
+//         ->where('employee_id', $request->employee_id)
+//         ->first();
+
+//     if ($payroll) {
+//         $engine->build($payroll);
+//     }
+
+//     return back()->with(
+//         'success',
+//         'Adjustment added and payroll recalculated.'
+//     );
+// }
 
 public function employeeSummary(
     PayrollRun $run,
@@ -256,7 +298,7 @@ public function updateField(Request $request, PayrollItem $item)
         'value' => 'required'
     ]);
 
-Log::info('Payroll item field updated', [
+    Log::info('Payroll item field updated', [
         'item_id' => $item->id,
         'payroll_id' => $item->payroll_id,
         'field' => $request->field,
@@ -269,7 +311,7 @@ Log::info('Payroll item field updated', [
     // optional: recalc payroll totals
     $this->recalculatePayroll($item->payroll);
 
-    return response()->json(['success' => true, 'message' => $request->value]);
+    return response()->json(['success' => true, 'message' => $request->value + ' Updated Successfully']);
 }
 
 public function deleteAdjustment(PayrollItem $adjustment)
@@ -288,7 +330,10 @@ public function deleteAdjustment(PayrollItem $adjustment)
     $this->recalculatePayroll($payroll);
 
 
-    return response()->json(['success' => true]);
+    return response()->json([
+        'success' => true,
+        'message' => 'Deleted successfully'
+    ]);
 }
 
 public function storeItem(Request $request, Payroll $payroll)
@@ -311,7 +356,8 @@ public function storeItem(Request $request, Payroll $payroll)
 
     return response()->json([
         'success' => true,
-        'item' => $item
+        'item' => $item,
+        'message' => 'Item added successfully'
     ]);
 }
 

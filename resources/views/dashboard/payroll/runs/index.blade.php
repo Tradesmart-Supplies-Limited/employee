@@ -37,6 +37,7 @@
                 <p>Employees: {{ $run->payrolls->count() }}</p>
 
                 <p>Net Pay: K {{ number_format($run->net_pay,2) }}</p>
+                
 
                 <div class="d-flex gap-2">
 
@@ -51,6 +52,12 @@
                     </a>
 
                 </div>
+
+                <small class="text-muted my-1" style="font-size: 0.5em; font-family: monospace;">
+                    @if($run->finalized_at)
+                        Finalized by: {{ $run->finalizedBy?->name }} on {{ $run->finalized_at}}
+                    @endif
+                </small>
 
             </div>
 

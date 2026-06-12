@@ -147,7 +147,7 @@ Route::middleware('auth')->prefix('payroll')->name('payroll.')->group(function (
 
     Route::post('/rules/bulk-update', [PayrollRuleController::class, 'bulkUpdate'])->name('rules.bulkUpdate');
 
-    Route::post('/runs/{run}/adjustments', [PayrollRunController::class, 'storeAdjustment'])->name('runs.adjustments.store');
+    // Route::post('/runs/{run}/adjustments', [PayrollRunController::class, 'storeAdjustment'])->name('runs.adjustments.store');
 
     
 
