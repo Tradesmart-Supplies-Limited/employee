@@ -20,6 +20,14 @@
 
         <div class="d-flex gap-2">
 
+        <!-- Trigger Button -->
+            <button type="button"
+                    class="btn btn-primary"
+                    data-bs-toggle="modal"
+                    data-bs-target="#salaryCalculatorModal">
+                <i class="bi bi-calculator"></i> Salary Calculator
+            </button>
+
             {{-- GENERATE --}}
             <form action="{{ route('payroll.runs.generate', $run->id) }}" method="POST">
                 @csrf
@@ -59,6 +67,8 @@
                 <i class="bi bi-printer"></i>
                 Print Payslips
             </a>
+
+
 
         </div>
 
@@ -376,6 +386,139 @@ function refreshOnModalClose(modalId) {
 
 refreshOnModalClose('adjustmentModal');
 refreshOnModalClose('payrollRulesModal');
+
+
+const salaryMode = document.getElementById('salary_mode');
+const salaryAmount = document.getElementById('salary_amount');
+
+document.addEventListener('input', calculatePayroll);
+
+function calculatePayroll()
+{
+    let amount = parseFloat(salaryAmount.value || 0);
+
+    let housing = parseFloat(document.getElementById('housing').value || 0);
+    let transport = parseFloat(document.getElementById('transport').value || 0);
+    let lunch = parseFloat(document.getElementById('lunch').value || 0);
+
+    let allowances = housing + transport + lunch;
+
+    let basicPay = 0;
+    let grossPay = 0;
+    let netPay = 0;
+
+    if (salaryMode.value === 'basic')
+    {
+        basicPay = amount;
+        grossPay = basicPay + allowances;
+    }
+
+    if (salaryMode.value === 'gross')
+    {
+        grossPay = amount;
+        basicPay = grossPay - allowances;
+    }
+
+    if (salaryMode.value === 'net')
+    {
+        grossPay = reverseGrossFromNet(amount);
+        basicPay = grossPay - allowances;
+    }
+
+    let napsa = calculateNAPSA(grossPay);
+    let nhima = calculateNHIMA(grossPay);
+
+    let taxableIncome = grossPay;
+
+    let paye = calculatePAYE(taxableIncome);
+
+    netPay = grossPay - napsa - nhima - paye;
+
+    document.getElementById('basic_pay').value = formatMoney(basicPay);
+    document.getElementById('gross_pay').value = formatMoney(grossPay);
+    document.getElementById('net_pay').value = formatMoney(netPay);
+
+    document.getElementById('paye').value = formatMoney(paye);
+    document.getElementById('napsa').value = formatMoney(napsa);
+    document.getElementById('nhima').value = formatMoney(nhima);
+}
+
+function calculateNAPSA(gross)
+{
+    return gross * 0.05;
+}
+
+function calculateNHIMA(gross)
+{
+    return gross * 0.01;
+}
+
+function calculatePAYE(income)
+{
+    let tax = 0;
+
+    const brackets = [
+        { min: 0,    max: 5100, rate: 0 },
+        { min: 5100, max: 7100, rate: 0.20 },
+        { min: 7100, max: 9200, rate: 0.30 },
+        { min: 9200, max: null, rate: 0.37 },
+    ];
+
+    for (let i = 0; i < brackets.length; i++) {
+        const b = brackets[i];
+
+        if (income <= b.min) continue;
+
+        const upper = b.max === null ? income : b.max;
+
+        const taxable = Math.min(income, upper) - b.min;
+
+        if (taxable > 0) {
+            tax += taxable * b.rate;
+        }
+    }
+
+    return Math.round(tax * 100) / 100;
+}
+
+function reverseGrossFromNet(targetNet)
+{
+    let low = targetNet;
+    let high = targetNet * 3;
+
+    while ((high - low) > 0.01)
+    {
+        let gross = (low + high) / 2;
+
+        let napsa = calculateNAPSA(gross);
+        let nhima = calculateNHIMA(gross);
+
+        let taxable = gross - napsa - nhima;
+
+        let paye = calculatePAYE(taxable);
+
+        let net = gross - napsa - nhima - paye;
+
+        if (net < targetNet)
+        {
+            low = gross;
+        }
+        else
+        {
+            high = gross;
+        }
+    }
+
+    return (low + high) / 2;
+}
+
+function formatMoney(value)
+{
+    return value.toLocaleString('en-ZM', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+}
 
 </script>
 

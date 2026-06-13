@@ -54,14 +54,17 @@ public function build(Payroll $payroll)
     | 2. BASIC SALARY (CORE EARNING)
     |-------------------------------------------------
     */
+
+    $basic_pay = $employee->salary * 0.7;
+
     $this->addItem($payroll, [
         'code' => 'BASIC',
         'description' => 'Basic Salary',
         'type' => 'earning',
-        'amount' => $employee->salary ?? 0,
+        'amount' => $basic_pay ?? 0,
     ]);
 
-    $totalEarnings += $employee->salary ?? 0;
+    $totalEarnings += $basic_pay ?? 0;
 
     /*
     |-------------------------------------------------
@@ -148,16 +151,16 @@ public function build(Payroll $payroll)
     | 6. NAPSA (UNCHANGED)
     |-------------------------------------------------
     */
-    $napsa = ($employee->salary * 0.05);
+    // $napsa = ($employee->salary * 0.05);
 
-    $this->addItem($payroll, [
-        'code' => 'NAPSA',
-        'description' => 'NAPSA Contribution (5%)',
-        'type' => 'deduction',
-        'amount' => $napsa,
-    ]);
+    // $this->addItem($payroll, [
+    //     'code' => 'NAPSA',
+    //     'description' => 'NAPSA Contribution (5%)',
+    //     'type' => 'deduction',
+    //     'amount' => $napsa,
+    // ]);
 
-    $totalDeductions += $napsa;
+    // $totalDeductions += $napsa;
 
     /*
     |-------------------------------------------------
