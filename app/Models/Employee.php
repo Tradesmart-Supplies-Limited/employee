@@ -90,6 +90,7 @@ class Employee extends Model
         'nssf_number',
         'tin_number',
         'salary',
+        'net_salary',
 
         /*
         |--------------------------------------------------------------------------
