@@ -98,6 +98,7 @@
                                 <th>Type</th>
                                 <th>Formula</th>
                                 <th>Value</th>
+                                <th>Applies to</th>
                                 <th>Active</th>
                                 <th>Delete</th>
                             </tr>
@@ -157,6 +158,23 @@
                                            value="{{ $rule->value }}"
                                            class="form-control form-control-sm">
                                 </td>
+
+                                {{-- APPLIES TO --}}
+                                <td>
+                                    <select name="rules[{{ $rule->id }}][applies_to]"
+                                            class="form-select form-select-sm">
+
+                                        <option value="BASICPAY" {{ $rule->applies_to == 'BASICPAY' ? 'selected' : '' }}>
+                                            BASIC PAY
+                                        </option>
+
+                                        <option value="GROSSPAY" {{ $rule->applies_to == 'GROSSPAY' ? 'selected' : '' }}>
+                                            GROSS PAY
+                                        </option>
+
+                                    </select>
+                                </td>
+
 
                                 {{-- ACTIVE --}}
                                 <td>
