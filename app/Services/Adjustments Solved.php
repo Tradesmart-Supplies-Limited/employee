@@ -303,7 +303,7 @@ class PayrollEngine
                                 ->where('formula_type', 'fixed')->sum('value');
         $fixedDeductions += $assignments->where('type', 'deduction')
                                 ->where('formula_type', 'fixed')->sum('value');
-        // $fixedDeductions += $runAdjustments->where('type', 'deduction')->sum('value');
+        $fixedDeductions += $runAdjustments->where('type', 'deduction')->sum('value');
 
         // Adjust the target to account for fixed deductions (they reduce net)
         $adjustedTarget = $this->TARGET_NET + $fixedDeductions;

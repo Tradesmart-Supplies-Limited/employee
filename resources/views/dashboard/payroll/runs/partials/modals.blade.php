@@ -1,71 +1,51 @@
-<div class="modal fade"
-     id="adjustmentModal"
-     tabindex="-1">
+{{--
+    _adjustment-modal.blade.php
+    Include this in your show.blade.php:  @include('...._adjustment-modal')
+--}}
 
+<div class="modal fade" id="adjustmentModal" tabindex="-1">
     <div class="modal-dialog modal-xl">
-
         <div class="modal-content">
 
             <div class="modal-header">
-
-                <h5 class="modal-title">
-                    Payroll Adjustment Manager
-                </h5>
-
-                <button class="btn-close"
-                        data-bs-dismiss="modal"></button>
-
+                <h5 class="modal-title">Payroll Adjustment Manager</h5>
+                <button class="btn-close" data-bs-dismiss="modal"></button>
             </div>
 
             <div class="modal-body">
 
-                {{-- EMPLOYEE --}}
+                {{-- EMPLOYEE SELECTOR --}}
                 <div class="mb-3">
-
-                    <label class="form-label">
-                        Employee
-                    </label>
-
+                    <label class="form-label">Employee</label>
                     <select id="employeeSelector"
-                            class="form-select">
-
-                        <option value="">
-                            Select Employee
-                        </option>
-
+                            class="form-select"
+                            onchange="reloadEmployeeSummary(this.value)">
+                        <option value="">Select Employee</option>
                         @foreach($run->payrolls as $payroll)
-
                             <option value="{{ $payroll->id }}">
                                 {{ $payroll->employee->employee_id }}
-                                -
+                                —
                                 {{ $payroll->employee->first_name }}
                                 {{ $payroll->employee->last_name }}
                             </option>
-
                         @endforeach
-
                     </select>
-
                 </div>
 
-                {{-- AJAX CONTENT --}}
+                {{-- AJAX CONTENT — replaced on every load/reload --}}
                 <div id="employeePayrollSummary">
-
                     <div class="text-center text-muted py-5">
-
-                        Select employee to view payslip.
-
+                        Select an employee to view their payslip.
                     </div>
-
                 </div>
 
             </div>
 
         </div>
-
     </div>
-
 </div>
+
+
 
 
 
@@ -241,6 +221,32 @@
                                    step="0.01"
                                    class="form-control"
                                    placeholder="Value">
+                        </div>
+
+                        <div class="col-md-3">
+                            <select name="applies_to" class="form-select">
+                                <option value="BASICPAY">BASIC PAY</option>
+                                <option value="GROSSPAY">GROSS PAY</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-3">
+                            <select name="applies_to" class="form-select">
+                                <option value="BASICPAY">BASIC PAY</option>
+                                <option value="GROSSPAY">GROSS PAY</option>
+                            </select>
+                        </div>
+
+                        
+
+
+                        <div class="col-md-3">
+                            <select name="tax_profile" class="form-select">
+                                <option value="taxable">TAXABLE</option>
+                                <option value="napsa_only">NAPSA ONLY</option>
+                                <option value="non_taxable">NON TAXABLE</option>
+
+                            </select>
                         </div>
 
                         <div class="col-md-1">
