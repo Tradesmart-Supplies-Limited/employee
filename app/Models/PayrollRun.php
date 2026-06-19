@@ -14,6 +14,10 @@ class PayrollRun extends Model
         'net_pay',
         'finalized_at',
         'finalized_by',
+        'alias',
+        'created_by',
+        'audited_by',
+        'audited_at',
     ];
 
     public function payrolls()
@@ -24,5 +28,10 @@ class PayrollRun extends Model
     public function finalizedBy()
 {
     return $this->belongsTo(User::class, 'finalized_by');
+}
+
+public function creator()
+{
+    return $this->belongsTo(User::class, 'created_by');
 }
 }

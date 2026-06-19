@@ -4,75 +4,145 @@
 
 <div class="panel">
 
-    {{-- HEADER --}}
-    <div class="panel-header d-flex justify-content-between align-items-center">
+{{-- Payroll Process --}}
+    <div class="row mb-4">
 
-        <div>
-            <h4 class="mb-0">
-                <i class="bi bi-calendar2-week me-2"></i>
-                {{ $run->period }} Payroll Run
-            </h4>
-
-            <small class="text-muted">
-                Status: {{ $run->status }}
-            </small>
+        <div class="col-md-3">
+            <div class="card shadow-sm">
+                <div class="card-body text-center">
+                    <div class="fw-bold">1</div>
+                    <small>Create Run</small>
+                </div>
+            </div>
         </div>
 
-        <div class="d-flex gap-2">
+        <div class="col-md-3">
+            <div class="card shadow-sm border-primary">
+                <div class="card-body text-center text-muted">
+                    <div class="fw-bold">2</div>
+                    <small>Generate Payroll</small>
+                </div>
+            </div>
+        </div>
 
-        <!-- Trigger Button -->
-            <button type="button"
-                    class="btn btn-primary"
-                    data-bs-toggle="modal"
-                    data-bs-target="#salaryCalculatorModal">
-                <i class="bi bi-calculator"></i> Salary Calculator
-            </button>
+        <div class="col-md-3">
+            <div class="card shadow-sm">
+                <div class="card-body text-center text-muted">
+                    <div class="fw-bold">3</div>
+                    <small>Review & Adjust</small>
+                </div>
+            </div>
+        </div>
 
-            {{-- GENERATE --}}
-            <form action="{{ route('payroll.runs.generate', $run->id) }}" method="POST">
-                @csrf
-                <button class="btn btn-success btn-sm">
-                    <i class="bi bi-cpu"></i>
-                    Generate Payroll
-                </button>
-            </form>
-
-            <button class="btn btn-warning btn-sm"
-                    data-bs-toggle="modal"
-                    data-bs-target="#adjustmentModal">
-                Add Adjustment
-            </button>
-
-            <button class="btn btn-outline-primary btn-sm"
-                    data-bs-toggle="modal"
-                    data-bs-target="#payrollRulesModal">
-
-                <i class="bi bi-sliders"></i>
-                Payroll Rules
-            </button>
-
-            {{-- FINALIZE --}}
-            <form action="{{ route('payroll.runs.finalize', $run->id) }}" method="POST">
-                @csrf
-                <button class="btn btn-primary btn-sm">
-                    <i class="bi bi-check2-circle"></i>
-                    Finalize Run
-                </button>
-            </form>
-
-            {{-- PRINT ALL --}}
-            <a href="{{ route('payroll.runs.payslips', $run->id) }}"
-               target="_blank"
-               class="btn btn-dark btn-sm">
-                <i class="bi bi-printer"></i>
-                Print Payslips
-            </a>
-
-
-
+        <div class="col-md-3">
+            <div class="card shadow-sm">
+                <div class="card-body text-center text-muted">
+                    <div class="fw-bold">4</div>
+                    <small>Approve & Export</small>
+                </div>
+            </div>
         </div>
 
     </div>
+
+    {{-- HEADER --}}
+{{-- HEADER --}}
+<div class="panel-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+
+    {{-- LEFT --}}
+    <div>
+        <h4 class="mb-0">
+            <i class="bi bi-calendar2-week me-2"></i>
+            {{ $run->period }} Payroll Run
+        </h4>
+
+        <small class="text-muted">
+            Status: <span class="fw-semibold">{{ $run->status }}</span>
+        </small>
+    </div>
+
+    {{-- RIGHT ACTION BAR --}}
+    <div class="d-flex align-items-center flex-wrap gap-2">
+
+        {{-- LOANS --}}
+        <button class="btn btn-outline-dark btn-sm"
+                data-bs-toggle="tooltip"
+                title="Manage Loans">
+            <i class="bi bi-cash-coin me-1"></i> Loans
+        </button>
+
+        {{-- SUBMIT --}}
+        <button class="btn btn-primary btn-sm"
+                data-bs-toggle="tooltip"
+                title="Submit Payroll">
+            <i class="bi bi-send-check me-1"></i> Submit
+        </button>
+
+        {{-- AUDIT --}}
+        <button class="btn btn-warning btn-sm"
+                data-bs-toggle="tooltip"
+                title="Audit Payroll Run">
+            <i class="bi bi-shield-check me-1"></i> Audit
+        </button>
+
+        {{-- SETTINGS --}}
+        <button class="btn btn-outline-secondary btn-sm"
+                data-bs-toggle="offcanvas"
+                data-bs-target="#settingsOffcanvas"
+                title="Settings">
+            <i class="bi bi-gear me-1"></i> Settings
+        </button>
+
+        {{-- TOOLS --}}
+        <button class="btn btn-dark btn-sm"
+                data-bs-toggle="offcanvas"
+                data-bs-target="#toolsOffcanvas"
+                title="Tools">
+            <i class="bi bi-tools me-1"></i> Tools
+        </button>
+
+        {{-- PRINT --}}
+        <a href="{{ route('payroll.runs.payslips', $run->id) }}"
+           target="_blank"
+           class="btn btn-outline-primary btn-sm"
+           data-bs-toggle="tooltip"
+           title="Print Payslips">
+            <i class="bi bi-printer me-1"></i> Print
+        </a>
+
+        {{-- FINALIZE --}}
+        <form action="{{ route('payroll.runs.finalize', $run->id) }}" method="POST">
+            @csrf
+            <button class="btn btn-success btn-sm"
+                    data-bs-toggle="tooltip"
+                    title="Finalize Run">
+                <i class="bi bi-check2-circle me-1"></i> Finalize
+            </button>
+        </form>
+
+    </div>
+</div>
+
+{{-- FLOATING GENERATE BUTTON --}}
+<form action="{{ route('payroll.runs.generate', $run->id) }}" method="POST">
+    @csrf
+
+    <button type="submit"
+            class="btn btn-primary rounded-circle shadow-lg"
+            style="
+                position: fixed;
+                bottom: 25px;
+                right: 25px;
+                width: 60px;
+                height: 60px;
+                z-index: 999;
+            "
+            data-bs-toggle="tooltip"
+            title="Generate Payroll">
+
+        <i class="bi bi-arrow-repeat fs-4"></i>
+    </button>
+</form>
 
     {{-- SUMMARY CARDS --}}
     <div class="row mt-3">
@@ -245,137 +315,6 @@
     });
 
 });
-
-
-// function addItem() {
-
-//     const description = document.getElementById('newDesc').value;
-//     const type = document.getElementById('newType').value;
-//     const amount = document.getElementById('newAmount').value;
-
-//     const payrollId = document.querySelector('[data-payroll-id]').dataset.payrollId;
-
-//     fetch(`/payroll/${payrollId}/items/store`, {
-//         method: 'POST',
-//         headers: {
-//             'Content-Type': 'application/json',
-//             'X-CSRF-TOKEN': '{{ csrf_token() }}'
-//         },
-//         body: JSON.stringify({ description, type, amount })
-//     })
-//     .then(res => res.json())
-//     .then(data => {
-
-//         if (!data.success) return;
-
-//         showToast(data.message, 'success');
-
-//         const item = data.item;
-
-//         const row = `
-//         <tr data-id="${item.id}">
-//             <td>
-//                 <input type="text" value="${item.description}"
-//                     class="form-control form-control-sm"
-//                     onblur="updateItem(this, ${item.id}, 'description')">
-//             </td>
-
-//             <td>
-//                 <input type="number" value="${item.amount}"
-//                     class="form-control form-control-sm text-end"
-//                     onblur="updateItem(this, ${item.id}, 'amount')">
-//             </td>
-
-//             <td class="text-end">
-//                 <button class="btn btn-sm btn-outline-danger"
-//                         onclick="deleteItem(${item.id})">
-//                     Delete
-//                 </button>
-//             </td>
-//         </tr>`;
-
-//         const target = type === 'earning'
-//             ? document.querySelector('#earningsTable')
-//             : document.querySelector('#deductionsTable');
-
-//         if (target) {
-//             target.insertAdjacentHTML('beforeend', row);
-//         }
-
-//     });
-
-// }
-
-
-// function updateItem(input, id, field) {
-
-//     console.log('Updating item', { id, field, value: input.value });
-
-//     fetch(`/payroll/items/${id}/update-field`, {
-//         method: 'POST',
-//         headers: {
-//             'X-CSRF-TOKEN': '{{ csrf_token() }}',
-//             'Content-Type': 'application/json'
-//         },
-//         body: JSON.stringify({
-//             field: field,
-//             value: input.value
-//         })
-//     })
-//     .then(res => res.json())
-//     .then((data) => {
-//         if(data.success){
-//             showToast(data.message, 'success');
-//             console.log(data);
-//         }
-        
-//     })
-//     .catch((data) => {
-//         showToast(data.message, 'error');
-//         console.log(data);
-//     });
-// }
-
-
-
-
-
-// function deleteItem(id) {
-
-// console.log('Deleting item with id:', id);
-
-//     // if (!confirm('Delete this item?')) return;
-
-//     var respo = null;
-
-//     fetch(`/payroll/items/${id}`, {
-//         method: 'DELETE',
-//         headers: {
-//             'X-CSRF-TOKEN': '{{ csrf_token() }}'
-
-//         }
-//     })
-//     .then(res => res.json())
-//     .then(data => {
-
-//         respo = data;
-
-//         if (data.success) {
-
-//             // remove row instantly (no reload)
-//             document.querySelector(`[data-id="${id}"]`)?.remove();
-//             showToast(data.message, 'success');
-
-//         }
-
-//         // showToast(data.message, 'error');
-//     });
-
-//     console.log(respo);
-
-// }
-
-
 
 /*
 |--------------------------------------------------------------------------

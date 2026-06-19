@@ -1668,3 +1668,73 @@ html[data-theme="dark"] {
     border-radius: 10px;
     background: #fafafa;
 }
+
+.run-card {
+    border-radius: 16px;
+    overflow: hidden;
+    transition: all 0.25s ease;
+    cursor: pointer;
+    background-color: #ffffff;
+}
+
+.run-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 30px rgba(0,0,0,0.12);
+    border-color: #1d4ed8;
+}
+
+/* KPI STRIP */
+.kpi-strip {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    background-color: #ffffff;
+}
+
+.kpi-box {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    background: #ffffff;
+    border-radius: 10px;
+}
+
+.kpi-box i {
+    font-size: 20px;
+    color: #6c757d;
+}
+
+.kpi-box small {
+    display: block;
+    font-size: 11px;
+    color: #000000;
+}
+
+.kpi-box strong {
+    display: block;
+    font-size: 14px;
+}
+
+/* ACTION BAR */
+.action-bar {
+    display: flex;
+    justify-content: space-between;
+    padding: 5px 10px;
+}
+
+.action-bar a {
+    flex: 1;
+    text-align: center;
+    color: #555;
+    font-size: 18px;
+    padding: 6px 0;
+    transition: 0.2s;
+}
+
+.action-bar a:hover {
+    background: #e9ecef;
+    border-radius: 8px;
+    color: #000;
+}

@@ -270,30 +270,17 @@
 
 
 
-<!-- Salary Calculator Modal -->
-<div class="modal fade"
-     id="salaryCalculatorModal"
-     tabindex="-1"
-     aria-labelledby="salaryCalculatorModalLabel"
-     aria-hidden="true">
 
-    <div class="modal-dialog modal-xl modal-dialog-scrollable">
 
-        <div class="modal-content">
 
-            <div class="modal-header">
-                <h5 class="modal-title" id="salaryCalculatorModalLabel">
-                    <i class="bi bi-calculator"></i> Salary Calculator
-                </h5>
+<div class="offcanvas offcanvas-end" tabindex="-1" id="salaryCanvas" style="width: 420px;">
 
-                <button type="button"
-                        class="btn-close"
-                        data-bs-dismiss="modal"
-                        aria-label="Close">
-                </button>
-            </div>
+    <div class="offcanvas-header border-bottom">
+        <h5 class="offcanvas-title">Salary Calculator</h5>
+        <button class="btn-close" data-bs-dismiss="offcanvas"></button>
+    </div>
 
-            <div class="modal-body">
+     <div class="offcanvas-body">
 
                 <!-- Calculation Mode -->
                 <div class="row">
@@ -439,9 +426,97 @@
                 </button>
 
             </div>
+</div>
+
+
+<div class="offcanvas offcanvas-end" tabindex="-1" id="overtimeCanvas" style="width: 420px;">
+
+    <div class="offcanvas-header border-bottom">
+        <h5 class="offcanvas-title">Overtime Calculator</h5>
+        <button class="btn-close" data-bs-dismiss="offcanvas"></button>
+    </div>
+
+    <div class="offcanvas-body">
+
+        <label class="form-label">Hourly Rate</label>
+        <input type="number" class="form-control mb-2" id="otRate">
+
+        <label class="form-label">Normal OT Hours (1.5x)</label>
+        <input type="number" class="form-control mb-2" id="otNormal">
+
+        <label class="form-label">Double OT Hours (2x)</label>
+        <input type="number" class="form-control mb-2" id="otDouble">
+
+        <button class="btn btn-success w-100" onclick="calculateOT()">
+            Calculate
+        </button>
+
+        <hr>
+
+        <div id="otResult" class="fw-bold text-primary"></div>
+
+    </div>
+</div>
+
+<div class="offcanvas offcanvas-end" tabindex="-1" id="leaveCanvas" style="width: 420px;">
+
+    <div class="offcanvas-header border-bottom">
+        <h5 class="offcanvas-title">Leave Calculator</h5>
+        <button class="btn-close" data-bs-dismiss="offcanvas"></button>
+    </div>
+
+    <div class="offcanvas-body">
+
+        <label class="form-label">Annual Leave Days</label>
+        <input type="number" class="form-control mb-2" id="leaveAnnual">
+
+        <label class="form-label">Days Taken</label>
+        <input type="number" class="form-control mb-2" id="leaveTaken">
+
+        <button class="btn btn-warning w-100" onclick="calculateLeave()">
+            Calculate
+        </button>
+
+        <hr>
+
+        <div id="leaveResult" class="fw-bold text-warning"></div>
+
+    </div>
+</div>
+<div class="offcanvas offcanvas-end" tabindex="-1" id="toolsOffcanvas">
+
+    <div class="offcanvas-header">
+        <h5 class="offcanvas-title">
+            <i class="bi bi-tools me-2"></i> Payroll Tools
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+    </div>
+
+    <div class="offcanvas-body">
+
+        <p class="text-muted small">Quick calculators & utilities</p>
+
+        <div class="d-grid gap-2">
+
+            <button class="btn btn-outline-primary"
+                    data-bs-toggle="offcanvas"
+                    data-bs-target="#salaryCalc">
+                Salary Calculator
+            </button>
+
+            <button class="btn btn-outline-success"
+                    data-bs-toggle="offcanvas"
+                    data-bs-target="#overtimeCalc">
+                Overtime Calculator
+            </button>
+
+            <button class="btn btn-outline-warning"
+                    data-bs-toggle="offcanvas"
+                    data-bs-target="#leaveCalc">
+                Leave Days Calculator
+            </button>
 
         </div>
 
     </div>
-
 </div>

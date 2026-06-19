@@ -58,17 +58,19 @@ class PayrollRunController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'period' => 'required'
+            'period' => 'required',
+            'alias'  => 'nullable|string|max:255',
         ]);
 
         $run = PayrollRun::create([
-            'period' => $request->period,
-            'status' => 'Draft',
+            'period'     => $request->period,
+            'alias'      => $request->alias,
+            'created_by' => auth()->id(),
+            'status'     => 'Draft',
         ]);
 
         return redirect()->route('payroll.runs.show', $run->id);
     }
-
     /*
     |--------------------------------------------------------------------------
     | SHOW RUN
