@@ -63,6 +63,10 @@
 
     {{-- RIGHT ACTION BAR --}}
     <div class="d-flex align-items-center flex-wrap gap-2">
+        
+
+    <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#adjustmentModal"> Add Adjustment </button> 
+    <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#payrollRulesModal"> <i class="bi bi-sliders"></i> Payroll Rules </button>
 
         {{-- LOANS --}}
         <button class="btn btn-outline-dark btn-sm"
@@ -272,9 +276,14 @@
 
 </div>
 
+
+
 @push('modals')
 
+
 @include('dashboard.payroll.runs.partials.modals', ['run' => $run])
+@include('dashboard.payroll.runs.partials.payroll-rules-modal')
+@include('dashboard.payroll.runs.partials.adjustment-modal')
 
 {{-- IMPORTANT: RUN ID FOR JS --}}
 <script>
@@ -562,6 +571,7 @@ function refreshOnModalClose(modalId) {
 }
 
 refreshOnModalClose('adjustmentModal');
+
 refreshOnModalClose('payrollRulesModal');
 
 
@@ -697,7 +707,92 @@ function formatMoney(value)
     });
 }
 
+
+
+(function () {
+
+    /* ── State ────────────────────────────────────────────────── */
+    let esMode         = 'rule';
+    let esSelectedRule = null;
+
+    /* ── Mode switcher ────────────────────────────────────────── */
+    window.esSetMode = function (mode) {
+        esMode = mode;
+        document.getElementById('esModeRule').classList.toggle('active',   mode === 'rule');
+        document.getElementById('esModeCustom').classList.toggle('active', mode === 'custom');
+        document.getElementById('esRuleSection').style.display = mode === 'rule' ? '' : 'none';
+
+        if (mode === 'custom') {
+            esClearRule();
+            esMakeFormEditable();
+        }
+    };
+
+    /* ── Rule card selection ──────────────────────────────────── */
+    window.esSelectRule = function (el) {
+        document.querySelectorAll('#esRuleGrid .es-rule-card')
+                .forEach(c => c.classList.remove('selected'));
+        el.classList.add('selected');
+
+        const d = el.dataset;
+        esSelectedRule = { id: d.ruleId, name: d.name, type: d.type, tax: d.tax };
+
+        document.getElementById('adjName').value    = d.name;
+        document.getElementById('adjName').readOnly = true;
+
+        document.getElementById('adjType').value    = d.type;
+        document.getElementById('adjType').disabled = true;
+
+        document.getElementById('adjTaxProfile').value    = d.tax;
+        document.getElementById('adjTaxProfile').disabled = true;
+
+        if (d.value) {
+            document.getElementById('adjAmount').value = parseFloat(d.value).toFixed(2);
+        }
+
+        document.getElementById('taxProfileGroup').style.visibility =
+            d.type === 'earning' ? 'visible' : 'hidden';
+
+        const banner = document.getElementById('esRuleBanner');
+        banner.style.display = 'flex';
+        document.getElementById('esRuleBannerText').textContent = d.name + ' selected';
+
+        document.getElementById('adjAmount').focus();
+    };
+
+    /* ── Clear rule selection ─────────────────────────────────── */
+    window.esClearRule = function () {
+        esSelectedRule = null;
+        document.querySelectorAll('#esRuleGrid .es-rule-card')
+                .forEach(c => c.classList.remove('selected'));
+        document.getElementById('esRuleBanner').style.display = 'none';
+        document.getElementById('adjName').value   = '';
+        document.getElementById('adjAmount').value = '';
+        esMakeFormEditable();
+    };
+
+    /* ── Unlock all form fields ───────────────────────────────── */
+    function esMakeFormEditable() {
+        document.getElementById('adjName').readOnly       = false;
+        document.getElementById('adjType').disabled       = false;
+        document.getElementById('adjTaxProfile').disabled = false;
+        document.getElementById('taxProfileGroup').style.visibility = 'visible';
+    }
+
+    /* ── Toggle tax profile visibility ───────────────────────── */
+    window.toggleTaxProfile = function () {
+        const type = document.getElementById('adjType').value;
+        document.getElementById('taxProfileGroup').style.visibility =
+            type === 'earning' ? 'visible' : 'hidden';
+    };
+
+})();
+
+
+
 </script>
+
+
 
 @endpush
 

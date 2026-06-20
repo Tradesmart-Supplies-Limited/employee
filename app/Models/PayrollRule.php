@@ -7,14 +7,34 @@ use Illuminate\Database\Eloquent\Model;
 class PayrollRule extends Model
 {
     protected $fillable = [
-        'name',
-        'type',
-        'formula_type',
-        'value',
-        'applies_to',
-        'tax_profile',   // 'taxable' | 'napsa_only' | 'non_taxable'
-        'active',
-    ];
+
+    'name',
+    'code',
+
+    'type',
+    'category',
+
+    'formula_type',
+    'value',
+    'applies_to',
+
+    'tax_profile',
+
+    'is_statutory',
+    'is_recurring',
+    'requires_assignment',
+
+    'affects_gross',
+    'affects_net',
+    'show_on_payslip',
+
+    'is_pensionable',
+
+    'sort_order',
+    'description',
+
+    'active'
+];
 
     /*
     |--------------------------------------------------------------------------

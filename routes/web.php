@@ -24,6 +24,7 @@ Route::middleware('guest')->group(function () {
 });
 
 
+
 /*
 |--------------------------------------------------------------------------
 | AUTHENTICATED ROUTES (LOGGED IN USERS ONLY)
@@ -106,6 +107,9 @@ Route::middleware('auth')->group(function () {
 
 });
 
+Route::get('/payroll/rules', function () {
+    return "RULES WORKING";
+});
 
 Route::middleware('auth')->prefix('payroll')->name('payroll.')->group(function () {
 
@@ -140,14 +144,14 @@ Route::middleware('auth')->prefix('payroll')->name('payroll.')->group(function (
 
     Route::get('/runs/{run}/payslips', [PayrollRunController::class, 'payslips'])->name('runs.payslips');
 
-    // LIST (optional page later if you want full screen manager)
-    // Route::get('/', [PayrollRuleController::class, 'index'])->name('index');
+    
+    Route::get('/rules',              [PayrollRuleController::class, 'index'])->name('rules.index');
+    Route::post('/rules',             [PayrollRuleController::class, 'store'])->name('rules.store');
+    Route::patch('/rules/{rule}',     [PayrollRuleController::class, 'update'])->name('rules.update');
+    Route::delete('/rules/{rule}',    [PayrollRuleController::class, 'destroy'])->name('rules.destroy');
+    Route::post('/rules/seed',        [PayrollRuleController::class, 'seedDefaults'])->name('rules.seedDefaults');
 
-    Route::post('/rules/store', [PayrollRuleController::class, 'store'])->name('rules.store');
-
-    Route::post('/rules/bulk-update', [PayrollRuleController::class, 'bulkUpdate'])->name('rules.bulkUpdate');
-
-    // routes/web.php
+    
     Route::post('/runs/{run}/adjustments',          [PayrollRunController::class, 'storeAdjustment'])->name('runs.adjustments.store');
     Route::delete('/runs/adjustments/{adjustment}', [PayrollRunController::class, 'destroyAdjustment'])->name('runs.adjustments.destroy');
 
@@ -160,11 +164,12 @@ Route::middleware('auth')->prefix('payroll')->name('payroll.')->group(function (
 
 
 
-Route::post('/items/{item}/update-field', [PayrollRunController::class, 'updateField']);
+    Route::post('/items/{item}/update-field', [PayrollRunController::class, 'updateField']);
 
-Route::delete('/items/{item}', [PayrollRunController::class, 'deleteItem']);
+    Route::delete('/items/{item}', [PayrollRunController::class, 'deleteItem']);
 
-Route::post('/{payroll}/items/store', [PayrollRunController::class, 'storeItem']);
+    Route::post('/{payroll}/items/store', [PayrollRunController::class, 'storeItem']);
 
 
 });
+
