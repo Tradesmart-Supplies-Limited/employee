@@ -4,47 +4,6 @@
 
 <div class="panel">
 
-{{-- Payroll Process --}}
-    <div class="row mb-4">
-
-        <div class="col-md-3">
-            <div class="card shadow-sm">
-                <div class="card-body text-center">
-                    <div class="fw-bold">1</div>
-                    <small>Create Run</small>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="card shadow-sm border-primary">
-                <div class="card-body text-center text-muted">
-                    <div class="fw-bold">2</div>
-                    <small>Generate Payroll</small>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="card shadow-sm">
-                <div class="card-body text-center text-muted">
-                    <div class="fw-bold">3</div>
-                    <small>Review & Adjust</small>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="card shadow-sm">
-                <div class="card-body text-center text-muted">
-                    <div class="fw-bold">4</div>
-                    <small>Approve & Export</small>
-                </div>
-            </div>
-        </div>
-
-    </div>
-
     {{-- HEADER --}}
 {{-- HEADER --}}
 <div class="panel-header d-flex justify-content-between align-items-center flex-wrap gap-2">
@@ -53,7 +12,7 @@
     <div>
         <h4 class="mb-0">
             <i class="bi bi-calendar2-week me-2"></i>
-            {{ $run->period }} Payroll Run
+            {{ $run->period }} - {{$run->alias }}
         </h4>
 
         <small class="text-muted">
@@ -65,40 +24,30 @@
     <div class="d-flex align-items-center flex-wrap gap-2">
         
 
-    <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#adjustmentModal"> Add Adjustment </button> 
-    <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#payrollRulesModal"> <i class="bi bi-sliders"></i> Payroll Rules </button>
-
-        {{-- LOANS --}}
-        <button class="btn btn-outline-dark btn-sm"
-                data-bs-toggle="tooltip"
-                title="Manage Loans">
-            <i class="bi bi-cash-coin me-1"></i> Loans
+    <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#adjustmentModal"><i class="bi bi-sliders"></i> Add Adjustment </button> 
+    {{-- LOANS --}}
+        <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#adjustmentModalBulk">
+            <i class="bi bi-upload"></i> Bulk Adjustments
         </button>
+    <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#payrollRulesModal"> <i class="bi bi-sliders"></i> Payroll Rules </button>
 
-        {{-- SUBMIT --}}
-        <button class="btn btn-primary btn-sm"
-                data-bs-toggle="tooltip"
-                title="Submit Payroll">
-            <i class="bi bi-send-check me-1"></i> Submit
-        </button>
+        
 
-        {{-- AUDIT --}}
-        <button class="btn btn-warning btn-sm"
-                data-bs-toggle="tooltip"
-                title="Audit Payroll Run">
-            <i class="bi bi-shield-check me-1"></i> Audit
-        </button>
+        {{-- GENERATE --}}
+        <form action="{{ route('payroll.runs.generate', $run->id) }}" method="POST" class="d-inline">
+            @csrf
+            <button type="submit" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-tools me-1"></i> Generate Payroll
+            </button>
+        </form>
 
-        {{-- SETTINGS --}}
-        <button class="btn btn-outline-secondary btn-sm"
-                data-bs-toggle="offcanvas"
-                data-bs-target="#settingsOffcanvas"
-                title="Settings">
-            <i class="bi bi-gear me-1"></i> Settings
-        </button>
+        
+
+        
+
 
         {{-- TOOLS --}}
-        <button class="btn btn-dark btn-sm"
+        <button class="btn btn-ouline-secondary btn-sm"
                 data-bs-toggle="offcanvas"
                 data-bs-target="#toolsOffcanvas"
                 title="Tools">
@@ -108,45 +57,36 @@
         {{-- PRINT --}}
         <a href="{{ route('payroll.runs.payslips', $run->id) }}"
            target="_blank"
-           class="btn btn-outline-primary btn-sm"
+           class="btn btn-outline-secondary btn-sm"
            data-bs-toggle="tooltip"
            title="Print Payslips">
             <i class="bi bi-printer me-1"></i> Print
         </a>
 
+        
+
+        {{-- SUBMIT --}}
+        <button class="btn btn-outline-secondary btn-sm"
+                data-bs-toggle="tooltip"
+                title="Submit Payroll">
+            <i class="bi bi-send-check me-1"></i> Submit
+        </button>
+
         {{-- FINALIZE --}}
-        <form action="{{ route('payroll.runs.finalize', $run->id) }}" method="POST">
-            @csrf
-            <button class="btn btn-success btn-sm"
-                    data-bs-toggle="tooltip"
-                    title="Finalize Run">
-                <i class="bi bi-check2-circle me-1"></i> Finalize
-            </button>
-        </form>
+
+        @if(auth()->check() && auth()->user()->role === 'admin')
+            <form action="{{ route('payroll.runs.finalize', $run->id) }}" method="POST">
+                @csrf
+                <button class="btn btn-success btn-sm"
+                        data-bs-toggle="tooltip"
+                        title="Finalize Run">
+                    <i class="bi bi-check2-circle me-1"></i> Finalize
+                </button>
+            </form>
+        @endif
 
     </div>
 </div>
-
-{{-- FLOATING GENERATE BUTTON --}}
-<form action="{{ route('payroll.runs.generate', $run->id) }}" method="POST">
-    @csrf
-
-    <button type="submit"
-            class="btn btn-primary rounded-circle shadow-lg"
-            style="
-                position: fixed;
-                bottom: 25px;
-                right: 25px;
-                width: 60px;
-                height: 60px;
-                z-index: 999;
-            "
-            data-bs-toggle="tooltip"
-            title="Generate Payroll">
-
-        <i class="bi bi-arrow-repeat fs-4"></i>
-    </button>
-</form>
 
     {{-- SUMMARY CARDS --}}
     <div class="row mt-3">
@@ -249,10 +189,24 @@
                     {{-- ACTION --}}
                     <td class="text-end">
 
-                        <a href="{{ route('payroll.show', $payroll->id) }}"
-                           class="btn btn-sm btn-outline-primary">
-                            View Payslip
-                        </a>
+                        <div class="d-flex justify-content-end gap-1 flex-wrap">
+                            <a href="{{ route('payroll.show', $payroll->id) }}"
+                               class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye me-1"></i>
+                            </a>
+
+                            <a href="{{ route('payroll.show', $payroll->id) }}?download=1"
+                               class="btn btn-sm btn-outline-success">
+                                <i class="bi bi-download me-1"></i>
+                            </a>
+
+                            <button type="button"
+                                    class="btn btn-sm btn-outline-secondary"
+                                    data-bs-toggle="tooltip"
+                                    title="Share Payslip">
+                                <i class="bi bi-share-fill me-1"></i>
+                            </button>
+                        </div>
 
                     </td>
 

@@ -1,7 +1,7 @@
 
 
 
-<div class="offcanvas offcanvas-end" tabindex="-1" id="salaryCanvas" style="width: 420px;">
+<div class="offcanvas offcanvas-start" tabindex="-1" id="salaryCanvas" style="width: 420px;">
 
     <div class="offcanvas-header border-bottom">
         <h5 class="offcanvas-title">Salary Calculator</h5>
@@ -265,3 +265,132 @@
 
     </div>
 </div>
+
+
+<!-- Modal -->
+<div class="modal fade" id="adjustmentModalBulk" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+
+        <div class="modal-content shadow-lg border-0 rounded-4">
+
+            <!-- Header -->
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-file-earmark-excel"></i>
+                    Payroll Adjustments Import
+                </h5>
+
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+
+            <!-- Body -->
+            <div class="modal-body p-4">
+
+                <form
+                    method="POST"
+                    action="{{ route('payroll.runs.adjustments.import', $run) }}"
+                    enctype="multipart/form-data"
+                    id="adjustmentForm">
+
+                    @csrf
+
+                    <!-- Adjustment Type -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">
+                            <i class="bi bi-sliders"></i> Adjustment Type
+                        </label>
+
+                        <select
+                            id="rule_id"
+                            name="rule_id"
+                            class="form-select"
+                            required>
+
+                            @foreach($rules as $rule)
+                                <option value="{{ $rule->id }}">
+                                    {{ $rule->code }} - {{ $rule->name }}
+                                </option>
+                            @endforeach
+
+                        </select>
+                    </div>
+
+                    <!-- Download Template -->
+                    <div class="mb-3 d-flex justify-content-between align-items-center">
+
+                        <div>
+                            <label class="form-label fw-semibold">
+                                <i class="bi bi-download"></i> Template
+                            </label>
+
+                            <p class="text-muted small mb-0">
+                                Download Excel with employees prefilled
+                            </p>
+                        </div>
+
+                        <button
+                            type="button"
+                            id="download-template"
+                            class="btn btn-success">
+
+                            <i class="bi bi-file-earmark-arrow-down"></i>
+                            Download
+
+                        </button>
+
+                    </div>
+
+                    <!-- File Upload -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">
+                            <i class="bi bi-file-earmark-arrow-up"></i> Upload Excel File
+                        </label>
+
+                        <input
+                            type="file"
+                            name="file"
+                            class="form-control"
+                            accept=".xlsx,.xls"
+                            required>
+                    </div>
+
+                </form>
+
+            </div>
+
+            <!-- Footer -->
+            <div class="modal-footer">
+
+                <button
+                    type="button"
+                    class="btn btn-light"
+                    data-bs-dismiss="modal">
+
+                    <i class="bi bi-x-circle"></i> Cancel
+
+                </button>
+
+                <button
+                    type="submit"
+                    form="adjustmentForm"
+                    class="btn btn-primary">
+
+                    <i class="bi bi-cloud-upload"></i> Import
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+</div>
+<script>
+document.getElementById('download-template').addEventListener('click', function () {
+
+    let ruleId = document.getElementById('rule_id').value;
+
+    window.location =
+        "{{ url('/payroll/runs/'.$run->id.'/adjustments/template') }}/" + ruleId;
+});
+</script>

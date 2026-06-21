@@ -6,10 +6,14 @@ use App\Models\PayrollRun;
 use App\Models\Payroll;
 use App\Models\Employee;
 use App\Models\PayrollItem;
+use App\Models\PayrollRule;
 use App\Models\PayrollRunAdjustment;
 use App\Services\PayrollEngine;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\PayrollAdjustmentTemplateExport;
+use App\Imports\PayrollAdjustmentImport;
 
 class PayrollRunController extends Controller
 {
@@ -36,6 +40,7 @@ class PayrollRunController extends Controller
     {
         $run = PayrollRun::with(['payrolls.employee', 'payrolls.items'])
             ->findOrFail($runId);
+        
 
         return view('dashboard.payroll.runs.payslips', compact('run'));
     }
@@ -79,8 +84,13 @@ class PayrollRunController extends Controller
     public function show(PayrollRun $run)
     {
         $run->load('payrolls.employee', 'payrolls.items');
+        $rules = PayrollRule::where(
+            'requires_assignment',
+            true
+        )->get();
 
-        return view('dashboard.payroll.runs.show', compact('run'));
+
+        return view('dashboard.payroll.runs.show', compact('run','rules'));
     }
 
     /*
@@ -205,6 +215,51 @@ class PayrollRunController extends Controller
             'message' => 'Adjustment saved and payroll recalculated.',
         ]);
     }
+
+    public function downloadAdjustmentTemplate(
+        PayrollRun $run, PayrollRule $rule
+    ) {
+        $file_name = "ADJ-" . $rule->code . "-" . $rule->name . "-" . $run->alias . ".xlsx";
+
+        return Excel::download(
+            new PayrollAdjustmentTemplateExport($run),
+             $file_name
+        );
+    }
+
+    public function importAdjustmentsExcel(
+        Request $request,
+        PayrollRun $run
+    ) {
+        $request->validate([
+            'rule_id' => 'required|exists:payroll_rules,id',
+            'file' => 'required|file|mimes:xlsx,xls'
+        ]);
+
+        if ($run->status === 'Approved') {
+
+            return back()->with(
+                'error',
+                'Cannot modify a finalized payroll run.'
+            );
+        }
+
+        Excel::import(
+            new PayrollAdjustmentImport(
+                $run,
+                $request->rule_id
+            ),
+            $request->file('file')
+        );
+
+        return back()->with(
+            'success',
+            'Adjustments imported successfully.'
+        );
+    }
+
+    
+
 
     /*
     |--------------------------------------------------------------------------

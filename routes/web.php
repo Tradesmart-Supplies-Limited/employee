@@ -154,6 +154,20 @@ Route::middleware('auth')->prefix('payroll')->name('payroll.')->group(function (
     
     Route::post('/runs/{run}/adjustments',          [PayrollRunController::class, 'storeAdjustment'])->name('runs.adjustments.store');
     Route::delete('/runs/adjustments/{adjustment}', [PayrollRunController::class, 'destroyAdjustment'])->name('runs.adjustments.destroy');
+    Route::get(
+        '/runs/{run}/adjustments/template',
+        [PayrollRunController::class, 'downloadAdjustmentTemplate']
+    )->name('runs.adjustments.template');
+
+    Route::post(
+        '/runs/{run}/adjustments/import',
+        [PayrollRunController::class, 'importAdjustmentsExcel']
+    )->name('runs.adjustments.import');
+
+    Route::get(
+        '/runs/{run}/adjustments/template/{rule}',
+        [PayrollRunController::class, 'downloadAdjustmentTemplate']
+    )->name('runs.adjustments.template');
 
     
 

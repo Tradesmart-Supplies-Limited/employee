@@ -44,11 +44,11 @@
                         <div>
                             <h5 class="mb-1">
                                 <i class="bi bi-calendar3 text-primary me-1"></i>
-                                {{ $run->period }}
+                                {{ $run->alias }}
                             </h5>
 
                             <small class="text-muted d-block">
-                                {{ $run->alias ?? 'No alias set' }}
+                                {{ $run->period ?? 'No alias set' }}
                             </small>
 
                             <small class="text-muted">
