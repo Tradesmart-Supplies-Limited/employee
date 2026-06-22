@@ -126,7 +126,9 @@ Route::middleware('auth')->prefix('payroll')->name('payroll.')->group(function (
     Route::delete('/{payroll}', [PayrollController::class, 'destroy'])->name('destroy');
 
     Route::post('/{payroll}/process', [PayrollController::class, 'process'])->name('process');
-    Route::get('/{payroll}/print', [PayrollController::class, 'print'])->name('print');
+    Route::get('/payroll/{payroll}', [PayrollController::class, 'show'])->name('show');
+    Route::get('/payroll/{payroll}/print', [PayrollController::class, 'print'])->name('print');
+    Route::get('/payroll/{payroll}/pdf', [PayrollController::class, 'downloadPdf'])->name('pdf');
 
 
     // -------------------------

@@ -418,7 +418,19 @@ class PayrollEngine
     private function writeAdjustmentEarnings(Payroll $payroll, Collection $adjustments): void
     {
         foreach ($adjustments->where('type', 'earning') as $adj) {
-            $this->addItem($payroll, strtoupper($adj->name), $adj->name, 'earning',
+
+            // log all fields for $adj
+            try {
+                \Log::info('adj: ' . json_encode($adj));
+            } catch (\Throwable $e) {
+                // fallback to print_r if json_encode fails
+                \Log::info('adj: ' . print_r($adj, true));
+            }
+
+            $rule = PayrollRule::where('id', $adj->payroll_rule_id)->first();
+
+
+            $this->addItem($payroll, $rule->code, $adj->name, 'earning',
                 round((float) ($adj->value ?? 0), 2));
         }
     }
@@ -446,7 +458,9 @@ class PayrollEngine
                 round($this->resolveAssignmentAmount($item), 2));
         }
         foreach ($adjustments->where('type', 'deduction') as $adj) {
-            $this->addItem($payroll, strtoupper($adj->name), $adj->name, 'deduction',
+            $rule = PayrollRule::where('id', $adj->payroll_rule_id)->first();
+
+            $this->addItem($payroll, $rule->code, $adj->name, 'deduction',
                 round((float) ($adj->value ?? 0), 2));
         }
     }

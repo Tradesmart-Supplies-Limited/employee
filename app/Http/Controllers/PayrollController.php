@@ -6,6 +6,7 @@ use App\Models\Payroll;
 use App\Models\Employee;
 use Illuminate\Http\Request;
 use App\Services\PayrollEngine;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 
 class PayrollController extends Controller
@@ -71,11 +72,59 @@ class PayrollController extends Controller
     | SHOW SINGLE PAYROLL
     |--------------------------------------------------------------------------
     */
+    // public function show(Payroll $payroll)
+    // {
+    //     $payroll->load(['employee', 'items']);
+
+    //     return view('dashboard.payroll.show', compact('payroll'));
+    // }
+
     public function show(Payroll $payroll)
     {
         $payroll->load(['employee', 'items']);
 
-        return view('dashboard.payroll.show', compact('payroll'));
+        $run = $payroll->run;
+        $run->setRelation('payrolls', collect([$payroll]));
+
+        $companyName = 'TRADESMART SUPPLIES LIMITED';
+        $companyLogo = 'http://misc.tradesmartzm.com/logo.png';
+
+        return view('dashboard.payroll.runs.payslip_single', compact('run', 'companyName', 'companyLogo', 'payroll'));
+    }
+
+     public function downloadPdf(Payroll $payroll)
+    {
+        $payroll->load(['employee', 'items']);
+ 
+        $run = $this->buildSingleEmployeeRun($payroll);
+ 
+        $pdf = Pdf::loadView('dashboard.payroll.runs.payslip_pdf', [
+            'run'         => $run,
+            'companyName' => 'TRADESMART SUPPLIES LIMITED',
+            'companyLogo' => 'http://misc.tradesmartzm.com/logo.png',
+            'payroll' => $payroll
+        ])->setPaper('a4', 'portrait');
+ 
+        $employeeName = trim($payroll->employee->first_name . ' ' . ($payroll->employee->last_name ?? ''));
+        $employeeName = preg_replace('/[^A-Za-z0-9]+/', '-', strtolower($employeeName));
+        $employeeName = trim($employeeName, '-');
+
+        $filename = sprintf(
+            'payslip-%s-%s-%s.pdf',
+            $payroll->employee->employee_id,
+            $employeeName,
+            str_replace(' ', '-', strtolower($payroll->pay_period))
+        );
+ 
+        return $pdf->download($filename);
+    }
+
+    private function buildSingleEmployeeRun(Payroll $payroll)
+    {
+        $run = $payroll->run; // belongsTo relation on Payroll → PayrollRun
+        $run->setRelation('payrolls', collect([$payroll]));
+ 
+        return $run;
     }
 
     /*
@@ -174,6 +223,6 @@ class PayrollController extends Controller
     {
         $payroll->load(['employee', 'items']);
 
-        return view('dashboard.payroll.print', compact('payroll'));
+        return view('dashboard.payroll.runs.payslip', compact('payroll'));
     }
 }

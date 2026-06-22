@@ -61,7 +61,7 @@ class PayrollRuleController extends Controller
         $validated = $request->validate([
             'name'         => 'required|string|max:255',
             'code'         => 'nullable|string|max:50|unique:payroll_rules,code',
-            'type'         => 'required|in:earning,deduction',
+            'type'         => 'required|in:earning,deduction,system',
             'category'     => 'nullable|string|max:100',
             'formula_type' => 'required|in:fixed,percentage',
             'value'        => 'required|numeric|min:0',
@@ -427,7 +427,7 @@ public function seedDefaults()
         [
             'name' => 'NAPSA Cap',
             'code' => 'SYS_NAPSA_CAP',
-            'type' => 'deduction',
+            'type' => 'system',
             'category' => 'cap',
             'formula_type' => 'fixed',
             'value' => 1861.80,

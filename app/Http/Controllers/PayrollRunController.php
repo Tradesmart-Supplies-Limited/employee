@@ -40,9 +40,12 @@ class PayrollRunController extends Controller
     {
         $run = PayrollRun::with(['payrolls.employee', 'payrolls.items'])
             ->findOrFail($runId);
+
+        $companyName = 'TRADESMART SUPPLIES LIMITED';
+        $companyLogo = 'http://misc.tradesmartzm.com/logo.png';
         
 
-        return view('dashboard.payroll.runs.payslips', compact('run'));
+        return view('dashboard.payroll.runs.payslips', compact('run', 'companyName' ,'companyLogo'));
     }
 
     /*
@@ -156,7 +159,7 @@ class PayrollRunController extends Controller
         $request->validate([
             'employee_id'  => 'required|exists:employees,id',
             'name'         => 'required|string|max:255',
-            'type'         => 'required|in:earning,deduction',
+            'type'         => 'required|in:earning,deduction,system',
             'formula_type' => 'required|in:fixed,percentage',
             'value'        => 'required|numeric|min:0',
 
@@ -169,12 +172,14 @@ class PayrollRunController extends Controller
                 'required_if:type,earning',
                 'in:taxable,napsa_only,non_taxable',
             ],
+            'rule_id' => 'nullable|string|max:255'
         ]);
 
         // Save the adjustment record — engine reads this on build()
         PayrollRunAdjustment::create([
             'payroll_run_id' => $run->id,
             'employee_id'    => $request->employee_id,
+            'payroll_rule_id'        => $request->rule_id,
             'name'           => $request->name,
             'type'           => $request->type,
             'formula_type'   => $request->formula_type,
@@ -183,6 +188,7 @@ class PayrollRunController extends Controller
                                     ? $request->tax_profile
                                     : null,   // deductions don't use tax_profile
             'active'         => true,
+            
         ]);
 
         // Find or create the payroll record for this employee in this run

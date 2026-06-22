@@ -9,6 +9,7 @@ class PayrollRunAdjustment extends Model
     protected $fillable = [
         'payroll_run_id',
         'employee_id',
+        'payroll_rule_id',
         'name',
         'type',           // 'earning' | 'deduction'
         'formula_type',   // 'fixed' | 'percentage'

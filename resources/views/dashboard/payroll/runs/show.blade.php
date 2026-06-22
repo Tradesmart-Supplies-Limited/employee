@@ -190,12 +190,11 @@
                     <td class="text-end">
 
                         <div class="d-flex justify-content-end gap-1 flex-wrap">
-                            <a href="{{ route('payroll.show', $payroll->id) }}"
-                               class="btn btn-sm btn-outline-primary">
+                            <a href="{{ route('payroll.show', $payroll->id) }}" target="_blank" class="btn btn-sm btn-outline-primary">
                                 <i class="bi bi-eye me-1"></i>
                             </a>
 
-                            <a href="{{ route('payroll.show', $payroll->id) }}?download=1"
+                            <a href="{{ route('payroll.pdf', $payroll) }}"
                                class="btn btn-sm btn-outline-success">
                                 <i class="bi bi-download me-1"></i>
                             </a>
@@ -304,8 +303,11 @@ function submitAdjustment() {
     const name       = document.getElementById('adjName').value.trim();
     const type       = document.getElementById('adjType').value;
     const taxProfile = document.getElementById('adjTaxProfile').value;
+    const ruleId = document.getElementById('adjRuleId').value;
     const amount     = document.getElementById('adjAmount').value;
     const errorBox   = document.getElementById('adjError');
+
+    // console.log("Rule ID : ", ruleId);
 
     // Client-side guard
     errorBox.classList.add('d-none');
@@ -337,6 +339,7 @@ function submitAdjustment() {
             formula_type: 'fixed',
             value: amount,
             tax_profile: type === 'earning' ? taxProfile : null,
+            rule_id: ruleId
         }),
     })
     .then(async (res) => {
@@ -690,6 +693,10 @@ function formatMoney(value)
 
         const d = el.dataset;
         esSelectedRule = { id: d.ruleId, name: d.name, type: d.type, tax: d.tax };
+
+        document.getElementById('adjRuleId').value    = d.ruleId;
+        document.getElementById('adjRuleId').readOnly  = true;
+
 
         document.getElementById('adjName').value    = d.name;
         document.getElementById('adjName').readOnly = true;

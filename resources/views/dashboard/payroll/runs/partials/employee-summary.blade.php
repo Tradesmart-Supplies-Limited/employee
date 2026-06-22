@@ -625,6 +625,13 @@
         {{-- Form fields --}}
         <div class="es-add-grid">
 
+        <div class="es-field" style="display:none;" aria-hidden="true">
+            <label for="adjRuleId">Rule ID</label>
+            <input type="text"
+                   id="adjRuleId"
+                   placeholder="Rule ID">
+            </div>
+            
             <div class="es-field">
                 <label for="adjName">Description</label>
                 <input type="text"

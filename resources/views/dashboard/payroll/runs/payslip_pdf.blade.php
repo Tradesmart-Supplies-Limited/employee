@@ -209,15 +209,6 @@
 
 <body>
 
-    <div class="print-bar">
-        <h2>{{ $run->period }} — Payslips</h2>
-        <div>
-            <button onclick="window.print()">Print</button>
-            <!-- <button type="button" onclick="window.location.href='{{ request()->fullUrlWithQuery(['download' => 1]) }}'">Download</button> -->
-        </div>
-        
-    </div>
-
     @php
         $companyName = $companyName ?? ($run->payrolls->first()->company ?? 'TRADESMART SUPPLIES LIMITED');
         $companyLogo = $companyLogo ?? null; // pass a public URL or base64 data URI from the controller
@@ -455,30 +446,5 @@
 
     @endforeach
 
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <script>
-        function downloadPDF() {
-
-    const element = document.getElementById('print-area');
-
-    html2pdf()
-        .set({
-            margin: 5,
-            filename: 'payslip.pdf',
-            image: { type: 'jpeg', quality: 1 },
-            html2canvas: {
-                scale: 2
-            },
-            jsPDF: {
-                unit: 'mm',
-                format: 'a4',
-                orientation: 'portrait'
-            }
-        })
-        .from(element)
-        .save();
-}
-    </script>
 </body>
 </html>
