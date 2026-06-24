@@ -4,14 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\LeaveRequest;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Mail;
 use Carbon\Carbon;
 
-use App\Mail\LeaveSubmittedMail;
-use App\Mail\LeaveApprovedMail;
-use App\Mail\LeaveRejectedMail;
-use App\Mail\LeaveAdminNotificationMail;
-use App\Mail\LeaveForwardedToHRMail;
+use App\Jobs\SendLeaveSubmittedEmail;
+use App\Jobs\SendLeaveApprovedEmail;
+use App\Jobs\SendLeaveRejectedEmail;
+use App\Jobs\SendLeaveAdminNotificationEmail;
+use App\Jobs\SendLeaveForwardedToHREmail;
 
 class LeaveController extends Controller
 {
@@ -47,44 +46,24 @@ class LeaveController extends Controller
             'supporting_document'    => 'nullable|file|mimes:pdf,jpg,jpeg,png,doc,docx|max:5120',
         ]);
 
-        /*
-        |--------------------------------------------------------------------------
-        | Calculate Total Leave Days
-        |--------------------------------------------------------------------------
-        */
         $from = Carbon::parse($request->date_from);
         $to   = Carbon::parse($request->date_to);
-
         $totalDays = $from->diffInDays($to) + 1;
 
-        /*
-        |--------------------------------------------------------------------------
-        | Upload Supporting Document
-        |--------------------------------------------------------------------------
-        */
         $documentPath = null;
 
         if ($request->hasFile('supporting_document')) {
-
             $documentPath = $request
                 ->file('supporting_document')
                 ->store('leave-documents', 'public');
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Create Leave Request
-        |--------------------------------------------------------------------------
-        */
         $leave = LeaveRequest::create([
-
-            // Employee
             'employee_name'           => $request->employee_name,
             'employee_number'         => $request->employee_number,
             'position'                => $request->position,
             'email'                   => $request->email,
 
-            // Leave
             'leave_type'              => $request->leave_type,
             'other_leave_type'        => $request->other_leave_type,
 
@@ -97,34 +76,22 @@ class LeaveController extends Controller
             'reason'                  => $request->reason,
             'late_application_reason' => $request->late_application_reason,
 
-            // Applicant
             'applicant_signature_date'=> now(),
 
-            // Status
             'status'                  => 'Pending',
 
-            // Document
             'supporting_document'     => $documentPath,
         ]);
 
         /*
         |--------------------------------------------------------------------------
-        | Email Applicant
+        | Email Applicant + Notify Admin — both queued, neither blocks the
+        | redirect. Admin recipient now comes from config('company.hr_emails')
+        | instead of a hardcoded personal address.
         |--------------------------------------------------------------------------
         */
-        Mail::to($leave->email)
-            ->send(new LeaveSubmittedMail($leave));
-
-        /*
-        |--------------------------------------------------------------------------
-        | Notify Admin
-        |--------------------------------------------------------------------------
-        |
-        | Replace with HR email later
-        |
-        */
-        Mail::to('katongobupe444@gmail.com')
-            ->send(new LeaveAdminNotificationMail($leave));
+        SendLeaveSubmittedEmail::dispatch($leave->id);
+        SendLeaveAdminNotificationEmail::dispatch($leave->id);
 
         return redirect()
             ->back()
@@ -151,37 +118,28 @@ class LeaveController extends Controller
 
     /**
      * Approve Leave
+     |
+     | This is the FINAL HR approval step. It sets status to Approved and
+     | sends the approval email. Called directly from a dedicated
+     | "Approve" action — NOT called internally by updateHr() anymore
+     | (see note there for why that coupling was removed).
      */
     public function approve(Request $request, LeaveRequest $leave)
     {
         $leave->update([
+            'status'             => 'Approved',
 
-            'status'                    => 'Approved',
+            'days_accrued'       => $request->days_accrued,
+            'days_available'     => $request->days_available,
+            'days_requested'     => $leave->total_days,
+            'days_balance'       => $request->days_balance,
 
-            // 'supervisor_name'           => auth()->user()->name,
-            // 'supervisor_position'       => auth()->user()->role ?? 'Manager',
-
-            // 'supervisor_signature_date' => now(),
-
-            // 'supervisor_comments'       => $request->comments,
-
-            /*
-            |--------------------------------------------------------------------------
-            | HR Section
-            |--------------------------------------------------------------------------
-            */
-            'days_accrued'              => $request->days_accrued,
-            'days_available'            => $request->days_available,
-            'days_requested'            => $leave->total_days,
-            'days_balance'              => $request->days_balance,
-
-            'hr_name'                   => auth()->user()->name,
-            'hr_position'               => auth()->user()->role ?? 'HR Officer',
-            'hr_signature_date'         => now(),
+            'hr_name'            => auth()->user()->name,
+            'hr_position'        => auth()->user()->role ?? 'HR Officer',
+            'hr_signature_date'  => now(),
         ]);
 
-        Mail::to($leave->email)
-            ->send(new LeaveApprovedMail($leave));
+        SendLeaveApprovedEmail::dispatch($leave->id);
 
         return redirect()
             ->back()
@@ -198,19 +156,12 @@ class LeaveController extends Controller
         ]);
 
         $leave->update([
-
             'status'                    => 'Rejected',
-
             'supervisor_comments'       => $request->reason,
-
-            // 'supervisor_name'           => auth()->user()->name,
-            // 'supervisor_position'       => auth()->user()->role ?? 'Manager',
-
             'supervisor_signature_date' => now(),
         ]);
 
-        Mail::to($leave->email)
-            ->send(new LeaveRejectedMail($leave));
+        SendLeaveRejectedEmail::dispatch($leave->id);
 
         return redirect()
             ->back()
@@ -229,59 +180,76 @@ class LeaveController extends Controller
             ->with('success', 'Leave request deleted.');
     }
 
+    /**
+     * Supervisor decision — forwards to HR for final approval.
+     */
     public function updateSupervisor(Request $request, LeaveRequest $leave)
-{
-    $request->validate([
-        'supervisor_decision' => 'nullable|string',
-        'supervisor_comments' => 'nullable|string',
-        'supervisor_name' => 'nullable|string',
-        'supervisor_position' => 'nullable|string',
-    ]);
+    {
+        $request->validate([
+            'supervisor_decision'  => 'nullable|string',
+            'supervisor_comments'  => 'nullable|string',
+            'supervisor_name'      => 'nullable|string',
+            'supervisor_position'  => 'nullable|string',
+        ]);
 
-    $leave->update([
-        'supervisor_decision' => $request->supervisor_decision,
-        'supervisor_comments' => $request->supervisor_comments,
-        'supervisor_name' => $request->supervisor_name,
-        'supervisor_position' => $request->supervisor_position,
-    ]);
+        $leave->update([
+            'supervisor_decision'  => $request->supervisor_decision,
+            'supervisor_comments'  => $request->supervisor_comments,
+            'supervisor_name'      => $request->supervisor_name,
+            'supervisor_position'  => $request->supervisor_position,
+        ]);
 
-    // If approved → send to HR
-    Mail::to('bupe@tradesmartzm.com')->send(
-        new LeaveForwardedToHRMail($leave)
-    );
+        // Notify HR — recipient now from config, not a hardcoded address
+        SendLeaveForwardedToHREmail::dispatch($leave->id);
 
-    return back()->with('success', 'Supervisor decision saved successfully.');
-}
+        return back()->with('success', 'Supervisor decision saved successfully.');
+    }
 
-public function updateHr(Request $request, LeaveRequest $leave)
-{
-    $request->validate([
-        'days_accrued' => 'nullable|integer',
-        'days_available' => 'nullable|integer',
-        'days_requested' => 'nullable|integer',
-        'days_balance' => 'nullable|integer',
-        'hr_name' => 'nullable|string',
-        'hr_position' => 'nullable|string',
-    ]);
+    /**
+     * HR records the leave balance figures for this request.
+     |
+     | IMPORTANT — this previously called LeaveController::approve()
+     | internally, which:
+     |   1. Re-ran approve()'s validation/update logic on every HR save,
+     |      even if HR was just updating balances without approving yet
+     |   2. Overwrote 'days_requested' with $leave->total_days, silently
+     |      discarding the days_requested value HR had just submitted
+     |      in THIS request
+     |   3. Sent a second "Leave Approved" email even if this was just
+     |      a balance-figures save, not an actual approval action
+     |
+     | This method now ONLY saves the HR balance fields. Approving the
+     | leave (status change + approval email) is a separate, explicit
+     | action — call approve() directly from its own "Approve" button
+     | in the UI, not through this method.
+     */
+    public function updateHr(Request $request, LeaveRequest $leave)
+    {
+        $request->validate([
+            'days_accrued'    => 'nullable|integer',
+            'days_available'  => 'nullable|integer',
+            'days_requested'  => 'nullable|integer',
+            'days_balance'    => 'nullable|integer',
+            'hr_name'         => 'nullable|string',
+            'hr_position'     => 'nullable|string',
+        ]);
 
-    $leave->update([
-        'days_accrued' => $request->days_accrued,
-        'days_available' => $request->days_available,
-        'days_requested' => $request->days_requested,
-        'days_balance' => $request->days_balance,
-        'hr_name' => $request->hr_name,
-        'hr_position' => $request->hr_position,
-    ]);
+        $leave->update([
+            'days_accrued'    => $request->days_accrued,
+            'days_available'  => $request->days_available,
+            'days_requested'  => $request->days_requested,
+            'days_balance'    => $request->days_balance,
+            'hr_name'         => $request->hr_name,
+            'hr_position'     => $request->hr_position,
+        ]);
 
-    LeaveController::approve($request, $leave);
+        return back()->with('success', 'HR record updated successfully.');
+    }
 
-    return back()->with('success', 'HR record updated successfully.');
-}
+    public function print($id)
+    {
+        $leave = LeaveRequest::findOrFail($id);
 
-public function print($id)
-{
-    $leave = LeaveRequest::findOrFail($id);
-
-    return view('dashboard.leave.print', compact('leave'));
-}
+        return view('dashboard.leave.print', compact('leave'));
+    }
 }

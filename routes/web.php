@@ -8,6 +8,8 @@ use App\Http\Controllers\LeaveController;
 use App\Http\Controllers\PayrollController;
 use App\Http\Controllers\PayrollRunController;
 use App\Http\Controllers\PayrollRuleController;
+use App\Http\Controllers\PayrollReportController;
+use App\Http\Controllers\PayslipMailController;
 
 /*
 |--------------------------------------------------------------------------
@@ -22,6 +24,49 @@ Route::middleware('guest')->group(function () {
     Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
     Route::post('/register', [AuthController::class, 'register']);
 });
+
+
+Route::prefix('payroll/reports')->name('payroll.reports.')->group(function () {
+ 
+    // Main dashboard — pick a run, see summary, jump to any export
+    Route::get('/', [PayrollReportController::class, 'index'])->name('index');
+ 
+    // Management reports — PDF export
+    // {report} = total_earnings | total_deductions | net_payable |
+    //            statutory_summary | comprehensive | department | branch
+    Route::get('/{run}/management/{report}/pdf',
+        [PayrollReportController::class, 'exportManagementPdf'])
+        ->name('management.pdf');
+ 
+    // Statutory submissions
+    Route::get('/{run}/napsa/csv',
+        [PayrollReportController::class, 'exportNapsaCsv'])
+        ->name('napsa.csv');
+ 
+    Route::get('/{run}/zra/excel',
+        [PayrollReportController::class, 'exportZraExcel'])
+        ->name('zra.excel');
+ 
+    Route::get('/{run}/nhima/csv',
+        [PayrollReportController::class, 'exportNhimaCsv'])
+        ->name('nhima.csv');
+ 
+    Route::get('/{run}/wcfcb/csv',
+        [PayrollReportController::class, 'exportWcfcbCsv'])
+        ->name('wcfcb.csv');
+ 
+    // Banking & payments
+    Route::get('/{run}/bank-payments/csv',
+        [PayrollReportController::class, 'exportBankPaymentsCsv'])
+        ->name('bank_payments.csv');
+ 
+});
+
+Route::post('/payroll/{payroll}/email', [PayslipMailController::class, 'sendSingle'])
+    ->name('payroll.email.single');
+ 
+Route::post('/payroll/runs/{run}/email-all', [PayslipMailController::class, 'sendBulk'])
+    ->name('payroll.email.bulk');
 
 
 
@@ -188,4 +233,7 @@ Route::middleware('auth')->prefix('payroll')->name('payroll.')->group(function (
 
 
 });
+
+
+
 

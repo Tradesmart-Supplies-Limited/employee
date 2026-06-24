@@ -426,7 +426,7 @@ public function seedDefaults()
         // =========================
         [
             'name' => 'NAPSA Cap',
-            'code' => 'SYS_NAPSA_CAP',
+            'code' => 'SYS01',
             'type' => 'system',
             'category' => 'cap',
             'formula_type' => 'fixed',

@@ -31,11 +31,11 @@
             <span class="nav-text">Employees</span>
         </a>
 
-        <a class="nav-link {{ request()->routeIs('departments.*') ? 'active' : '' }}"
+        <!-- <a class="nav-link {{ request()->routeIs('departments.*') ? 'active' : '' }}"
            href="{{ route('departments.index') }}">
             <i class="bi bi-diagram-3 nav-icon"></i>
             <span class="nav-text">Departments</span>
-        </a>
+        </a> -->
 
         <a class="nav-link {{ request()->routeIs('leave.*') ? 'active' : '' }}"
            href="{{ route('leave.index') }}">

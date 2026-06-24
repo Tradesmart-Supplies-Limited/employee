@@ -63,8 +63,18 @@
             <i class="bi bi-printer me-1"></i> Print
         </a>
 
-        
 
+        <form action="{{ route('payroll.email.bulk', $run) }}"
+            method="POST"
+            onsubmit="return confirmBulkEmail(this)">
+            @csrf
+            <button type="submit" class="btn btn-dark btn-sm" id="emailBulkBtn">
+                <i class="bi bi-envelope-paper"></i>
+                <span id="emailBulkBtnText">Email all payslips</span>
+            </button>
+        </form>
+
+        
         {{-- SUBMIT --}}
         <button class="btn btn-outline-secondary btn-sm"
                 data-bs-toggle="tooltip"
@@ -199,12 +209,14 @@
                                 <i class="bi bi-download me-1"></i>
                             </a>
 
-                            <button type="button"
-                                    class="btn btn-sm btn-outline-secondary"
-                                    data-bs-toggle="tooltip"
-                                    title="Share Payslip">
-                                <i class="bi bi-share-fill me-1"></i>
-                            </button>
+                            <form action="{{ route('payroll.email.single', $payroll) }}"
+                                method="POST"
+                                onsubmit="return confirmSingleEmail(this)">
+                                @csrf
+                                <button type="submit" class="btn btn-sm btn-outline-success" id="emailSingleBtn">
+                                    <i class="bi bi-share me-1"></i>
+                                </button>
+                            </form>
                         </div>
 
                     </td>
@@ -241,6 +253,45 @@
 {{-- IMPORTANT: RUN ID FOR JS --}}
 <script>
     const runId = @json($run->id);
+</script>
+
+<script>
+function confirmSingleEmail(form) {
+    const email = "{{ $payroll->employee->personal_email ?? '' }}";
+ 
+    if (!email) {
+        alert('This employee has no email address on file. Add one before sending.');
+        return false;
+    }
+ 
+    if (!confirm(`Send this payslip to ${email}?`)) {
+        return false;
+    }
+ 
+    const btn = document.getElementById('emailSingleBtn');
+    const text = document.getElementById('emailSingleBtnText');
+    btn.disabled = true;
+    text.textContent = 'Sending…';
+ 
+    return true;
+}
+</script>
+
+<script>
+function confirmBulkEmail(form) {
+    const employeeCount = {{ $run->payrolls->count() }};
+ 
+    if (!confirm(`Send payslips to all ${employeeCount} employees in this run? This cannot be undone.`)) {
+        return false;
+    }
+ 
+    const btn = document.getElementById('emailBulkBtn');
+    const text = document.getElementById('emailBulkBtnText');
+    btn.disabled = true;
+    text.textContent = 'Queuing emails…';
+ 
+    return true;
+}
 </script>
 
 <script>
