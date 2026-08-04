@@ -360,7 +360,7 @@
             </div>
         </div>
 
-        <div class="kpi-card amber">
+        <!-- <div class="kpi-card amber">
             <div class="kpi-icon amber"><i class="bi bi-calendar-x-fill"></i></div>
             <div class="kpi-body">
                 <div class="kpi-label">Pending Leave</div>
@@ -369,7 +369,7 @@
                     {{ $stats['on_leave_today'] }} on leave today
                 </div>
             </div>
-        </div>
+        </div> -->
 
         <div class="kpi-card green">
             <div class="kpi-icon green"><i class="bi bi-diagram-3-fill"></i></div>
@@ -418,7 +418,7 @@
         </div>
 
         {{-- Payroll Health Strip (SIGNATURE ELEMENT) --}}
-        <div class="panel payroll-panel">
+        <!-- <div class="panel payroll-panel">
             <div class="panel-title">
                 <i class="bi bi-currency-dollar text-success"></i> Payroll Health
             </div>
@@ -488,7 +488,7 @@
                     <a href="{{ route('payroll.runs.create') }}" class="d-block mt-2 text-primary" style="font-weight:600;">Start a payroll run →</a>
                 </div>
             @endif
-        </div>
+        </div> -->
 
     </div>
 
@@ -496,7 +496,7 @@
     <div class="bottom-row">
 
         {{-- Recent Leave Requests --}}
-        <div class="panel">
+        <!-- <div class="panel">
             <div class="panel-title">
                 <i class="bi bi-clock-history"></i> Recent Leave Requests
                 <a href="{{ route('leave.index') }}" style="margin-left:auto; font-size:.72rem; color:#3B4FE8; font-weight:600; text-transform:none; letter-spacing:0;">View all</a>
@@ -538,7 +538,7 @@
                     </tbody>
                 </table>
             @endif
-        </div>
+        </div> -->
 
         {{-- Right column: dept breakdown + new employees --}}
         <div style="display: flex; flex-direction: column; gap: 1rem;">

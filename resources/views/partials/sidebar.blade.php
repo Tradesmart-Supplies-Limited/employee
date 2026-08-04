@@ -37,29 +37,29 @@
             <span class="nav-text">Departments</span>
         </a> -->
 
-        <a class="nav-link {{ request()->routeIs('leave.*') ? 'active' : '' }}"
+        <!-- <a class="nav-link {{ request()->routeIs('leave.*') ? 'active' : '' }}"
            href="{{ route('leave.index') }}">
             <i class="bi bi-calendar-check nav-icon"></i>
             <span class="nav-text">Leave</span>
-        </a>
+        </a> -->
 
-        <a class="nav-link {{ request()->routeIs('attendance.*') ? 'active' : '' }}"
+        <!-- <a class="nav-link {{ request()->routeIs('attendance.*') ? 'active' : '' }}"
            href="{{ route('attendance.index') }}">
             <i class="bi bi-clock-history nav-icon"></i>
             <span class="nav-text">Attendance</span>
-        </a>
+        </a> -->
 
-        <a class="nav-link {{ request()->routeIs('payroll.*') ? 'active' : '' }}"
+        <!-- <a class="nav-link {{ request()->routeIs('payroll.*') ? 'active' : '' }}"
            href="{{ route('payroll.runs.index') }}">
             <i class="bi bi-cash-stack nav-icon"></i>
             <span class="nav-text">Payroll</span>
-        </a>
+        </a> -->
 
-        <a class="nav-link {{ request()->routeIs('reports.*') ? 'active' : '' }}"
+        <!-- <a class="nav-link {{ request()->routeIs('reports.*') ? 'active' : '' }}"
            href="{{ route('reports.index') }}">
             <i class="bi bi-bar-chart nav-icon"></i>
             <span class="nav-text">Reports</span>
-        </a>
+        </a> -->
 
         <a class="nav-link {{ request()->routeIs('settings.*') ? 'active' : '' }}"
            href="{{ route('settings.index') }}">
