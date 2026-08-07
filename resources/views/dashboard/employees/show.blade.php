@@ -19,6 +19,8 @@
             <a class="btn btn-outline-secondary btn-sm" href="{{ route('employees.index') }}">
                 <i class="bi bi-arrow-left"></i> Back
             </a>
+
+            
         </div>
     </div>
 </div>
@@ -339,7 +341,21 @@
             <button onclick="window.print()" class="btn btn-sm btn-outline-secondary">
                 <i class="bi bi-printer"></i> Print
             </button>
+
+             <form action="{{ route('employees.destroy', $employee) }}"
+                  method="POST"
+                  onsubmit="return confirm('Are you sure you want to delete this employee?');">
+
+                @csrf
+                @method('DELETE')
+
+                <button type="submit" class="btn btn-outline-danger btn-sm">
+                    <i class="bi bi-trash"></i> Remove Employee from Database
+                </button>
+            </form>
         </div>
+
+       
 
     </div>{{-- end resume-right --}}
 

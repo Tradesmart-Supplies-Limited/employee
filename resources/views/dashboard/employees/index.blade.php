@@ -24,6 +24,11 @@
                 data-bs-target="#importEmployeesModal">
             <i class="bi bi-upload"></i> Import
         </button>
+        
+        {{-- CONTRACT REMINDERS BUTTON --}}
+        <a href="{{ route('settings.contract-reminders.index') }}" class="btn btn-outline-secondary btn-sm ms-2">
+            <i class="bi bi-bell"></i> Contract Reminders
+        </a>
 
         <a href="{{ route('employees.create') }}" class="btn btn-primary btn-sm">
             <i class="bi bi-plus-lg"></i> Add Employee
@@ -214,6 +219,7 @@
 
             @endforeach
         </tbody>
+        
 
     </table>
 

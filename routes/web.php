@@ -10,6 +10,7 @@ use App\Http\Controllers\PayrollRunController;
 use App\Http\Controllers\PayrollRuleController;
 use App\Http\Controllers\PayrollReportController;
 use App\Http\Controllers\PayslipMailController;
+use App\Http\Controllers\ContractReminderSettingController;
 
 /*
 |--------------------------------------------------------------------------
@@ -24,6 +25,19 @@ Route::middleware('guest')->group(function () {
     Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
     Route::post('/register', [AuthController::class, 'register']);
 });
+Route::prefix('settings')->name('settings.')->group(function () {
+    Route::get('contract-reminders', [ContractReminderSettingController::class, 'index'])
+        ->name('contract-reminders.index');
+ 
+    Route::put('contract-reminders/{setting}', [ContractReminderSettingController::class, 'update'])
+        ->name('contract-reminders.update');
+ 
+    Route::post('contract-reminders/{setting}/test', [ContractReminderSettingController::class, 'sendTest'])
+        ->name('contract-reminders.test');
+});
+ 
+// Optional: add a sidebar/nav link pointing at
+
 
 
 Route::prefix('payroll/reports')->name('payroll.reports.')->group(function () {
@@ -90,6 +104,7 @@ Route::middleware('auth')->group(function () {
 
     // Employees
     Route::resource('employees', EmployeeController::class);
+    
 
     // Others
     Route::get('/departments', [DashboardController::class, 'departments'])->name('departments.index');
@@ -100,6 +115,7 @@ Route::middleware('auth')->group(function () {
 
     Route::view('/profile', 'dashboard.profile')->name('profile.index');
     Route::view('/settings', 'dashboard.settings')->name('settings.index');
+    Route::get('/settings/contract-reminders', [ContractReminderSettingController::class, 'index'])->name('settings.contract-reminders.index');
 
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 });

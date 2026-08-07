@@ -27,9 +27,9 @@ return new class extends Migration
             | PERSONAL INFORMATION
             |--------------------------------------------------------------------------
             */
-            $table->date('date_of_birth');
-            $table->string('gender');
-            $table->string('nationality');
+            $table->date('date_of_birth')->nullable();
+            $table->string('gender')->nullable();
+            $table->string('nationality')->nullable();
             $table->string('national_id_number')->nullable();
             $table->string('passport_number')->nullable();
 
@@ -43,7 +43,7 @@ return new class extends Migration
             */
             $table->string('personal_email')->nullable();
             $table->string('company_email')->nullable();
-            $table->string('primary_phone');
+            $table->string('primary_phone')->nullable();
             $table->string('secondary_phone')->nullable();
 
             /*
@@ -51,7 +51,7 @@ return new class extends Migration
             | JOB INFORMATION
             |--------------------------------------------------------------------------
             */
-            $table->string('position');
+            $table->string('position')->nullable();
             $table->string('department')->nullable(); // keeping simple (no FK)
             $table->string('supervisor')->nullable();
 

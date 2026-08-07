@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Employee;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\DB;
 
 class EmployeeController extends Controller
 {
@@ -15,7 +18,8 @@ class EmployeeController extends Controller
     */
     public function index()
     {
-        $employees = Employee::latest()->paginate(10);
+        $employees = Employee::latest()
+            ->paginate(50);
 
         return view('dashboard.employees.index', compact('employees'));
     }
@@ -40,10 +44,10 @@ class EmployeeController extends Controller
         $request->validate([
             'first_name' => 'required',
             'last_name' => 'required',
-            'date_of_birth' => 'required|date',
-            'gender' => 'required',
-            'primary_phone' => 'required',
-            'position' => 'required',
+            // 'date_of_birth' => 'required|date',
+            // 'gender' => 'required',
+            // 'primary_phone' => 'required',
+            // 'position' => 'required',
         ]);
 
         // Generate Employee ID (EIN)
@@ -248,12 +252,27 @@ public function update(Request $request, Employee $employee)
     |--------------------------------------------------------------------------
     */
     public function destroy(Employee $employee)
-    {
-        $employee->delete();
-
-        return redirect()->route('employees.index')
-            ->with('success', 'Employee deleted successfully');
+{
+    // Delete passport photo
+    if ($employee->passport_photo) {
+        Storage::disk('public')->delete($employee->passport_photo);
     }
+
+    // Delete uploaded documents
+    if (!empty($employee->uploads)) {
+        foreach ($employee->uploads as $document) {
+            if (!empty($document['path'])) {
+                Storage::disk('public')->delete($document['path']);
+            }
+        }
+    }
+
+    $employee->delete();
+
+    return redirect()
+        ->route('employees.index')
+        ->with('success', 'Employee deleted successfully.');
+}
 
 
 
@@ -355,57 +374,201 @@ public function import(Request $request)
 
     $header = array_map('trim', fgetcsv($file));
 
-    while ($row = fgetcsv($file)) {
 
-        $data = array_combine($header, $row);
+    $errors = [];
+    $rowNumber = 1;
 
-        Employee::create([
-            'employee_id' => $data['employee_id'] ?? null,
-            'first_name' => $data['first_name'] ?? null,
-            'middle_name' => $data['middle_name'] ?? null,
-            'last_name' => $data['last_name'] ?? null,
-            'date_of_birth' => $data['date_of_birth'] ?? null,
-            'gender' => $data['gender'] ?? null,
-            'nationality' => $data['nationality'] ?? null,
-            'national_id_number' => $data['national_id_number'] ?? null,
-            'passport_number' => $data['passport_number'] ?? null,
-            'passport_photo' => $data['passport_photo'] ?? null,
 
-            'personal_email' => $data['personal_email'] ?? null,
-            'company_email' => $data['company_email'] ?? null,
-            'primary_phone' => $data['primary_phone'] ?? null,
-            'secondary_phone' => $data['secondary_phone'] ?? null,
+    DB::beginTransaction();
 
-            'position' => $data['position'] ?? null,
-            'department' => $data['department'] ?? null,
-            'branch' => $data['branch'] ?? null,
-            'supervisor' => $data['supervisor'] ?? null,
-            'employment_status' => $data['employment_status'] ?? 'Active',
+    try {
 
-            'probation_start' => $data['probation_start'] ?? null,
-            'probation_end' => $data['probation_end'] ?? null,
-            'contract_start' => $data['contract_start'] ?? null,
-            'contract_end' => $data['contract_end'] ?? null,
+        while ($row = fgetcsv($file)) {
 
-            'emergency_name' => $data['emergency_name'] ?? null,
-            'emergency_relationship' => $data['emergency_relationship'] ?? null,
-            'emergency_phone' => $data['emergency_phone'] ?? null,
+            $rowNumber++;
 
-            'next_of_kin_name' => $data['next_of_kin_name'] ?? null,
-            'next_of_kin_phone' => $data['next_of_kin_phone'] ?? null,
-            'next_of_kin_address' => $data['next_of_kin_address'] ?? null,
+            $data = array_combine($header, $row);
 
-            'bank_name' => $data['bank_name'] ?? null,
-            'bank_account_number' => $data['bank_account_number'] ?? null,
-            'nssf_number' => $data['nssf_number'] ?? null,
-            'tin_number' => $data['tin_number'] ?? null,
-            'salary' => $data['salary'] ?? null,
-        ]);
+
+            // Convert empty strings to null
+            $data = array_map(function ($value) {
+
+                $value = trim((string) $value);
+
+                return $value === '' ? null : $value;
+
+            }, $data);
+
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Validate Row
+            |--------------------------------------------------------------------------
+            */
+
+            $validator = Validator::make($data, [
+
+                'employee_id' => [
+                    'required',
+                    'unique:employees,employee_id'
+                ],
+
+                'first_name' => 'required',
+
+                'last_name' => 'required',
+
+                'date_of_birth' => 'nullable|date',
+
+                'probation_start' => 'nullable|date',
+
+                'probation_end' => 'nullable|date',
+
+                'contract_start' => 'nullable|date',
+
+                'contract_end' => 'nullable|date',
+
+                'salary' => 'nullable|numeric',
+
+            ]);
+
+
+
+            if ($validator->fails()) {
+
+
+                foreach ($validator->errors()->all() as $error) {
+
+                    $errors[] = 
+                    "Row {$rowNumber}: {$error}";
+
+                }
+
+
+                continue;
+
+            }
+
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Insert Employee
+            |--------------------------------------------------------------------------
+            */
+
+            Employee::create([
+
+                'employee_id' => $data['employee_id'],
+
+                'first_name' => $data['first_name'],
+
+                'middle_name' => $data['middle_name'] ?? null,
+
+                'last_name' => $data['last_name'],
+
+                'date_of_birth' => $data['date_of_birth'],
+
+                'gender' => $data['gender'] ?? null,
+
+                'nationality' => $data['nationality'] ?? null,
+
+
+                'national_id_number' => $data['national_id_number'] ?? null,
+
+                'passport_number' => $data['passport_number'] ?? null,
+
+
+                'personal_email' => $data['personal_email'] ?? null,
+
+                'company_email' => $data['company_email'] ?? null,
+
+
+                'primary_phone' => $data['primary_phone'],
+
+                'secondary_phone' => $data['secondary_phone'] ?? null,
+
+
+                'position' => $data['position'],
+
+                'department' => $data['department'] ?? null,
+
+                'branch' => $data['branch'] ?? null,
+
+                'supervisor' => $data['supervisor'] ?? null,
+
+
+                'employment_status' => 
+                    $data['employment_status'] ?? 'Active',
+
+
+                'probation_start' => $data['probation_start'] ?? null,
+
+                'probation_end' => $data['probation_end'] ?? null,
+
+
+                'contract_start' => $data['contract_start'] ?? null,
+
+                'contract_end' => $data['contract_end'] ?? null,
+
+
+                'salary' => $data['salary'] ?? null,
+
+            ]);
+
+        }
+
+
+        fclose($file);
+
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | If errors exist, rollback everything
+        |--------------------------------------------------------------------------
+        */
+
+        if(count($errors) > 0){
+
+            DB::rollBack();
+
+
+            return back()
+                ->withErrors($errors)
+                ->with('error',
+                    'Import failed. Please correct the errors and upload again.'
+                );
+        }
+
+
+
+        DB::commit();
+
+
+        return back()
+            ->with(
+                'success',
+                'Employees imported successfully.'
+            );
+
+
+
+    } catch(QueryException $e){
+
+
+        DB::rollBack();
+
+        fclose($file);
+
+
+        return back()
+            ->with(
+                'error',
+                'Import failed due to a database error. Please check your CSV format.'
+            );
+
     }
-
-    fclose($file);
-
-    return back()->with('success', 'Employees imported successfully.');
 }
 
 }

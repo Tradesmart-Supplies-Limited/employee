@@ -44,7 +44,7 @@
         <div class="row g-3">
 
           <div class="col-md-4">
-            <label class="form-label">First Name</label>
+            <label class="form-label">First Name <span class="text-danger">*</span></label>
             <input class="form-control" name="first_name" required>
           </div>
 
@@ -54,17 +54,17 @@
           </div>
 
           <div class="col-md-4">
-            <label class="form-label">Last Name</label>
+            <label class="form-label">Last Name <span class="text-danger">*</span></label>
             <input class="form-control" name="last_name" required>
           </div>
 
           <div class="col-md-4">
-            <label class="form-label">Date of Birth</label>
+            <label class="form-label">Date of Birth <span class="text-danger">*</span></label>
             <input type="date" class="form-control" name="date_of_birth" required>
           </div>
 
           <div class="col-md-4">
-            <label class="form-label">Gender</label>
+            <label class="form-label">Gender <span class="text-danger">*</span></label>
             <select class="form-select" name="gender" required>
               <option value="">Select</option>
               <option>Male</option>
@@ -73,8 +73,8 @@
           </div>
 
           <div class="col-md-4">
-            <label class="form-label">Nationality</label>
-            <input class="form-control" name="nationality">
+            <label class="form-label">Nationality <span class="text-danger">*</span></label>
+            <input class="form-control" name="nationality" required>
           </div>
 
           <div class="col-md-6">
@@ -109,7 +109,7 @@
           </div>
 
           <div class="col-md-6">
-            <label class="form-label">Primary Phone</label>
+            <label class="form-label">Primary Phone <span class="text-danger">*</span></label>
             <input class="form-control" name="primary_phone" required>
           </div>
 
@@ -130,7 +130,7 @@
         <div class="row g-3">
 
           <div class="col-md-6">
-            <label class="form-label">Position</label>
+            <label class="form-label">Position <span class="text-danger">*</span></label>
             <input class="form-control" name="position" required>
           </div>
 
@@ -150,8 +150,8 @@
           </div>
 
           <div class="col-md-6">
-            <label class="form-label">Employment Status</label>
-            <select class="form-select" name="employment_status">
+            <label class="form-label">Employment Status <span class="text-danger">*</span></label>
+            <select class="form-select" name="employment_status" required>
               <option value="Active">Active</option>
               <option value="Exited">Exited</option>
               <option value="Suspended">Suspended</option>

@@ -49,6 +49,7 @@
       <div class="row g-3">
 
         <div class="col-md-4">
+          <label class="form-label">First Name</label>
           <input class="form-control"
                  name="first_name"
                  value="{{ old('first_name', $employee->first_name) }}"
@@ -56,6 +57,7 @@
         </div>
 
         <div class="col-md-4">
+          <label class="form-label">Middle Name</label>
           <input class="form-control"
                  name="middle_name"
                  value="{{ old('middle_name', $employee->middle_name) }}"
@@ -63,6 +65,7 @@
         </div>
 
         <div class="col-md-4">
+          <label class="form-label">Last Name</label>
           <input class="form-control"
                  name="last_name"
                  value="{{ old('last_name', $employee->last_name) }}"
@@ -70,6 +73,7 @@
         </div>
 
         <div class="col-md-4">
+          <label class="form-label">Date of Birth</label>
           <input type="date"
                  class="form-control"
                  name="date_of_birth"
@@ -77,6 +81,7 @@
         </div>
 
         <div class="col-md-4">
+          <label class="form-label">Gender</label>
           <select class="form-select" name="gender">
             <option value="">Gender</option>
             <option value="Male" {{ $employee->gender == 'Male' ? 'selected' : '' }}>Male</option>
@@ -85,6 +90,7 @@
         </div>
 
         <div class="col-md-4">
+          <label class="form-label">Nationality</label>
           <input class="form-control"
                  name="nationality"
                  value="{{ old('nationality', $employee->nationality) }}"
@@ -92,6 +98,7 @@
         </div>
 
         <div class="col-md-6">
+          <label class="form-label">National ID</label>
           <input class="form-control"
                  name="national_id_number"
                  value="{{ old('national_id_number', $employee->national_id_number) }}"
@@ -99,6 +106,7 @@
         </div>
 
         <div class="col-md-6">
+          <label class="form-label">Passport Number</label>
           <input class="form-control"
                  name="passport_number"
                  value="{{ old('passport_number', $employee->passport_number) }}"
@@ -117,6 +125,7 @@
       <div class="row g-3">
 
         <div class="col-md-6">
+          <label class="form-label">Personal Email</label>
           <input class="form-control"
                  name="personal_email"
                  value="{{ old('personal_email', $employee->personal_email) }}"
@@ -124,6 +133,7 @@
         </div>
 
         <div class="col-md-6">
+          <label class="form-label">Company Email</label>
           <input class="form-control"
                  name="company_email"
                  value="{{ old('company_email', $employee->company_email) }}"
@@ -131,6 +141,7 @@
         </div>
 
         <div class="col-md-6">
+          <label class="form-label">Primary Phone</label>
           <input class="form-control"
                  name="primary_phone"
                  value="{{ old('primary_phone', $employee->primary_phone) }}"
@@ -138,6 +149,7 @@
         </div>
 
         <div class="col-md-6">
+          <label class="form-label">Secondary Phone</label>
           <input class="form-control"
                  name="secondary_phone"
                  value="{{ old('secondary_phone', $employee->secondary_phone) }}"
@@ -156,6 +168,7 @@
       <div class="row g-3">
 
         <div class="col-md-6">
+          <label class="form-label">Position</label>
           <input class="form-control"
                  name="position"
                  value="{{ old('position', $employee->position) }}"
@@ -163,24 +176,28 @@
         </div>
 
         <div class="col-md-6">
+          <label class="form-label">Department</label>
           <input class="form-control"
                  name="department"
                  value="{{ old('department', $employee->department) }}">
         </div>
 
         <div class="col-md-6">
+          <label class="form-label">Branch</label>
           <input class="form-control"
                  name="branch"
                  value="{{ old('branch', $employee->branch) }}">
         </div>
 
         <div class="col-md-6">
+          <label class="form-label">Supervisor</label>
           <input class="form-control"
                  name="supervisor"
                  value="{{ old('supervisor', $employee->supervisor) }}">
         </div>
 
         <div class="col-md-6">
+          <label class="form-label">Employment Status</label>
           <select class="form-select" name="employment_status">
             <option value="Active" {{ $employee->employment_status == 'Active' ? 'selected' : '' }}>Active</option>
             <option value="Exited" {{ $employee->employment_status == 'Exited' ? 'selected' : '' }}>Exited</option>
@@ -200,31 +217,36 @@
       <div class="row g-3">
 
         <div class="col-md-6">
-          <input type="date"
-                 class="form-control"
-                 name="probation_start"
-                 value="{{ old('probation_start', $employee->probation_start) }}">
+          <label class="form-label">Probation Start</label>
+          <input
+            type="date"
+            name="probation_start"
+            class="form-control"
+            value="{{ old('probation_start', optional($employee->probation_start)->format('Y-m-d')) }}">
         </div>
 
         <div class="col-md-6">
+          <label class="form-label">Probation End</label>
           <input type="date"
                  class="form-control"
                  name="probation_end"
-                 value="{{ old('probation_end', $employee->probation_end) }}">
+                 value="{{ old('probation_end', optional($employee->probation_end)->format('Y-m-d')) }}">
         </div>
 
         <div class="col-md-6">
+          <label class="form-label">Contract Start</label>
           <input type="date"
                  class="form-control"
                  name="contract_start"
-                 value="{{ old('contract_start', $employee->contract_start) }}">
+                 value="{{ old('contract_start', optional($employee->contract_start)->format('Y-m-d')) }}">
         </div>
 
         <div class="col-md-6">
+          <label class="form-label">Contract End</label>
           <input type="date"
                  class="form-control"
                  name="contract_end"
-                 value="{{ old('contract_end', $employee->contract_end) }}">
+                 value="{{ old('contract_end', optional($employee->contract_end)->format('Y-m-d')) }}">
         </div>
 
       </div>
@@ -239,6 +261,7 @@
       <div class="row g-3">
 
         <div class="col-md-4">
+          <label class="form-label">Emergency Name</label>
           <input class="form-control"
                  name="emergency_name"
                  value="{{ old('emergency_name', $employee->emergency_name) }}"
@@ -246,6 +269,7 @@
         </div>
 
         <div class="col-md-4">
+          <label class="form-label">Relationship</label>
           <input class="form-control"
                  name="emergency_relationship"
                  value="{{ old('emergency_relationship', $employee->emergency_relationship) }}"
@@ -253,6 +277,7 @@
         </div>
 
         <div class="col-md-4">
+          <label class="form-label">Phone</label>
           <input class="form-control"
                  name="emergency_phone"
                  value="{{ old('emergency_phone', $employee->emergency_phone) }}"
@@ -271,6 +296,7 @@
       <div class="row g-3">
 
         <div class="col-md-4">
+          <label class="form-label">Next of Kin Name</label>
           <input class="form-control"
                  name="next_of_kin_name"
                  value="{{ old('next_of_kin_name', $employee->next_of_kin_name) }}"
@@ -278,6 +304,7 @@
         </div>
 
         <div class="col-md-4">
+          <label class="form-label">Next of Kin Phone</label>
           <input class="form-control"
                  name="next_of_kin_phone"
                  value="{{ old('next_of_kin_phone', $employee->next_of_kin_phone) }}"
@@ -285,6 +312,7 @@
         </div>
 
         <div class="col-md-4">
+          <label class="form-label">Next of Kin Address</label>
           <input class="form-control"
                  name="next_of_kin_address"
                  value="{{ old('next_of_kin_address', $employee->next_of_kin_address) }}"
@@ -303,6 +331,7 @@
       <div class="row g-3">
 
         <div class="col-md-4">
+          <label class="form-label">Bank Name</label>
           <input class="form-control"
                  name="bank_name"
                  value="{{ old('bank_name', $employee->bank_name) }}"
@@ -310,6 +339,7 @@
         </div>
 
         <div class="col-md-4">
+          <label class="form-label">Bank Account Number</label>
           <input class="form-control"
                  name="bank_account_number"
                  value="{{ old('bank_account_number', $employee->bank_account_number) }}"
@@ -317,6 +347,7 @@
         </div>
 
         <div class="col-md-4">
+          <label class="form-label">Salary</label>
           <input class="form-control"
                  name="salary"
                  value="{{ old('salary', $employee->salary) }}"
@@ -324,6 +355,7 @@
         </div>
 
         <div class="col-md-6">
+          <label class="form-label">NSSF Number</label>
           <input class="form-control"
                  name="nssf_number"
                  value="{{ old('nssf_number', $employee->nssf_number) }}"
@@ -331,6 +363,7 @@
         </div>
 
         <div class="col-md-6">
+          <label class="form-label">TIN Number</label>
           <input class="form-control"
                  name="tin_number"
                  value="{{ old('tin_number', $employee->tin_number) }}"
