@@ -5,7 +5,10 @@
 {{-- ===== TOP BAR ===== --}}
 <div class="emp-top-bar">
 
-    <h3 class="emp-title">Employees</h3>
+    <div>
+        <div class="emp-eyebrow">Workforce</div>
+        <h3 class="emp-title">Employees</h3>
+    </div>
 
     <div class="emp-top-right">
 
@@ -18,15 +21,8 @@
                    oninput="empFilter()">
         </div>
 
-        {{-- IMPORT BUTTON --}}
-        <button class="btn btn-outline-secondary btn-sm"
-                data-bs-toggle="modal"
-                data-bs-target="#importEmployeesModal">
-            <i class="bi bi-upload"></i> Import
-        </button>
-        
         {{-- CONTRACT REMINDERS BUTTON --}}
-        <a href="{{ route('settings.contract-reminders.index') }}" class="btn btn-outline-secondary btn-sm ms-2">
+        <a href="{{ route('settings.contract-reminders.index') }}" class="btn btn-outline-secondary btn-sm">
             <i class="bi bi-bell"></i> Contract Reminders
         </a>
 
@@ -39,32 +35,40 @@
 </div>
 
 
-{{-- ===== STATS BAR ===== --}}
-<div class="emp-stats">
+{{-- ===== KPI RIBBON ===== --}}
+<div class="emp-kpi-ribbon">
 
-    <div class="emp-stat">
-        <div class="emp-stat-label">Total Employees</div>
-        <div class="emp-stat-value">{{ $employees->count() }}</div>
-    </div>
-
-    <div class="emp-stat">
-        <div class="emp-stat-label">Active</div>
-        <div class="emp-stat-value emp-stat-green">
-            {{ $employees->where('employment_status', 'Active')->count() }}
+    <div class="emp-kpi-item blue">
+        <div class="emp-kpi-icon"><i class="bi bi-people-fill"></i></div>
+        <div class="emp-kpi-body">
+            <div class="emp-kpi-label">Total Employees</div>
+            <div class="emp-kpi-value">{{ $employees->count() }}</div>
         </div>
     </div>
 
-    <div class="emp-stat">
-        <div class="emp-stat-label">Departments</div>
-        <div class="emp-stat-value">
-            {{ $employees->pluck('department')->filter()->unique()->count() }}
+    <div class="emp-kpi-item green">
+        <div class="emp-kpi-icon"><i class="bi bi-person-check-fill"></i></div>
+        <div class="emp-kpi-body">
+            <div class="emp-kpi-label">Active</div>
+            <div class="emp-kpi-value">{{ $employees->where('employment_status', 'Active')->count() }}</div>
         </div>
     </div>
 
-    <div class="emp-stat">
-        <div class="emp-stat-label">Contracts Expiring</div>
-        <div class="emp-stat-value emp-stat-red">
-            {{ $employees->filter(fn($e) => $e->contract_end && \Carbon\Carbon::parse($e->contract_end)->diffInDays(now()) <= 30 && \Carbon\Carbon::parse($e->contract_end)->isFuture())->count() }}
+    <div class="emp-kpi-item amber">
+        <div class="emp-kpi-icon"><i class="bi bi-diagram-3-fill"></i></div>
+        <div class="emp-kpi-body">
+            <div class="emp-kpi-label">Departments</div>
+            <div class="emp-kpi-value">{{ $employees->pluck('department')->filter()->unique()->count() }}</div>
+        </div>
+    </div>
+
+    <div class="emp-kpi-item rose">
+        <div class="emp-kpi-icon"><i class="bi bi-file-earmark-x-fill"></i></div>
+        <div class="emp-kpi-body">
+            <div class="emp-kpi-label">Contracts Expiring</div>
+            <div class="emp-kpi-value">
+                {{ $employees->filter(fn($e) => $e->contract_end && \Carbon\Carbon::parse($e->contract_end)->diffInDays(now()) <= 30 && \Carbon\Carbon::parse($e->contract_end)->isFuture())->count() }}
+            </div>
         </div>
     </div>
 
@@ -74,7 +78,7 @@
 {{-- ===== FILTER BAR ===== --}}
 <div class="panel emp-filter-bar">
 
-    <span class="emp-filter-label">Filter:</span>
+    <span class="emp-filter-label">Filter</span>
 
     <select id="empDeptFilter" class="emp-select" onchange="empFilter()">
         <option value="">All Departments</option>
@@ -150,7 +154,7 @@
                         <div>
                             <div class="emp-name">{{ $employee->first_name }} {{ $employee->last_name }}</div>
                             <div class="emp-pos">
-                                <i class="bi bi-briefcase"></i> {{ $employee->position }} 
+                                <i class="bi bi-briefcase"></i> {{ $employee->position }}
                             </div>
                         </div>
                     </div>
@@ -219,7 +223,7 @@
 
             @endforeach
         </tbody>
-        
+
 
     </table>
 
@@ -339,26 +343,44 @@
 {{-- ===== STYLES ===== --}}
 <style>
 
+.emp-top-bar,
+.emp-kpi-ribbon,
+.emp-filter-bar,
+#empTableView,
+#empCardView { font-family: "Segoe UI", Arial, sans-serif; }
+
 /* ---- Layout ---- */
 .emp-top-bar {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 16px;
+    margin-bottom: 1.1rem;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: .75rem;
+}
+
+.emp-eyebrow {
+    font-size: .7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--admin-primary);
+    margin-bottom: .2rem;
 }
 
 .emp-title {
-    font-size: 20px;
-    font-weight: 600;
+    font-size: 1.2rem;
+    font-weight: 800;
+    letter-spacing: -.01em;
     margin: 0;
+    color: var(--admin-text);
 }
 
 .emp-top-right {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: .6rem;
+    flex-wrap: wrap;
 }
 
 /* ---- Search ---- */
@@ -368,161 +390,206 @@
 
 .emp-search-icon {
     position: absolute;
-    left: 9px;
+    left: .7rem;
     top: 50%;
     transform: translateY(-50%);
-    color: #aaa;
-    font-size: 13px;
+    color: var(--admin-muted);
+    font-size: .82rem;
     pointer-events: none;
 }
 
 .emp-search-input {
-    padding: 6px 10px 6px 30px;
-    border: 1px solid #d0d0d0;
+    padding: .5rem .7rem .5rem 2.1rem;
+    border: none;
     border-radius: 7px;
-    font-size: 13px;
-    width: 220px;
+    background: var(--admin-surface-soft);
+    box-shadow: inset 0 0 0 1px var(--admin-border);
+    font-size: .82rem;
+    width: 230px;
+    color: var(--admin-text);
     outline: none;
-    transition: border-color .15s;
+    transition: box-shadow .15s ease, background .15s ease;
 }
+
+.emp-search-input::placeholder { color: var(--admin-muted); }
 
 .emp-search-input:focus {
-    border-color: #185FA5;
+    background: var(--admin-surface);
+    box-shadow: inset 0 0 0 1.5px var(--admin-primary), var(--admin-ring);
 }
 
-/* ---- Stats ---- */
-.emp-stats {
+/* ---- KPI ribbon ---- */
+.emp-kpi-ribbon {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 10px;
-    margin-bottom: 12px;
-}
-
-.emp-stat {
-    background: #2563EB;
+    background: var(--admin-surface);
+    border: 1px solid var(--admin-border);
     border-radius: 8px;
-    padding: 12px 16px;
+    box-shadow: var(--admin-shadow-sm);
+    margin-bottom: 1rem;
+    overflow: hidden;
 }
 
-.emp-stat-label {
-    font-size: 11px;
-    color: #ffffff;
-    margin-bottom: 4px;
+.emp-kpi-item {
+    display: flex;
+    align-items: center;
+    gap: .7rem;
+    padding: .9rem 1.1rem;
+    border-right: 1px solid var(--admin-border);
+    min-width: 0;
 }
+.emp-kpi-item:last-child { border-right: none; }
 
-.emp-stat-value {
-    font-size: 22px;
-    font-weight: 600;
-    color: #ffffff;
+.emp-kpi-icon {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 7px;
+    font-size: .95rem;
+    background: var(--kpi-bg, #eaf2ff);
+    color: var(--kpi-fg, var(--admin-primary));
 }
+.emp-kpi-item.blue  { --kpi-bg: #eaf2ff; --kpi-fg: var(--admin-primary); }
+.emp-kpi-item.green { --kpi-bg: #e7f6f3; --kpi-fg: var(--admin-success); }
+.emp-kpi-item.amber { --kpi-bg: #fff4df; --kpi-fg: var(--admin-warning); }
+.emp-kpi-item.rose  { --kpi-bg: #ffecec; --kpi-fg: var(--admin-danger); }
+html[data-theme="dark"] .emp-kpi-item.blue  { --kpi-bg: rgba(96,165,250,.14); }
+html[data-theme="dark"] .emp-kpi-item.green { --kpi-bg: rgba(45,212,191,.14); }
+html[data-theme="dark"] .emp-kpi-item.amber { --kpi-bg: rgba(251,191,36,.14); }
+html[data-theme="dark"] .emp-kpi-item.rose  { --kpi-bg: rgba(248,113,113,.14); }
 
-.emp-stat-green { color: #ffffff; }
-.emp-stat-red   { color: #ffffff; }
+.emp-kpi-body { min-width: 0; }
+.emp-kpi-label {
+    font-size: .67rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--admin-muted);
+}
+.emp-kpi-value {
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: var(--admin-text);
+    line-height: 1.25;
+}
 
 /* ---- Filter bar ---- */
 .emp-filter-bar {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: .65rem;
     flex-wrap: wrap;
-    padding: 10px 16px !important;
-    margin-bottom: 12px;
+    padding: .7rem 1rem !important;
+    margin-bottom: 1rem;
 }
 
 .emp-filter-label {
-    font-size: 12px;
-    color: #888;
+    font-size: .74rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: var(--admin-muted);
 }
 
 .emp-select {
-    font-size: 12px;
-    padding: 5px 10px;
-    border: 1px solid #d0d0d0;
+    font-size: .78rem;
+    padding: .4rem .65rem;
+    border: 1px solid var(--admin-border);
     border-radius: 6px;
-    background: #fff;
-    color: #333;
+    background: var(--admin-surface);
+    color: var(--admin-text);
     outline: none;
     cursor: pointer;
 }
 
 .emp-select:focus {
-    border-color: #185FA5;
+    border-color: var(--admin-primary);
+    box-shadow: var(--admin-ring);
 }
 
 /* ---- View toggle ---- */
 .emp-view-toggle {
     display: flex;
-    border: 1px solid #d0d0d0;
+    border: 1px solid var(--admin-border);
     border-radius: 7px;
     overflow: hidden;
 }
 
 .emp-view-btn {
-    padding: 5px 12px;
+    padding: .4rem .8rem;
     border: none;
-    background: #fff;
+    background: var(--admin-surface);
     cursor: pointer;
-    font-size: 12px;
-    color: #666;
-    border-right: 1px solid #d0d0d0;
+    font-size: .78rem;
+    font-weight: 600;
+    color: var(--admin-muted);
+    border-right: 1px solid var(--admin-border);
     display: flex;
     align-items: center;
-    gap: 5px;
-    transition: background .12s;
+    gap: .35rem;
+    transition: background .12s ease, color .12s ease;
 }
 
 .emp-view-btn:last-child {
     border-right: none;
 }
 
+.emp-view-btn:hover {
+    background: var(--admin-surface-soft);
+    color: var(--admin-text);
+}
+
 .emp-view-btn.active {
-    background: #185FA5;
-    color: #fff;
+    background: var(--admin-primary);
+    color: #ffffff;
 }
 
 /* ---- Table ---- */
 .emp-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 13px;
+    font-size: .85rem;
 }
 
 .emp-table thead th {
-    font-size: 11px;
-    font-weight: 500;
-    color: #888;
+    font-size: .68rem;
+    font-weight: 700;
+    color: var(--admin-muted);
     text-transform: uppercase;
-    letter-spacing: .05em;
-    padding: 8px 10px;
-    border-bottom: 1.5px solid #e8e8e8;
+    letter-spacing: .06em;
+    padding: .6rem .65rem;
+    border-bottom: 1px solid var(--admin-border);
     text-align: left;
     white-space: nowrap;
 }
 
 .emp-row {
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid var(--admin-border);
     cursor: pointer;
-    transition: background .12s;
+    transition: background .12s ease;
 }
 
 .emp-row:hover {
-    background: #f4f8fd;
+    background: var(--admin-surface-soft);
 }
 
 .emp-row td {
-    padding: 10px 10px;
+    padding: .65rem .65rem;
     vertical-align: middle;
 }
 
 .emp-td-id {
-    font-size: 11px;
-    color: #aaa;
+    font-size: .74rem;
+    color: var(--admin-muted);
     white-space: nowrap;
 }
 
 .emp-td-muted {
-    color: #888;
-    font-size: 12px;
+    color: var(--admin-muted);
+    font-size: .8rem;
 }
 
 /* ---- Avatar ---- */
@@ -533,8 +600,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 12px;
-    font-weight: 500;
+    font-size: .78rem;
+    font-weight: 700;
     flex-shrink: 0;
     overflow: hidden;
 }
@@ -548,84 +615,107 @@
 .emp-avatar-lg {
     width: 46px;
     height: 46px;
-    font-size: 14px;
+    font-size: .88rem;
 }
 
-/* Department color variants — add more as needed */
+/* Department color variants */
 .emp-avatar-it,
-.emp-dept-it             { background: #E6F1FB; color: #0C447C; }
+.emp-dept-it             { background: #eaf2ff; color: var(--admin-primary); }
 
 .emp-avatar-finance,
-.emp-dept-finance        { background: #E1F5EE; color: #085041; }
+.emp-dept-finance        { background: #e7f6f3; color: var(--admin-success); }
 
 .emp-avatar-hr,
-.emp-dept-hr             { background: #FBEAF0; color: #72243E; }
+.emp-dept-hr             { background: #fbeaf0; color: #b8285f; }
 
 .emp-avatar-operations,
-.emp-dept-operations     { background: #FAEEDA; color: #633806; }
+.emp-dept-operations     { background: #fff4df; color: var(--admin-warning); }
+
+.emp-avatar-sales,
+.emp-dept-sales          { background: #f2ecff; color: #6d3fd6; }
+
+.emp-avatar-marketing,
+.emp-dept-marketing      { background: #e6f8fb; color: #0891b2; }
 
 .emp-avatar-default,
-.emp-dept-default        { background: #f1f1f1; color: #555; }
+.emp-dept-default        { background: var(--admin-surface-soft); color: var(--admin-muted); }
+
+html[data-theme="dark"] .emp-avatar-it,        html[data-theme="dark"] .emp-dept-it        { background: rgba(96,165,250,.16); }
+html[data-theme="dark"] .emp-avatar-finance,   html[data-theme="dark"] .emp-dept-finance   { background: rgba(45,212,191,.16); }
+html[data-theme="dark"] .emp-avatar-hr,        html[data-theme="dark"] .emp-dept-hr        { background: rgba(244,63,148,.16); color: #f9a8d4; }
+html[data-theme="dark"] .emp-avatar-operations,html[data-theme="dark"] .emp-dept-operations{ background: rgba(251,191,36,.16); }
+html[data-theme="dark"] .emp-avatar-sales,     html[data-theme="dark"] .emp-dept-sales      { background: rgba(167,139,250,.18); color: #c4b5fd; }
+html[data-theme="dark"] .emp-avatar-marketing, html[data-theme="dark"] .emp-dept-marketing  { background: rgba(34,211,238,.16); color: #67e8f9; }
+html[data-theme="dark"] .emp-avatar-default,   html[data-theme="dark"] .emp-dept-default    { background: var(--admin-surface-soft); }
 
 /* ---- Name cell ---- */
 .emp-name-cell {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: .65rem;
 }
 
 .emp-name {
-    font-weight: 500;
-    font-size: 13px;
-    color: #1a1a1a;
+    font-weight: 600;
+    font-size: .85rem;
+    color: var(--admin-text);
 }
 
 .emp-pos {
-    font-size: 11px;
-    color: #aaa;
+    font-size: .72rem;
+    color: var(--admin-muted);
 }
 
 /* ---- Badges ---- */
 .emp-dept-badge {
     display: inline-block;
-    font-size: 11px;
-    font-weight: 500;
-    padding: 2px 9px;
-    border-radius: 10px;
+    font-size: .7rem;
+    font-weight: 600;
+    padding: .18rem .6rem;
+    border-radius: 6px;
 }
 
 .emp-status-badge {
     display: inline-block;
-    font-size: 11px;
-    font-weight: 500;
-    padding: 2px 9px;
-    border-radius: 10px;
+    font-size: .7rem;
+    font-weight: 600;
+    padding: .18rem .6rem;
+    border-radius: 6px;
 }
 
-.emp-status-active   { background: #EAF3DE; color: #3B6D11; }
-.emp-status-inactive { background: #f1f1f1; color: #666; }
+.emp-status-active   { background: #e7f6f3; color: var(--admin-success); }
+.emp-status-inactive { background: var(--admin-surface-soft); color: var(--admin-muted); border: 1px solid var(--admin-border); }
+
+html[data-theme="dark"] .emp-status-active { background: rgba(45,212,191,.16); }
+
+.emp-branch {
+    font-size: .8rem;
+    color: var(--admin-muted);
+}
 
 /* ---- Contract ---- */
 .emp-contract {
-    font-size: 11px;
-    color: #888;
+    font-size: .74rem;
+    color: var(--admin-muted);
     white-space: nowrap;
 }
 
 .emp-contract-warn {
-    color: #A32D2D;
-    font-weight: 500;
+    color: var(--admin-danger);
+    font-weight: 600;
 }
 
 .emp-soon-label {
     display: inline-block;
-    margin-left: 4px;
-    background: #FCEBEB;
-    color: #A32D2D;
-    font-size: 10px;
-    padding: 1px 6px;
-    border-radius: 8px;
+    margin-left: .3rem;
+    background: #ffecec;
+    color: var(--admin-danger);
+    font-size: .65rem;
+    font-weight: 700;
+    padding: .1rem .5rem;
+    border-radius: 6px;
 }
+html[data-theme="dark"] .emp-soon-label { background: rgba(248,113,113,.16); }
 
 /* ---- Row action buttons ---- */
 .emp-actions-cell {
@@ -634,10 +724,10 @@
 
 .emp-row-actions {
     display: flex;
-    gap: 4px;
+    gap: .3rem;
     justify-content: flex-end;
     opacity: 0;
-    transition: opacity .15s;
+    transition: opacity .15s ease;
 }
 
 .emp-row:hover .emp-row-actions {
@@ -650,129 +740,135 @@
     justify-content: center;
     width: 28px;
     height: 28px;
-    border: 1px solid #d0d0d0;
+    border: 1px solid var(--admin-border);
     border-radius: 6px;
-    color: #555;
+    color: var(--admin-muted);
     text-decoration: none;
-    background: #fff;
-    font-size: 13px;
-    transition: background .12s;
+    background: var(--admin-surface);
+    font-size: .8rem;
+    transition: background .12s ease, color .12s ease, border-color .12s ease;
 }
 
 .emp-action-btn:hover {
-    background: #f0f0f0;
-    color: #185FA5;
+    background: var(--admin-surface-soft);
+    border-color: var(--admin-primary);
+    color: var(--admin-primary);
 }
 
 /* ---- Empty state ---- */
 .emp-empty-state {
     text-align: center;
-    padding: 40px 20px;
-    color: #bbb;
-    font-size: 13px;
+    padding: 2.75rem 1.25rem;
+    color: var(--admin-muted);
+    font-size: .85rem;
 }
 
 .emp-empty-state i {
-    font-size: 28px;
+    font-size: 1.8rem;
     display: block;
-    margin-bottom: 8px;
+    margin-bottom: .5rem;
 }
 
 /* ---- Card view ---- */
 .emp-dept-group {
-    margin-bottom: 24px;
+    margin-bottom: 1.5rem;
 }
 
 .emp-dept-group-label {
-    font-size: 12px;
-    font-weight: 600;
-    color: #185FA5;
-    background: #E6F1FB;
+    font-size: .74rem;
+    font-weight: 700;
+    color: var(--admin-primary);
+    background: #eaf2ff;
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 4px 12px;
+    gap: .4rem;
+    padding: .3rem .75rem;
     border-radius: 6px;
-    margin-bottom: 10px;
+    margin-bottom: .65rem;
+    text-transform: uppercase;
+    letter-spacing: .04em;
 }
+html[data-theme="dark"] .emp-dept-group-label { background: rgba(96,165,250,.16); }
 
 .emp-dept-count {
-    background: #185FA5;
-    color: #fff;
-    font-size: 10px;
-    font-weight: 600;
-    padding: 1px 6px;
-    border-radius: 8px;
+    background: var(--admin-primary);
+    color: #ffffff;
+    font-size: .64rem;
+    font-weight: 700;
+    padding: .05rem .4rem;
+    border-radius: 6px;
 }
 
 .emp-card {
-    border: 1px solid #e8e8e8;
-    border-radius: 10px;
-    padding: 14px;
-    background: #fff;
+    border: 1px solid var(--admin-border);
+    border-radius: 8px;
+    padding: .9rem;
+    background: var(--admin-surface);
     cursor: pointer;
-    transition: border-color .15s, box-shadow .15s;
+    box-shadow: var(--admin-shadow-sm);
+    transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
     height: 100%;
 }
 
 .emp-card:hover {
-    border-color: #185FA5;
-    box-shadow: 0 0 0 3px rgba(24,95,165,.06);
+    border-color: var(--admin-primary);
+    box-shadow: var(--admin-shadow);
+    transform: translateY(-2px);
 }
 
 .emp-card-top {
     display: flex;
     align-items: flex-start;
-    gap: 10px;
-    margin-bottom: 10px;
+    gap: .65rem;
+    margin-bottom: .65rem;
 }
 
 .emp-card-name {
-    font-weight: 600;
-    font-size: 13px;
-    color: #1a1a1a;
+    font-weight: 700;
+    font-size: .85rem;
+    color: var(--admin-text);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
 .emp-card-pos {
-    font-size: 11px;
-    color: #aaa;
-    margin-top: 1px;
+    font-size: .72rem;
+    color: var(--admin-muted);
+    margin-top: .05rem;
 }
 
 .emp-card-id {
-    font-size: 10.5px;
-    color: #bbb;
-    margin-top: 2px;
+    font-size: .68rem;
+    color: var(--admin-muted);
+    margin-top: .1rem;
 }
 
 .emp-card-detail {
-    font-size: 12px;
-    color: #888;
-    margin-bottom: 5px;
+    font-size: .78rem;
+    color: var(--admin-muted);
+    margin-bottom: .3rem;
 }
 
 .emp-card-warn {
-    font-size: 11px;
-    color: #A32D2D;
-    font-weight: 500;
-    margin-bottom: 5px;
+    font-size: .72rem;
+    color: var(--admin-danger);
+    font-weight: 600;
+    margin-bottom: .3rem;
 }
 
 .emp-card-footer {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-top: 10px;
-    padding-top: 10px;
-    border-top: 1px solid #f0f0f0;
+    margin-top: .65rem;
+    padding-top: .65rem;
+    border-top: 1px solid var(--admin-border);
 }
 
 .emp-card-actions {
     display: flex;
-    gap: 5px;
+    gap: .3rem;
 }
 
 .min-width-0 { min-width: 0; }
@@ -786,11 +882,15 @@
 }
 
 /* ---- Responsive ---- */
-@media (max-width: 768px) {
-    .emp-stats {
-        grid-template-columns: repeat(2, 1fr);
-    }
+@media (max-width: 900px) {
+    .emp-kpi-ribbon { grid-template-columns: repeat(2, 1fr); }
+    .emp-kpi-item:nth-child(2) { border-right: none; }
+    .emp-kpi-item:nth-child(odd) { border-right: 1px solid var(--admin-border); }
+    .emp-kpi-item { border-bottom: 1px solid var(--admin-border); }
+    .emp-kpi-item:nth-last-child(-n+2) { border-bottom: none; }
+}
 
+@media (max-width: 768px) {
     .emp-search-input {
         width: 160px;
     }
@@ -801,6 +901,12 @@
     .emp-table tbody td:nth-child(5) {
         display: none;
     }
+}
+
+@media (max-width: 540px) {
+    .emp-kpi-ribbon { grid-template-columns: 1fr; }
+    .emp-kpi-item { border-right: none !important; border-bottom: 1px solid var(--admin-border); }
+    .emp-kpi-item:last-child { border-bottom: none; }
 }
 
 </style>
