@@ -68,7 +68,7 @@ class EmployeeController extends Controller
             'date_of_birth' => $request->date_of_birth,
             'gender' => $request->gender,
             'nationality' => $request->nationality,
-            'national_id_number' => $request->national_id_number,
+            'nrc_no' => $request->nrc_no,
             'passport_number' => $request->passport_number,
             'passport_photo' => $passportPath,
 
@@ -97,9 +97,10 @@ class EmployeeController extends Controller
             'next_of_kin_address' => $request->next_of_kin_address,
 
             'bank_name' => $request->bank_name,
-            'bank_account_number' => $request->bank_account_number,
-            'nssf_number' => $request->nssf_number,
-            'tin_number' => $request->tin_number,
+            'bank_account_no' => $request->bank_account_no,
+            'ssn' => $request->ssn,
+            'nhima_no' => $request->nhima_no,
+            'tpin' => $request->tpin,
             'salary' => $request->salary,
 
             'uploads' => null,
@@ -178,7 +179,7 @@ public function update(Request $request, Employee $employee)
     $employee->date_of_birth = $request->date_of_birth;
     $employee->gender = $request->gender;
     $employee->nationality = $request->nationality;
-    $employee->national_id_number = $request->national_id_number;
+    $employee->nrc_no = $request->nrc_no;
     $employee->passport_number = $request->passport_number;
 
     $employee->personal_email = $request->personal_email;
@@ -207,9 +208,10 @@ public function update(Request $request, Employee $employee)
     $employee->next_of_kin_address = $request->next_of_kin_address;
 
     $employee->bank_name = $request->bank_name;
-    $employee->bank_account_number = $request->bank_account_number;
-    $employee->nssf_number = $request->nssf_number;
-    $employee->tin_number = $request->tin_number;
+    $employee->bank_account_no = $request->bank_account_no;
+    $employee->ssn = $request->ssn;
+    $employee->nhima_no = $request->nhima_no;
+    $employee->tpin = $request->tpin;
 
     $employee->salary = $request->salary ? (float) $request->salary : null;
 
@@ -287,7 +289,7 @@ public function downloadSampleCsv()
         'date_of_birth',
         'gender',
         'nationality',
-        'national_id_number',
+        'nrc_no',
         'passport_number',
         'personal_email',
         'primary_phone',
@@ -308,9 +310,10 @@ public function downloadSampleCsv()
         'next_of_kin_phone',
         'next_of_kin_address',
         'bank_name',
-        'bank_account_number',
-        'nssf_number',
-        'tin_number',
+        'bank_account_no',
+        'ssn',
+        'nhima_no',
+        'tpin',
         'salary',
     ];
 
@@ -354,7 +357,8 @@ public function downloadSampleCsv()
             'Zanaco',
             '1234567890',
             'NSSF12345',
-            'TIN98765',
+            'NHI12345',
+            'TPIN98765',
             '5000',
         ]);
 
@@ -474,7 +478,7 @@ public function import(Request $request)
                 'nationality' => $data['nationality'] ?? null,
 
 
-                'national_id_number' => $data['national_id_number'] ?? null,
+                'nrc_no' => $data['nrc_no'] ?? null,
 
                 'passport_number' => $data['passport_number'] ?? null,
 

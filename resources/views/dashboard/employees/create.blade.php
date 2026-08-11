@@ -78,8 +78,8 @@
           </div>
 
           <div class="col-md-6">
-            <label class="form-label">National ID</label>
-            <input class="form-control" name="national_id_number">
+            <label class="form-label">NRC Number</label>
+            <input class="form-control" name="nrc_no">
           </div>
 
           <div class="col-md-6">
@@ -259,7 +259,7 @@
 
           <div class="col-md-4">
             <label class="form-label">Account Number</label>
-            <input class="form-control" name="bank_account_number">
+            <input class="form-control" name="bank_account_no">
           </div>
 
           <div class="col-md-4">
@@ -267,14 +267,19 @@
             <input type="number" class="form-control" name="salary">
           </div>
 
-          <div class="col-md-6">
-            <label class="form-label">NSSF Number</label>
-            <input class="form-control" name="nssf_number">
+          <div class="col-md-4">
+            <label class="form-label">SSN</label>
+            <input class="form-control" name="ssn">
           </div>
 
-          <div class="col-md-6">
-            <label class="form-label">TIN Number</label>
-            <input class="form-control" name="tin_number">
+          <div class="col-md-4">
+            <label class="form-label">Nhima No.</label>
+            <input class="form-control" name="nhima_no">
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label">TPIN</label>
+            <input class="form-control" name="tpin">
           </div>
 
         </div>

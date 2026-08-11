@@ -164,10 +164,55 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
 
+<style>
+/* Global loader circular progress styles */
+#global-loader.global-loader{
+    position:fixed;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:rgba(255,255,255,0.75);
+    z-index:10000;
+}
+.loader-circle{
+    width:120px;
+    height:120px;
+    position:relative;
+}
+.loader-circle svg{width:100%;height:100%;transform:rotate(-90deg);} 
+.loader-circle .center-logo{
+    position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+    width:56px;height:56px;border-radius:8px;overflow:hidden;background:#fff;display:flex;align-items:center;justify-content:center;
+}
+.loader-circle .center-logo img{width:100%;height:100%;object-fit:contain}
+</style>
+
 <div id="global-loader" class="global-loader d-none">
     <div class="loader-box">
-        <div class="spinner-border text-primary" role="status"></div>
-        <p class="mt-2 mb-0">Loading...</p>
+        <div class="loader-circle" role="status" aria-label="Loading">
+            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+                <defs>
+                    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stop-color="#4DABE0">
+                            <animate attributeName="stop-color" values="#4DABE0;#84C442;#4DABE0" dur="2.5s" repeatCount="indefinite" />
+                        </stop>
+                        <stop offset="100%" stop-color="#84C442">
+                            <animate attributeName="stop-color" values="#84C442;#4DABE0;#84C442" dur="2.5s" repeatCount="indefinite" />
+                        </stop>
+                    </linearGradient>
+                </defs>
+                <circle cx="50" cy="50" r="42" stroke="#eee" stroke-width="12" fill="none" />
+                <circle cx="50" cy="50" r="42" stroke="url(#g)" stroke-width="12" fill="none" stroke-linecap="round"
+                    stroke-dasharray="262.5" stroke-dashoffset="196">
+                    <animate attributeName="stroke-dashoffset" from="262.5" to="0" dur="1.5s" repeatCount="indefinite" />
+                    <animateTransform attributeName="transform" attributeType="XML" type="rotate" from="0 50 50" to="360 50 50" dur="2s" repeatCount="indefinite" />
+                </circle>
+            </svg>
+            <div class="center-logo">
+                <img src="https://misc.tradesmartzm.com/logo.png" alt="logo">
+            </div>
+        </div>
     </div>
 </div>
 

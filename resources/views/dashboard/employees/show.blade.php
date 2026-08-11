@@ -149,21 +149,28 @@
         @if($employee->bank_account_number)
         <div class="resume-info-row">
             <i class="bi bi-credit-card"></i>
-            <span>{{ $employee->bank_account_number }}</span>
+            <span>{{ $employee->bank_account_no }}</span>
         </div>
         @endif
 
-        @if($employee->nssf_number)
+        @if($employee->ssn)
         <div class="resume-info-row">
             <i class="bi bi-shield-check"></i>
-            <span>NSSF: {{ $employee->nssf_number }}</span>
+            <span>SSN: {{ $employee->ssn }}</span>
         </div>
         @endif
 
-        @if($employee->tin_number)
+        @if($employee->nhima_no)
+        <div class="resume-info-row">
+            <i class="bi bi-geo-alt"></i>
+            <span>Nhima: {{ $employee->nhima_no }}</span>
+        </div>
+        @endif
+
+        @if($employee->tpin)
         <div class="resume-info-row">
             <i class="bi bi-receipt"></i>
-            <span>TIN: {{ $employee->tin_number }}</span>
+            <span>TPIN: {{ $employee->tpin }}</span>
         </div>
         @endif
 
@@ -232,10 +239,10 @@
             </div>
             @endif
 
-            @if($employee->national_id_number)
+            @if($employee->nrc_no)
             <div class="resume-entry">
                 <div class="resume-entry-label">National ID</div>
-                <div class="resume-entry-value">{{ $employee->national_id_number }}</div>
+                <div class="resume-entry-value">{{ $employee->nrc_no }}</div>
             </div>
             @endif
 

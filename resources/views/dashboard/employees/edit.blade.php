@@ -98,11 +98,11 @@
         </div>
 
         <div class="col-md-6">
-          <label class="form-label">National ID</label>
+          <label class="form-label">NRC Number</label>
           <input class="form-control"
-                 name="national_id_number"
-                 value="{{ old('national_id_number', $employee->national_id_number) }}"
-                 placeholder="National ID">
+                 name="nrc_no"
+                 value="{{ old('nrc_no', $employee->nrc_no) }}"
+                 placeholder="123456/78/9">
         </div>
 
         <div class="col-md-6">
@@ -341,8 +341,8 @@
         <div class="col-md-4">
           <label class="form-label">Bank Account Number</label>
           <input class="form-control"
-                 name="bank_account_number"
-                 value="{{ old('bank_account_number', $employee->bank_account_number) }}"
+                 name="bank_account_no"
+                 value="{{ old('bank_account_no', $employee->bank_account_no) }}"
                  placeholder="Account">
         </div>
 
@@ -355,19 +355,27 @@
         </div>
 
         <div class="col-md-6">
-          <label class="form-label">NSSF Number</label>
+          <label class="form-label">SSN</label>
           <input class="form-control"
-                 name="nssf_number"
-                 value="{{ old('nssf_number', $employee->nssf_number) }}"
-                 placeholder="NSSF">
+                 name="ssn"
+                 value="{{ old('ssn', $employee->ssn) }}"
+                 placeholder="SSN">
         </div>
 
         <div class="col-md-6">
-          <label class="form-label">TIN Number</label>
+          <label class="form-label">Nhima No.</label>
           <input class="form-control"
-                 name="tin_number"
-                 value="{{ old('tin_number', $employee->tin_number) }}"
-                 placeholder="TIN">
+                 name="nhima_no"
+                 value="{{ old('nhima_no', $employee->nhima_no) }}"
+                 placeholder="Nhima">
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label">TPIN</label>
+          <input class="form-control"
+                 name="tpin"
+                 value="{{ old('tpin', $employee->tpin) }}"
+                 placeholder="TPIN">
         </div>
 
       </div>

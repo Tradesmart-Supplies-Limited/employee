@@ -93,8 +93,68 @@
 
 <div id="global-loader" class="global-loader d-none">
     <div class="loader-box">
-        <div class="spinner-border text-primary" role="status"></div>
-        <p class="mt-2 mb-0">Loading...</p>
+        <style>
+            .circular-progress {
+                position: relative;
+                width: 100px;
+                height: 100px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .circular-progress svg {
+                width: 100%;
+                height: 100%;
+                transform: rotate(-90deg);
+            }
+
+            .progress-circle {
+                fill: none;
+                stroke-width: 8;
+                stroke-dasharray: 235;
+                stroke-dashoffset: 0;
+                animation: colorRotate 2s linear infinite;
+            }
+
+            .progress-logo {
+                position: absolute;
+                width: 60px;
+                height: 60px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: white;
+            }
+
+            .progress-logo img {
+                width: 40px;
+                height: 40px;
+            }
+
+            @keyframes colorRotate {
+                0% {
+                    stroke: #4DABE0;
+                    stroke-dashoffset: 0;
+                }
+                50% {
+                    stroke: #84C442;
+                }
+                100% {
+                    stroke: #4DABE0;
+                    stroke-dashoffset: -235;
+                }
+            }
+        </style>
+        <div class="circular-progress">
+            <svg viewBox="0 0 100 100">
+                <circle class="progress-circle" cx="50" cy="50" r="37.5"></circle>
+            </svg>
+            <div class="progress-logo">
+                <img src="https://misc.tradesmartzm.com/logo.png" alt="Loading">
+            </div>
+        </div>
     </div>
 </div>
 </body>
