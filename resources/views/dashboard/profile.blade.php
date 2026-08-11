@@ -14,9 +14,7 @@
             <small class="text-muted">Account & personal information</small>
         </div>
 
-        <button onclick="window.print()" class="btn btn-outline-dark btn-sm">
-            <i class="bi bi-printer"></i> Print
-        </button>
+       
 
     </div>
 
@@ -124,27 +122,7 @@
 
             </div>
 
-            {{-- SECURITY CARD --}}
-            <div class="card shadow-sm border-0 p-3 mt-3">
-
-                <h6 class="mb-3">
-                    <i class="bi bi-shield-lock me-1"></i> Security
-                </h6>
-
-                <div class="d-flex justify-content-between align-items-center">
-
-                    <div>
-                        <div class="fw-semibold">Password</div>
-                        <small class="text-muted">Last updated recently</small>
-                    </div>
-
-                    <button class="btn btn-outline-primary btn-sm">
-                        Change Password
-                    </button>
-
-                </div>
-
-            </div>
+            
 
         </div>
 
