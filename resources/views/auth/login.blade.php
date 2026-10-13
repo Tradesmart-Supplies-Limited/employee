@@ -95,7 +95,7 @@
 
         <span class="small text-muted">
             <i class="bi bi-shield-check"></i>
-            Secure Login
+            Secure
         </span>
 
     </div>
