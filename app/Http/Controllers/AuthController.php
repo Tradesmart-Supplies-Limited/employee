@@ -29,12 +29,21 @@ class AuthController extends Controller
 
         $credentials = $request->only('email', 'password');
 
-        if (Auth::attempt($credentials, $request->remember)) {
+        if (Auth::attempt($credentials, $request->boolean('remember'))) {
             $request->session()->regenerate();
+
+            $user = Auth::user();
+
+            // Employee self-service accounts go to the portal.
+            if ($user->isPortalUser()) {
+                return redirect()->route('portal.dashboard')
+                    ->with('success', 'Welcome back, ' . $user->employee->first_name . '!');
+            }
 
             return redirect()->route('dashboard')
                 ->with('success', 'Welcome back!');
         }
+
 
         return back()->withErrors([
             'email' => 'Invalid credentials provided.'

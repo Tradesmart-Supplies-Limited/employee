@@ -55,9 +55,17 @@
         document.getElementById('global-loader').classList.add('d-none');
     }
 
-    // Show loader on any form submit
-    document.addEventListener('submit', function () {
+    // Show loader on form submit (not for downloads / new tabs / JS-handled forms)
+    document.addEventListener('submit', function (e) {
+        const f = e.target;
+        if (e.defaultPrevented || f.target || f.hasAttribute('data-no-loader')) return;
         showLoader();
+    });
+    // Coming back with the browser's Back button: undo the loader / fade.
+    window.addEventListener('pageshow', function () {
+        hideLoader();
+        const pc = document.getElementById('page-content');
+        if (pc) { pc.style.opacity = ''; pc.style.transform = ''; }
     });
 
     // Show loader on page navigation clicks
@@ -73,7 +81,10 @@
     document.addEventListener("click", function (e) {
     const link = e.target.closest("a");
 
-    if (link && link.href && !link.target && !link.hasAttribute("download")) {
+    const samePageHash = link && link.hash && link.pathname === location.pathname && link.search === location.search;
+    const isDownload = link && (link.hasAttribute("download") || /\/(export|template|attachment|download)|\.csv|\.xlsx|photo\?/i.test(link.href));
+    if (link && link.href && !link.target && !isDownload && !samePageHash && !e.defaultPrevented && !e.ctrlKey && !e.metaKey && !e.shiftKey
+        && !link.hasAttribute("data-no-transition") && !link.href.startsWith("javascript:") && !/^(mailto|tel):/.test(link.href)) {
         e.preventDefault();
 
         document.getElementById("page-content").style.opacity = "0";
@@ -126,6 +137,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const selector = document.getElementById('employeeSelector');
     const container = document.getElementById('employeePayrollSummary');
+    if (!selector || !container) return; // only on the payroll run page
 
     selector.addEventListener('change', function () {
 

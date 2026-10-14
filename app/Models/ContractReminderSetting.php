@@ -17,6 +17,10 @@ class ContractReminderSetting extends Model
         'use_monthly_fixed',
         'monthly_fixed_days',
         'monthly_lookahead_days',
+        'track_contracts',
+        'track_probation',
+        'include_expired',
+        'notify_supervisor',
         'is_active',
         'last_run_at',
     ];
@@ -28,6 +32,10 @@ class ContractReminderSetting extends Model
         'use_days_before' => 'boolean',
         'use_monthly_fixed' => 'boolean',
         'is_active' => 'boolean',
+        'track_contracts' => 'boolean',
+        'track_probation' => 'boolean',
+        'include_expired' => 'boolean',
+        'notify_supervisor' => 'boolean',
         'last_run_at' => 'datetime',
     ];
 

@@ -5,6 +5,8 @@
 
 @section('content')
 
+@include('auth.partials.flash')
+
 <form method="POST"
       action="{{ route('login') }}"
       class="needs-validation"
@@ -49,7 +51,7 @@
                 Password
             </label>
 
-            <a href="#"
+            <a href="{{ route('password.request') }}"
                class="small text-decoration-none">
                 Forgot Password?
             </a>
@@ -95,7 +97,7 @@
 
         <span class="small text-muted">
             <i class="bi bi-shield-check"></i>
-            Secure
+            Secure Login
         </span>
 
     </div>

@@ -11,7 +11,15 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        $middleware->alias([
+            'staff'           => \App\Http\Middleware\EnsureStaff::class,
+            'portal'          => \App\Http\Middleware\EnsureEmployeePortal::class,
+            'password.change' => \App\Http\Middleware\ForcePasswordChange::class,
+        ]);
+
+        // The entrance tablet stays open for days; its secret link authenticates it,
+        // so scans must not fail when a session's CSRF token expires.
+        $middleware->validateCsrfTokens(except: ['kiosk/*']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

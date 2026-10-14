@@ -6,12 +6,13 @@
             <img src="http://misc.tradesmartzm.com/logo.png" width="36" height="36" alt="Tradesmart Supplies Logo" class="brand-logo">
             <span class="brand-copy">
                 <span class="brand-title">Tradesmart Supplies</span>
-                <span class="brand-subtitle">Contract Reminder System</span>
+                <span class="brand-subtitle">HR Workspace</span>
             </span>
         </a>
     </div>
 
     {{-- NAVIGATION --}}
+        {{-- NAVIGATION --}}
     <nav class="sidebar-nav">
 
         <span class="nav-group-label nav-text">Main</span>
@@ -28,17 +29,129 @@
             <span class="nav-text">Employees</span>
         </a>
 
+        @php $pendingProfileChanges = \App\Models\ProfileChangeRequest::where('status', 'pending')->count(); @endphp
+        <a class="nav-link {{ request()->routeIs('profile-changes.*') ? 'active' : '' }}"
+           href="{{ route('profile-changes.index') }}">
+            <i class="bi bi-person-gear nav-icon"></i>
+            <span class="nav-text">Detail Changes</span>
+            @if($pendingProfileChanges)<span class="badge rounded-pill bg-warning text-dark ms-auto">{{ $pendingProfileChanges }}</span>@endif
+        </a>
+
+        <a class="nav-link {{ request()->routeIs('employees.import*') ? 'active' : '' }}"
+           href="{{ route('employees.import') }}">
+            <i class="bi bi-cloud-upload nav-icon"></i>
+            <span class="nav-text">Bulk Import</span>
+        </a>
+
+        <a class="nav-link {{ request()->routeIs('departments.*') ? 'active' : '' }}"
+           href="{{ route('departments.index') }}">
+            <i class="bi bi-building nav-icon"></i>
+            <span class="nav-text">Departments</span>
+        </a>
+
+        <a class="nav-link {{ request()->routeIs('announcements.*') ? 'active' : '' }}"
+           href="{{ route('announcements.index') }}">
+            <i class="bi bi-megaphone nav-icon"></i>
+            <span class="nav-text">Announcements</span>
+        </a>
+
+        <a class="nav-link {{ request()->routeIs('attendance.*') ? 'active' : '' }}"
+           href="{{ route('attendance.index') }}">
+            <i class="bi bi-clock-history nav-icon"></i>
+            <span class="nav-text">Attendance</span>
+        </a>
+
+        <span class="nav-group-label nav-text">Leave</span>
+
+        <a class="nav-link {{ request()->routeIs('leave.index', 'leave.show') ? 'active' : '' }}"
+           href="{{ route('leave.index') }}">
+            <i class="bi bi-calendar-check nav-icon"></i>
+            <span class="nav-text">Leave Requests</span>
+        </a>
+
+        <a class="nav-link {{ request()->routeIs('leave.manage.index', 'leave.manage.employee') ? 'active' : '' }}"
+           href="{{ route('leave.manage.index') }}">
+            <i class="bi bi-bar-chart-line nav-icon"></i>
+            <span class="nav-text">Leave Reports &amp; Balances</span>
+        </a>
+
+        <a class="nav-link {{ request()->routeIs('leave.manage.planner') ? 'active' : '' }}"
+           href="{{ route('leave.manage.planner') }}">
+            <i class="bi bi-calendar3-range nav-icon"></i>
+            <span class="nav-text">Leave Planner</span>
+        </a>
+
+        <a class="nav-link {{ request()->routeIs('leave.manage.record') ? 'active' : '' }}"
+           href="{{ route('leave.manage.record') }}">
+            <i class="bi bi-journal-plus nav-icon"></i>
+            <span class="nav-text">Record Leave</span>
+        </a>
+
+        <a class="nav-link {{ request()->routeIs('leave.manage.holidays') ? 'active' : '' }}"
+           href="{{ route('leave.manage.holidays') }}">
+            <i class="bi bi-flag nav-icon"></i>
+            <span class="nav-text">Public Holidays</span>
+        </a>
+
+        <a class="nav-link {{ request()->routeIs('leave.apply') ? 'active' : '' }}"
+           href="{{ route('leave.apply') }}">
+            <i class="bi bi-calendar-plus nav-icon"></i>
+            <span class="nav-text">Apply for Leave</span>
+        </a>
+
+        <!-- <span class="nav-group-label nav-text">Payroll</span>
+
+        <a class="nav-link {{ request()->routeIs('payroll.runs.*') ? 'active' : '' }}"
+           href="{{ route('payroll.runs.index') }}">
+            <i class="bi bi-cash-stack nav-icon"></i>
+            <span class="nav-text">Payroll Runs</span>
+        </a>
+
+        <a class="nav-link {{ request()->routeIs('payroll.index', 'payroll.create', 'payroll.show', 'payroll.edit') ? 'active' : '' }}"
+           href="{{ route('payroll.index') }}">
+            <i class="bi bi-receipt nav-icon"></i>
+            <span class="nav-text">Payslips</span>
+        </a>
+
+        <a class="nav-link {{ request()->routeIs('payroll.rules.*') ? 'active' : '' }}"
+           href="{{ route('payroll.rules.index') }}">
+            <i class="bi bi-sliders nav-icon"></i>
+            <span class="nav-text">Payroll Rules</span>
+        </a>
+
+        <a class="nav-link {{ request()->routeIs('payroll.reports.*') ? 'active' : '' }}"
+           href="{{ route('payroll.reports.index') }}">
+            <i class="bi bi-file-earmark-bar-graph nav-icon"></i>
+            <span class="nav-text">Payroll Reports</span>
+        </a> -->
+<!-- 
+        <span class="nav-group-label nav-text">Insights</span>
+
+        <a class="nav-link {{ request()->routeIs('reports.*') ? 'active' : '' }}"
+           href="{{ route('reports.index') }}">
+            <i class="bi bi-bar-chart-line nav-icon"></i>
+            <span class="nav-text">Reports</span>
+        </a> -->
+
         <span class="nav-group-label nav-text">System</span>
+
+        <a class="nav-link {{ request()->routeIs('settings.contract-reminders.*') ? 'active' : '' }}"
+           href="{{ route('settings.contract-reminders.index') }}">
+            <i class="bi bi-bell nav-icon"></i>
+            <span class="nav-text">Contract Reminders</span>
+        </a>
+
+        <a class="nav-link {{ request()->routeIs('settings.index') ? 'active' : '' }}"
+           href="{{ route('settings.index') }}">
+            <i class="bi bi-gear nav-icon"></i>
+            <span class="nav-text">Settings</span>
+        </a>
 
         <a class="nav-link {{ request()->routeIs('profile.*') ? 'active' : '' }}"
            href="{{ route('profile.index') }}">
             <i class="bi bi-person nav-icon"></i>
             <span class="nav-text">Profile</span>
         </a>
-
-    
-
-        
 
     </nav>
 

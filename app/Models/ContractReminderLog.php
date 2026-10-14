@@ -13,12 +13,16 @@ class ContractReminderLog extends Model
         'employee_id',
         'contract_reminder_setting_id',
         'trigger_type',
+        'event',
+        'end_date',
+        'threshold',
         'run_date',
         'sent_at',
     ];
 
     protected $casts = [
         'run_date' => 'date',
+        'end_date' => 'date',
         'sent_at' => 'datetime',
     ];
 

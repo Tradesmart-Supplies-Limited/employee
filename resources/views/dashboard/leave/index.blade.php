@@ -2,20 +2,59 @@
 
 @section('content')
 
+@include('leave.partials.tracker-styles')
+
+<style>
+.lv-tabs { display: flex; gap: .5rem; flex-wrap: wrap; }
+.lv-tab {
+    display: inline-flex; align-items: center; gap: .45rem;
+    padding: .45rem .85rem; border-radius: 999px;
+    border: 1px solid var(--admin-border, #e2e8f0);
+    color: var(--admin-text, #0f172a); text-decoration: none;
+    font-size: .82rem; font-weight: 600; background: var(--admin-surface, #fff);
+}
+.lv-tab:hover { border-color: #185FA5; color: #185FA5; }
+.lv-tab.active { background: #185FA5; border-color: #185FA5; color: #fff; }
+.lv-tab .count { font-size: .72rem; padding: .05rem .45rem; border-radius: 999px; background: rgba(0,0,0,.07); }
+.lv-tab.active .count { background: rgba(255,255,255,.25); }
+.lv-tab .dot { width: 8px; height: 8px; border-radius: 50%; }
+</style>
+
 <div class="panel">
 
     {{-- HEADER --}}
-    <div class="panel-header d-flex justify-content-between align-items-center">
-
+    <div class="panel-header d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
         <h4 class="mb-0">
             <i class="bi bi-calendar-check me-2"></i>
             Leave Applications
         </h4>
 
-        <span class="badge bg-primary">
-            {{ $applications->count() }} Requests
-        </span>
+        <form method="GET" class="d-flex gap-2">
+            @if($stage)<input type="hidden" name="stage" value="{{ $stage }}">@endif
+            <input type="search" name="q" value="{{ request('q') }}" class="form-control form-control-sm" placeholder="Search name or EIN" style="max-width:220px">
+            <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-search"></i></button>
+        </form>
+    </div>
 
+    {{-- STAGE TABS --}}
+    @php
+        $tabs = [
+            'all'                                        => ['All', '#64748b'],
+            \App\Models\LeaveRequest::STAGE_SUPERVISOR   => ['Awaiting supervisor', '#f59e0b'],
+            \App\Models\LeaveRequest::STAGE_HR           => ['Awaiting HR', '#0ea5e9'],
+            \App\Models\LeaveRequest::STAGE_APPROVED     => ['Approved', '#16a34a'],
+            \App\Models\LeaveRequest::STAGE_REJECTED     => ['Rejected', '#dc2626'],
+        ];
+    @endphp
+    <div class="lv-tabs mb-3">
+        @foreach($tabs as $key => [$label, $color])
+            <a href="{{ route('leave.index', array_filter(['stage' => $key === 'all' ? null : $key, 'q' => request('q')])) }}"
+               class="lv-tab {{ ($stage ?: 'all') === $key ? 'active' : '' }}">
+                <span class="dot" style="background:{{ $color }}"></span>
+                {{ $label }}
+                <span class="count">{{ $counts[$key] }}</span>
+            </a>
+        @endforeach
     </div>
 
     <div class="table-responsive">
@@ -25,9 +64,10 @@
             <thead class="table-light">
                 <tr>
                     <th>Employee</th>
-                    <th>Leave Info</th>
-                    <th>Duration</th>
-                    <th>Status</th>
+                    <th>Leave</th>
+                    <th>Dates</th>
+                    <th>Supervisor</th>
+                    <th style="min-width:180px">Progress</th>
                     <th class="text-end">Action</th>
                 </tr>
             </thead>
@@ -36,118 +76,68 @@
 
                 @forelse($applications as $leave)
 
-                @php
-                $start = \Carbon\Carbon::parse($leave->date_from);
-                $end = \Carbon\Carbon::parse($leave->date_to);
-                $days = $start->diffInDays($end) + 1;
-                $daysToStart = now()->diffInDays($start, false);
-                @endphp
-
                 <tr onclick="window.location='{{ route('leave.show', $leave->id) }}';" style="cursor: pointer;">
 
                     {{-- EMPLOYEE --}}
                     <td>
-                        <div class="fw-semibold">
-                            {{ $leave->employee_name }}
-                        </div>
-                        <small class="text-muted">
-                            #{{ $leave->employee_number ?? 'N/A' }}
-                        </small>
+                        <div class="fw-semibold">{{ $leave->employee_name }}</div>
+                        <small class="text-muted">#{{ $leave->employee_number ?? 'N/A' }}</small>
+                        @if($leave->employee)
+                            <div class="small text-muted">Balance: {{ rtrim(rtrim(number_format((float) $leave->employee->leave_balance, 1), '0'), '.') }} d</div>
+                        @endif
                     </td>
 
                     {{-- LEAVE TYPE --}}
                     <td>
-                        <span class="badge bg-light text-dark border mb-1">
-                            {{ $leave->leave_type }}
-                        </span>
-
+                        <span class="badge bg-light text-dark border">{{ $leave->leave_type }}</span>
                         @if($leave->other_leave_type)
-                        <div class="small text-muted">
-                            {{ $leave->other_leave_type }}
-                        </div>
+                            <div class="small text-muted">{{ $leave->other_leave_type }}</div>
                         @endif
-
                         @if($leave->late_application_reason)
-                        <div class="small text-muted mt-1" style="font-size: 0.5rem;">
-                            Late Application Reason: {{ $leave->late_application_reason }}
-                        </div>
-                        @endif
-
-                        @if($leave->reason)
-                        <div class="small text-muted mt-1" style="font-size: 0.5rem;">
-                            Supervisor Decision: {{ $leave->reason }}
-                        </div>
+                            <div class="small text-danger mt-1"><i class="bi bi-clock-history"></i> Late application</div>
                         @endif
                     </td>
 
                     {{-- DURATION --}}
                     <td>
-                        <div class="small">
-                            <i class="bi bi-calendar-event me-1"></i>
-                            {{ $start->format('d M') }} → {{ $end->format('d M Y') }}
-                        </div>
-
-                        <div class="fw-semibold small text-primary mt-1">
-                            {{ $days }} {{ $days == 1 ? 'day' : 'days' }}
-                        </div>
+                        <div class="small">{{ $leave->date_from->format('d M') }} → {{ $leave->date_to->format('d M Y') }}</div>
+                        <div class="fw-semibold small text-primary">{{ $leave->total_days }} {{ $leave->total_days == 1 ? 'day' : 'days' }}</div>
                     </td>
 
-
-
-                    {{-- STATUS --}}
-                    <td>
-                        <span class="badge px-3 py-2
-                            @if($leave->status == 'Approved') bg-success
-                            @elseif($leave->status == 'Rejected') bg-danger
-                            @else bg-warning text-dark
-                            @endif">
-
-                            <i class="bi
-                                @if($leave->status == 'Approved') bi-check-circle
-                                @elseif($leave->status == 'Rejected') bi-x-circle
-                                @else bi-hourglass-split
-                                @endif me-1"></i>
-
-                            {{ $leave->status }}
-                        </span>
-
+                    {{-- SUPERVISOR --}}
+                    <td class="small">
+                        {{ $leave->assigned_supervisor_name ?? '—' }}
                         @if($leave->supervisor_decision)
-                        <div class="small text-muted mt-1" style="font-size: 0.5rem;">
-                            Supervisor Decision: {{ $leave->supervisor_decision }}
-                        </div>
+                            <div class="{{ $leave->supervisor_decision === 'Approved' ? 'text-success' : 'text-danger' }}">
+                                <i class="bi {{ $leave->supervisor_decision === 'Approved' ? 'bi-hand-thumbs-up' : 'bi-hand-thumbs-down' }}"></i>
+                                {{ $leave->supervisor_decision === 'Approved' ? 'Recommended' : 'Not recommended' }}
+                            </div>
                         @endif
                     </td>
 
+                    {{-- PROGRESS --}}
+                    <td>@include('leave.partials.mini-tracker', ['leave' => $leave])</td>
+
                     {{-- ACTION --}}
-                    <td>
-                        <div class="d-flex gap-1 align-items-center">
-
-                            {{-- VIEW --}}
-                            <a href="{{ route('leave.show',$leave->id) }}" class="btn btn-sm btn-outline-primary">
-                                <i class="bi bi-eye"></i>
+                    <td onclick="event.stopPropagation()">
+                        <div class="d-flex gap-1 align-items-center justify-content-end">
+                            <a href="{{ route('leave.show', $leave->id) }}"
+                               class="btn btn-sm {{ $leave->isFinal() ? 'btn-outline-primary' : 'btn-primary' }}">
+                                {{ $leave->isFinal() ? 'View' : 'Review' }}
                             </a>
-
-                            {{-- PRINT --}}
                             <button type="button"
-                                onclick="window.open('{{ route('leave.show',$leave->id) }}?print=1','_blank')"
-                                class="btn btn-sm btn-outline-secondary">
+                                onclick="window.open('{{ route('leave.print', $leave->id) }}','_blank')"
+                                class="btn btn-sm btn-outline-secondary" title="Print">
                                 <i class="bi bi-printer"></i>
                             </button>
-
-                            {{-- DELETE --}}
-                            <form id="delete-form-{{ $leave->id }}" action="{{ route('leave.destroy', $leave->id) }}"
-                                method="POST" class="m-0">
-
+                            <form action="{{ route('leave.destroy', $leave->id) }}" method="POST" class="m-0">
                                 @csrf
                                 @method('DELETE')
-
-                                <button type="submit" class="btn btn-sm btn-outline-danger"
-                                    onclick="return confirm('Are you sure you want to delete this leave application?');">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete"
+                                    onclick="return confirm('Delete this leave application?{{ $leave->status === 'Approved' && (float) $leave->balance_deducted > 0 ? ' The deducted days will be returned to the employee\'s balance.' : '' }}');">
                                     <i class="bi bi-trash"></i>
                                 </button>
-
                             </form>
-
                         </div>
                     </td>
 
@@ -169,6 +159,10 @@
         </table>
 
     </div>
+
+    @if($applications->hasPages())
+        <div class="mt-3">{{ $applications->links() }}</div>
+    @endif
 
 </div>
 

@@ -6,32 +6,35 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Collection;
 
+/**
+ * Contract / probation reminder. $rows are plain arrays (see ContractMonitor::rows)
+ * so the email can be queued safely.
+ *
+ * $kind: alert | digest | supervisor | test
+ */
 class ContractEndingReminder extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
-    public Collection $employees;
-    public string $label;
-
-    /**
-     * @param  \Illuminate\Support\Collection|\App\Models\Employee[]  $employees
-     */
-    public function __construct($employees, string $label)
-    {
-        $this->employees = collect($employees);
-        $this->label = $label;
-    }
+    public function __construct(
+        public array $rows,
+        public string $label,
+        public string $kind = 'alert',
+    ) {}
 
     public function build()
     {
-        return $this
-            ->subject('Contract Ending Reminder — ' . $this->label)
-            ->view('emails.contract-reminder')
-            ->with([
-                'employees' => $this->employees,
-                'label' => $this->label,
+        $prefix = [
+            'digest'     => 'Contract digest',
+            'supervisor' => 'Team reminder',
+            'test'       => 'TEST',
+        ][$this->kind] ?? 'Action needed';
+
+        return $this->subject("{$prefix}: {$this->label}")
+            ->view('emails.contract-reminder', [
+                'groups'   => collect($this->rows)->groupBy('state'),
+                'settings' => route('settings.contract-reminders.index'),
             ]);
     }
 }

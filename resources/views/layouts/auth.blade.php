@@ -76,11 +76,14 @@
     document.addEventListener("click", function (e) {
     const link = e.target.closest("a");
 
-    if (link && link.href && !link.target && !link.hasAttribute("download")) {
+    const page = document.getElementById("page-content") || document.querySelector(".auth-card");
+
+    if (page && link && link.href && !link.target && !link.hasAttribute("download") && !link.hasAttribute("data-theme-toggle")) {
         e.preventDefault();
 
-        document.getElementById("page-content").style.opacity = "0";
-        document.getElementById("page-content").style.transform = "translateY(6px)";
+        page.style.transition = "opacity .15s, transform .15s";
+        page.style.opacity = "0";
+        page.style.transform = "translateY(6px)";
 
         setTimeout(() => {
             window.location = link.href;

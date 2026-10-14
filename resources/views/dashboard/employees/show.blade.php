@@ -2,621 +2,273 @@
 
 @section('content')
 
-{{-- HEADER CARD --}}
-<div class="panel mb-3">
-    <div class="d-flex align-items-center gap-3">
-        <div class="flex-grow-1">
-            <h4 class="mb-0">Employee Information</h4>
-            <small class="text-muted">
-                Edit, Print, or view details of {{ $employee->first_name }} {{ $employee->last_name }}
-            </small>
+@php
+    use App\Support\EmployeeFields as F;
+    $fields = F::all();
+    $val = function ($name) use ($employee) {
+        $v = F::display($employee, $name);
+        if ($v === null) return '<span class="ep-empty">—</span>';
+        if (! empty(F::get($name)['mask'])) {
+            return '<span class="ep-mask" data-full="' . e($v) . '">' . e(F::mask($v)) . '</span> <button type="button" class="ep-reveal" title="Show"><i class="bi bi-eye"></i></button>';
+        }
+        return e($v);
+    };
+    $section = fn ($step) => collect($fields)->filter(fn ($f) => $f['step'] === $step)->keys();
+    $stateColor = ['expired' => '#dc2626', 'critical' => '#ea580c', 'soon' => '#d97706', 'ok' => '#16a34a'];
+    $n = fn ($v) => rtrim(rtrim(number_format((float) $v, 1), '0'), '.');
+    $tenure = $employee->contract_start ? $employee->contract_start->diff(now()) : null;
+@endphp
+
+<style>
+.ep-hero { background: var(--admin-surface, #fff); border: 1px solid var(--admin-border, #e2e8f0); border-radius: 16px; padding: 1.2rem 1.4rem; display: flex; gap: 1.2rem; align-items: center; flex-wrap: wrap; margin-bottom: 1rem; }
+.ep-photo { width: 92px; height: 92px; border-radius: 50%; overflow: hidden; flex-shrink: 0; background: linear-gradient(135deg, #185FA5, #4f8cff); color: #fff; font-size: 2rem; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+.ep-photo img { width: 100%; height: 100%; object-fit: cover; }
+.ep-hero h1 { font-size: 1.45rem; font-weight: 800; margin: 0; }
+.ep-meta { font-size: .85rem; color: var(--admin-muted, #64748b); }
+.ep-chip { font-size: .72rem; font-weight: 700; padding: .18rem .6rem; border-radius: 999px; display: inline-flex; gap: .3rem; align-items: center; margin: .15rem .2rem .15rem 0; }
+.ep-tabs { display: flex; gap: .2rem; border-bottom: 1px solid var(--admin-border, #e2e8f0); margin-bottom: 1rem; overflow-x: auto; }
+.ep-tab { border: 0; background: none; padding: .65rem .95rem; font-size: .88rem; font-weight: 600; color: var(--admin-muted, #64748b); border-bottom: 2px solid transparent; white-space: nowrap; }
+.ep-tab.active { color: #185FA5; border-bottom-color: #185FA5; }
+.ep-tab .count { font-size: .7rem; background: var(--admin-surface-soft, #f1f5f9); padding: .05rem .4rem; border-radius: 999px; margin-left: .2rem; }
+.ep-pane { display: none; } .ep-pane.active { display: block; }
+.ep-card { background: var(--admin-surface, #fff); border: 1px solid var(--admin-border, #e2e8f0); border-radius: 14px; padding: 1rem 1.2rem; margin-bottom: 1rem; }
+.ep-card h2 { font-size: .9rem; font-weight: 800; margin: 0 0 .8rem; display: flex; align-items: center; gap: .45rem; }
+.ep-card h2 a { margin-left: auto; font-size: .78rem; font-weight: 600; }
+.ep-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: .75rem 1.2rem; }
+.ep-grid small { display: block; font-size: .7rem; text-transform: uppercase; letter-spacing: .04em; color: var(--admin-muted, #64748b); font-weight: 700; }
+.ep-grid div > span, .ep-grid div { font-size: .88rem; }
+.ep-empty { color: var(--admin-muted, #94a3b8); }
+.ep-reveal { border: 0; background: none; color: var(--admin-muted, #94a3b8); padding: 0 .2rem; }
+.ep-timeline { position: relative; padding-left: 1.4rem; }
+.ep-timeline::before { content: ""; position: absolute; left: .4rem; top: .3rem; bottom: .3rem; width: 2px; background: var(--admin-border, #e2e8f0); }
+.ep-tl { position: relative; padding: .3rem 0 .7rem; font-size: .86rem; }
+.ep-tl::before { content: ""; position: absolute; left: -1.25rem; top: .55rem; width: 12px; height: 12px; border-radius: 50%; background: var(--c, #94a3b8); border: 2px solid var(--admin-surface, #fff); box-shadow: 0 0 0 1px var(--c, #94a3b8); }
+.ep-tl small { color: var(--admin-muted, #64748b); display: block; }
+.ep-doc { display: flex; align-items: center; gap: .8rem; padding: .6rem 0; border-bottom: 1px solid var(--admin-border, #eef2f7); }
+.ep-doc:last-child { border-bottom: 0; }
+.ep-doc .ic { width: 38px; height: 38px; border-radius: 10px; background: var(--admin-surface-soft, #f1f5f9); display: flex; align-items: center; justify-content: center; font-size: 1.1rem; color: #185FA5; flex-shrink: 0; }
+.ep-progress { height: 8px; border-radius: 4px; background: var(--admin-surface-soft, #f1f5f9); overflow: hidden; }
+.ep-progress span { display: block; height: 100%; background: #16a34a; }
+@media print { .ep-tabs, .ep-actions, .ep-reveal, form, .admin-sidebar { display: none !important; } .ep-pane { display: block !important; } }
+</style>
+
+{{-- ===== HERO ===== --}}
+<div class="ep-hero">
+    <div class="ep-photo">@if($employee->passport_photo)<img src="{{ asset('storage/' . $employee->passport_photo) }}" alt="">@else{{ $employee->initials }}@endif</div>
+    <div class="flex-grow-1">
+        <a href="{{ route('employees.index') }}" class="small text-decoration-none"><i class="bi bi-arrow-left"></i> Employees</a>
+        <h1>{{ $employee->full_name }}</h1>
+        <div class="ep-meta">
+            {{ $employee->position ?? 'No position' }}{{ $employee->department ? ' · ' . $employee->department : '' }}{{ $employee->branch ? ' · ' . $employee->branch : '' }}
+            · <span class="fw-semibold">{{ $employee->employee_id }}</span>
         </div>
+        <div class="mt-1">
+            @php $sc = ['Active' => ['#dcfce7', '#166534'], 'Suspended' => ['#fef3c7', '#92400e'], 'Exited' => ['#f1f5f9', '#475569']][$employee->employment_status] ?? ['#f1f5f9', '#475569']; @endphp
+            <span class="ep-chip" style="background:{{ $sc[0] }};color:{{ $sc[1] }}">{{ $employee->employment_status }}</span>
+            <span class="ep-chip" style="background:#f1f5f9;color:#334155">{{ F::NATURES[$employee->employment_nature] ?? 'Permanent' }}</span>
+            @foreach($endDates as $type => $d)
+                <span class="ep-chip" style="background:{{ $stateColor[$d['state']] }}1a;color:{{ $stateColor[$d['state']] }}">
+                    <i class="bi bi-calendar-event"></i> {{ ucfirst($type) }} {{ $d['days'] < 0 ? 'ended ' . abs($d['days']) . 'd ago' : 'ends ' . $d['end']->format('d M Y') . ' (' . $d['days'] . 'd)' }}
+                </span>
+            @endforeach
+            @if($employee->supervisor_name)<span class="ep-chip" style="background:#eef2ff;color:#3730a3"><i class="bi bi-person-up"></i> Reports to {{ $employee->supervisor_name }}</span>@endif
+        </div>
+    </div>
+    <div class="d-flex gap-2 flex-wrap ep-actions">
+        <a class="btn btn-outline-secondary btn-sm" href="{{ route('attendance.employee', $employee) }}"><i class="bi bi-clock-history"></i> Attendance</a>
+        <a class="btn btn-primary btn-sm" href="{{ route('employees.edit', $employee) }}"><i class="bi bi-pencil-square"></i> Edit</a>
+        <a class="btn btn-outline-secondary btn-sm" href="{{ route('leave.manage.employee', $employee) }}"><i class="bi bi-calendar-check"></i> Leave</a>
+        <button class="btn btn-outline-secondary btn-sm" onclick="window.print()"><i class="bi bi-printer"></i></button>
+    </div>
+</div>
 
-        <div class="ms-auto d-flex align-items-center gap-2">
-            <a class="btn btn-outline-secondary btn-sm" href="{{ route('employees.edit', $employee) }}">
-                <i class="bi bi-pencil-square"></i> Edit
-            </a>
-            <a class="btn btn-outline-secondary btn-sm" href="{{ route('employees.index') }}">
-                <i class="bi bi-arrow-left"></i> Back
-            </a>
+@if($pendingChanges->isNotEmpty())
+    <div class="alert alert-warning d-flex align-items-center gap-2">
+        <i class="bi bi-shield-exclamation fs-5"></i>
+        <div class="flex-grow-1">{{ $employee->first_name }} has requested changes to {{ $pendingChanges->flatMap(fn ($r) => array_keys($r->changes))->map(fn ($f) => F::label($f))->unique()->implode(', ') }}.</div>
+        <a href="{{ route('profile-changes.index') }}" class="btn btn-sm btn-warning">Review</a>
+    </div>
+@endif
 
-            
+@include('dashboard.employees.partials.portal-account')
+
+{{-- ===== TABS ===== --}}
+<div class="ep-tabs" role="tablist">
+    @foreach(['overview' => 'Overview', 'personal' => 'Personal & contact', 'job' => 'Job & pay', 'documents' => 'Documents', 'leave' => 'Leave'] as $k => $label)
+        <button class="ep-tab" data-tab="{{ $k }}" role="tab">{{ $label }}@if($k === 'documents')<span class="count">{{ $employee->documents->count() }}</span>@endif</button>
+    @endforeach
+</div>
+
+{{-- ===== OVERVIEW ===== --}}
+<div class="ep-pane" data-pane="overview">
+    <div class="row g-3">
+        <div class="col-lg-8">
+            <div class="ep-card">
+                <h2><i class="bi bi-person-badge"></i> Key facts</h2>
+                <div class="ep-grid">
+                    <div><small>Phone</small>{!! $val('primary_phone') !!}</div>
+                    <div><small>Email</small>{!! $employee->company_email ? e($employee->company_email) : $val('personal_email') !!}</div>
+                    <div><small>NRC</small>{!! $val('nrc_no') !!}</div>
+                    <div><small>Date of birth</small>{!! $val('date_of_birth') !!}{{ $employee->age ? ' (' . $employee->age . ')' : '' }}</div>
+                    <div><small>Started</small>{!! $val('contract_start') !!}@if($tenure) <span class="ep-empty">· {{ $tenure->y ? $tenure->y . 'y ' : '' }}{{ $tenure->m }}m</span>@endif</div>
+                    <div><small>Leave balance</small><strong>{{ $n($employee->leave_balance) }}</strong> <span class="ep-empty">of {{ $n($employee->annual_leave_entitlement) }} days</span></div>
+                    <div><small>Emergency contact</small>{{ $employee->emergency_name ?? '—' }}{!! $employee->emergency_phone ? '<br><span class="ep-empty">' . e($employee->emergency_phone) . '</span>' : '' !!}</div>
+                    <div><small>Direct reports</small>{{ $employee->directReports->isNotEmpty() ? $employee->directReports->map->full_name->implode(', ') : '—' }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="ep-card">
+                <h2><i class="bi bi-clipboard-check"></i> Record completeness <a href="{{ route('employees.edit', $employee) }}">Complete</a></h2>
+                <div class="d-flex align-items-center gap-2 mb-2"><div class="ep-progress flex-grow-1"><span style="width: {{ $completeness['percent'] }}%; {{ $completeness['percent'] < 60 ? 'background:#f59e0b' : '' }}"></span></div><strong>{{ $completeness['percent'] }}%</strong></div>
+                @if($completeness['missing'])
+                    <div class="small text-muted">Missing: {{ implode(', ', $completeness['missing']) }}</div>
+                @else
+                    <div class="small text-success"><i class="bi bi-check-circle"></i> All key details are filled in.</div>
+                @endif
+            </div>
+            <div class="ep-card">
+                <h2><i class="bi bi-signpost-split"></i> Employment timeline</h2>
+                <div class="ep-timeline">
+                    @php
+                        $events = collect([
+                            ['Started', $employee->contract_start, '#185FA5'],
+                            ['Probation ends', $employee->probation_end, '#7c3aed'],
+                            ['Contract ends', $employee->contract_end, '#dc2626'],
+                        ])->filter(fn ($e) => $e[1])->sortBy(fn ($e) => $e[1]);
+                    @endphp
+                    @forelse($events as [$label, $date, $c])
+                        <div class="ep-tl" style="--c: {{ $date->isPast() ? '#94a3b8' : $c }}">
+                            <strong>{{ $label }}</strong><small>{{ $date->format('D d M Y') }} · {{ $date->isPast() ? $date->diffForHumans() : 'in ' . now()->startOfDay()->diffInDays($date) . ' days' }}</small>
+                        </div>
+                    @empty
+                        <div class="small text-muted">No dates recorded yet.</div>
+                    @endforelse
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
-{{-- RESUME CARD --}}
-<div class="resume-card">
-
-    {{-- ===== LEFT SIDEBAR ===== --}}
-    <div class="resume-left">
-
-        {{-- Photo --}}
-        <div class="resume-photo-wrap">
-            <div class="resume-photo-circle">
-                @if($employee->passport_photo)
-                    <img src="{{ asset('storage/' . $employee->passport_photo) }}"
-                         alt="{{ $employee->first_name }} {{ $employee->last_name }}">
-                @else
-                    <span class="resume-photo-initials">
-                        {{ strtoupper(substr($employee->first_name, 0, 1)) }}{{ strtoupper(substr($employee->last_name, 0, 1)) }}
-                    </span>
-                @endif
+{{-- ===== PERSONAL & CONTACT ===== --}}
+<div class="ep-pane" data-pane="personal">
+    @foreach(['personal' => ['Personal', 'bi-person'], 'contact' => ['Contact & family', 'bi-telephone']] as $step => [$title, $icon])
+        <div class="ep-card">
+            <h2><i class="bi {{ $icon }}"></i> {{ $title }} <a href="{{ route('employees.edit', $employee) }}#{{ $step }}">Edit</a></h2>
+            <div class="ep-grid">
+                @foreach($section($step) as $f)<div><small>{{ F::label($f) }}</small>{!! $val($f) !!}</div>@endforeach
             </div>
         </div>
+    @endforeach
+</div>
 
-        {{-- Badges --}}
-        <div class="resume-badges">
-            <span class="resume-badge resume-badge-id">{{ $employee->employee_id }}</span>
-            <span class="resume-badge resume-badge-{{ $employee->employment_status == 'Active' ? 'active' : 'inactive' }}">
-                {{ $employee->employment_status }}
-            </span>
+{{-- ===== JOB & PAY ===== --}}
+<div class="ep-pane" data-pane="job">
+    <div class="ep-card">
+        <h2><i class="bi bi-briefcase"></i> Job &amp; contract <a href="{{ route('employees.edit', $employee) }}#job">Edit</a></h2>
+        <div class="ep-grid">
+            <div><small>Employee number</small>{{ $employee->employee_id }}</div>
+            <div><small>Reports to</small>{{ $employee->supervisor_name ?? '—' }}</div>
+            @foreach($section('job') as $f)<div><small>{{ F::label($f) }}</small>{!! $val($f) !!}</div>@endforeach
         </div>
-
-        {{-- Contacts --}}
-        <div class="resume-section-label">Contacts</div>
-
-        @if($employee->personal_email)
-        <div class="resume-info-row">
-            <i class="bi bi-envelope"></i>
-            <span>{{ $employee->personal_email }}</span>
+    </div>
+    <div class="ep-card">
+        <h2><i class="bi bi-bank"></i> Pay &amp; statutory <a href="{{ route('employees.edit', $employee) }}#pay">Edit</a></h2>
+        <div class="ep-grid">
+            @foreach($section('pay') as $f)<div><small>{{ F::label($f) }}</small>{!! $val($f) !!}</div>@endforeach
         </div>
-        @endif
+    </div>
+</div>
 
-        @if($employee->company_email)
-        <div class="resume-info-row">
-            <i class="bi bi-building"></i>
-            <span>{{ $employee->company_email }}</span>
-        </div>
-        @endif
-
-        @if($employee->primary_phone)
-        <div class="resume-info-row">
-            <i class="bi bi-telephone"></i>
-            <span>{{ $employee->primary_phone }}</span>
-        </div>
-        @endif
-
-        @if($employee->secondary_phone)
-        <div class="resume-info-row">
-            <i class="bi bi-telephone"></i>
-            <span>{{ $employee->secondary_phone }}</span>
-        </div>
-        @endif
-
-        {{-- Emergency --}}
-        @if($employee->emergency_name || $employee->emergency_phone)
-        <div class="resume-section-label">Emergency</div>
-
-        @if($employee->emergency_name)
-        <div class="resume-info-row">
-            <i class="bi bi-person"></i>
-            <span>{{ $employee->emergency_name }}</span>
-        </div>
-        @endif
-
-        @if($employee->emergency_relationship)
-        <div class="resume-info-row">
-            <i class="bi bi-heart"></i>
-            <span>{{ $employee->emergency_relationship }}</span>
-        </div>
-        @endif
-
-        @if($employee->emergency_phone)
-        <div class="resume-info-row">
-            <i class="bi bi-telephone"></i>
-            <span>{{ $employee->emergency_phone }}</span>
-        </div>
-        @endif
-        @endif
-
-        {{-- Next of Kin --}}
-        @if($employee->next_of_kin_name || $employee->next_of_kin_phone)
-        <div class="resume-section-label">Next of Kin</div>
-
-        @if($employee->next_of_kin_name)
-        <div class="resume-info-row">
-            <i class="bi bi-person"></i>
-            <span>{{ $employee->next_of_kin_name }}</span>
-        </div>
-        @endif
-
-        @if($employee->next_of_kin_phone)
-        <div class="resume-info-row">
-            <i class="bi bi-telephone"></i>
-            <span>{{ $employee->next_of_kin_phone }}</span>
-        </div>
-        @endif
-
-        @if($employee->next_of_kin_address)
-        <div class="resume-info-row">
-            <i class="bi bi-geo-alt"></i>
-            <span>{{ $employee->next_of_kin_address }}</span>
-        </div>
-        @endif
-        @endif
-
-        {{-- Finance --}}
-        <div class="resume-section-label">Finance</div>
-
-        @if($employee->bank_name)
-        <div class="resume-info-row">
-            <i class="bi bi-bank"></i>
-            <span>{{ $employee->bank_name }}</span>
-        </div>
-        @endif
-
-        @if($employee->bank_account_number)
-        <div class="resume-info-row">
-            <i class="bi bi-credit-card"></i>
-            <span>{{ $employee->bank_account_no }}</span>
-        </div>
-        @endif
-
-        @if($employee->ssn)
-        <div class="resume-info-row">
-            <i class="bi bi-shield-check"></i>
-            <span>SSN: {{ $employee->ssn }}</span>
-        </div>
-        @endif
-
-        @if($employee->nhima_no)
-        <div class="resume-info-row">
-            <i class="bi bi-geo-alt"></i>
-            <span>Nhima: {{ $employee->nhima_no }}</span>
-        </div>
-        @endif
-
-        @if($employee->tpin)
-        <div class="resume-info-row">
-            <i class="bi bi-receipt"></i>
-            <span>TPIN: {{ $employee->tpin }}</span>
-        </div>
-        @endif
-
-        @if($employee->salary)
-        <div class="resume-salary">
-            K {{ number_format($employee->salary, 2) }} <span>/ month</span>
-        </div>
-        @endif
-
-    </div>{{-- end resume-left --}}
-
-    {{-- ===== RIGHT MAIN ===== --}}
-    <div class="resume-right">
-
-        {{-- Name & Role --}}
-        <div class="resume-name">
-            {{ strtoupper($employee->first_name) }}
-            @if($employee->middle_name)
-                {{ strtoupper($employee->middle_name) }}
-            @endif
-            <span>{{ strtoupper($employee->last_name) }}</span>
-        </div>
-
-        <div class="resume-role">
-            {{ $employee->position }}
-            @if($employee->department)
-                &nbsp;•&nbsp; {{ $employee->department }}
-            @endif
-            @if($employee->branch)
-                &nbsp;•&nbsp; {{ $employee->branch }}
-            @endif
-        </div>
-
-        <hr class="resume-divider">
-
-        {{-- Personal --}}
-        <div class="resume-section-label-right">Personal</div>
-
-        <div class="resume-grid-2">
-
-            @if($employee->date_of_birth)
-            <div class="resume-entry">
-                <div class="resume-entry-label">Date of birth</div>
-                <div class="resume-entry-value">{{ $employee->date_of_birth->format('Y-m-d') }}</div>
+{{-- ===== DOCUMENTS ===== --}}
+<div class="ep-pane" data-pane="documents" id="documents">
+    <div class="row g-3">
+        <div class="col-lg-8">
+            <div class="ep-card">
+                <h2><i class="bi bi-folder2-open"></i> Documents</h2>
+                @forelse($employee->documents->sortByDesc(fn ($d) => $d->uploaded_at) as $doc)
+                    <div class="ep-doc">
+                        <span class="ic"><i class="bi {{ in_array($doc->ext, ['jpg', 'jpeg', 'png', 'webp']) ? 'bi-file-image' : ($doc->ext === 'pdf' ? 'bi-file-pdf' : 'bi-file-earmark-text') }}"></i></span>
+                        <div class="flex-grow-1 min-w-0">
+                            <div class="fw-semibold text-truncate">{{ $doc->name }}</div>
+                            <div class="small text-muted">
+                                {{ $doc->category }} · {{ $doc->uploaded_by === 'employee' ? 'uploaded by employee' : 'uploaded by HR' }}
+                                {{ $doc->uploaded_at ? '· ' . $doc->uploaded_at->format('d M Y') : '' }}
+                                {{ $doc->size ? '· ' . number_format($doc->size / 1024) . ' KB' : '' }}
+                            </div>
+                        </div>
+                        <a href="{{ asset('storage/' . $doc->path) }}" target="_blank" class="btn btn-sm btn-outline-secondary" title="Open"><i class="bi bi-box-arrow-up-right"></i></a>
+                        <a href="{{ route('employees.documents.download', [$employee, $doc->index]) }}" class="btn btn-sm btn-outline-secondary" title="Download"><i class="bi bi-download"></i></a>
+                        <form method="POST" action="{{ route('employees.documents.destroy', [$employee, $doc->index]) }}" onsubmit="return confirm('Delete {{ addslashes($doc->name) }}?')">
+                            @csrf @method('DELETE')
+                            <button class="btn btn-sm btn-outline-danger" title="Delete"><i class="bi bi-trash"></i></button>
+                        </form>
+                    </div>
+                @empty
+                    <div class="text-muted small py-3 text-center"><i class="bi bi-folder fs-3 d-block"></i> No documents yet.</div>
+                @endforelse
             </div>
-            @endif
-
-            @if($employee->age)
-            <div class="resume-entry">
-                <div class="resume-entry-label">Age</div>
-                <div class="resume-entry-value">{{ $employee->age }}</div>
-            </div>
-            @endif
-
-            @if($employee->gender)
-            <div class="resume-entry">
-                <div class="resume-entry-label">Gender</div>
-                <div class="resume-entry-value">{{ $employee->gender }}</div>
-            </div>
-            @endif
-
-            @if($employee->nationality)
-            <div class="resume-entry">
-                <div class="resume-entry-label">Nationality</div>
-                <div class="resume-entry-value">{{ $employee->nationality }}</div>
-            </div>
-            @endif
-
-            @if($employee->nrc_no)
-            <div class="resume-entry">
-                <div class="resume-entry-label">National ID</div>
-                <div class="resume-entry-value">{{ $employee->nrc_no }}</div>
-            </div>
-            @endif
-
-            @if($employee->passport_number)
-            <div class="resume-entry">
-                <div class="resume-entry-label">Passport</div>
-                <div class="resume-entry-value">{{ $employee->passport_number }}</div>
-            </div>
-            @endif
-
         </div>
-
-        {{-- Job Details --}}
-        <div class="resume-section-label-right">Job Details</div>
-
-        <div class="resume-grid-2">
-
-            @if($employee->department)
-            <div class="resume-entry">
-                <div class="resume-entry-label">Department</div>
-                <div class="resume-entry-value">{{ $employee->department }}</div>
-            </div>
-            @endif
-
-            @if($employee->branch)
-            <div class="resume-entry">
-                <div class="resume-entry-label">Branch</div>
-                <div class="resume-entry-value">{{ $employee->branch }}</div>
-            </div>
-            @endif
-
-            @if($employee->position)
-            <div class="resume-entry">
-                <div class="resume-entry-label">Position</div>
-                <div class="resume-entry-value">{{ $employee->position }}</div>
-            </div>
-            @endif
-
-            @if($employee->supervisor)
-            <div class="resume-entry">
-                <div class="resume-entry-label">Supervisor</div>
-                <div class="resume-entry-value">{{ $employee->supervisor }}</div>
-            </div>
-            @endif
-
-        </div>
-
-        {{-- Employment Dates --}}
-        <div class="resume-section-label-right">Employment Dates</div>
-
-        <div class="resume-grid-2">
-
-            @if($employee->probation_start || $employee->probation_end)
-            <div class="resume-entry">
-                <div class="resume-entry-label">Probation period</div>
-                <div class="resume-entry-value">
-                    {{ $employee->probation_start?->format('Y-m-d') }}
-                    @if($employee->probation_end)
-                        &rarr; {{ $employee->probation_end->format('Y-m-d') }}
-                    @endif
-                </div>
-            </div>
-            @endif
-
-            @if($employee->contract_start || $employee->contract_end)
-            <div class="resume-entry">
-                <div class="resume-entry-label">Contract period</div>
-                <div class="resume-entry-value">
-                    {{ $employee->contract_start?->format('Y-m-d') }}
-                    @if($employee->contract_end)
-                        &rarr; {{ $employee->contract_end->format('Y-m-d') }}
-                    @endif
-                </div>
-            </div>
-            @endif
-
-        </div>
-
-        <hr class="resume-divider">
-
-        {{-- Documents --}}
-        <div class="resume-section-label-right">Documents</div>
-
-        <div class="resume-docs">
-            @if(!empty($employee->uploads))
-                @foreach($employee->uploads as $doc)
-                    <a href="{{ asset('storage/' . $doc['path']) }}"
-                       target="_blank"
-                       class="resume-doc-btn">
-                        <i class="bi bi-file-earmark-text"></i>
-                        {{ $doc['name'] }}
-                    </a>
-                @endforeach
-            @else
-                <span class="resume-no-docs">No documents uploaded</span>
-            @endif
-        </div>
-
-        <hr class="resume-divider">
-
-        {{-- Actions --}}
-        <div class="resume-actions">
-            <button onclick="window.print()" class="btn btn-sm btn-outline-secondary">
-                <i class="bi bi-printer"></i> Print
-            </button>
-
-             <form action="{{ route('employees.destroy', $employee) }}"
-                  method="POST"
-                  onsubmit="return confirm('Are you sure you want to delete this employee?');">
-
+        <div class="col-lg-4">
+            <form method="POST" action="{{ route('employees.documents.store', $employee) }}" enctype="multipart/form-data" class="ep-card">
                 @csrf
-                @method('DELETE')
-
-                <button type="submit" class="btn btn-outline-danger btn-sm">
-                    <i class="bi bi-trash"></i> Remove Employee from Database
-                </button>
+                <h2><i class="bi bi-cloud-upload"></i> Upload</h2>
+                <input type="file" name="files[]" multiple class="form-control form-control-sm mb-2" required accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx">
+                <select name="category" class="form-select form-select-sm mb-2">@foreach(F::DOC_CATEGORIES as $c)<option>{{ $c }}</option>@endforeach</select>
+                <input type="text" name="name" class="form-control form-control-sm mb-2" placeholder="Name (optional), e.g. Signed contract 2026">
+                <button class="btn btn-primary btn-sm w-100">Upload</button>
+                <div class="form-text">Up to 10 files, 10 MB each. The employee can see these in the portal.</div>
             </form>
         </div>
+    </div>
+</div>
 
-       
+{{-- ===== LEAVE ===== --}}
+<div class="ep-pane" data-pane="leave">
+    <div class="ep-card">
+        <h2><i class="bi bi-calendar-check"></i> Leave <a href="{{ route('leave.manage.employee', $employee) }}">Full leave record &amp; balance history</a></h2>
+        <div class="ep-grid mb-3">
+            <div><small>Balance</small><strong class="fs-5">{{ $n($employee->leave_balance) }}</strong> days</div>
+            <div><small>Entitlement</small>{{ $n($employee->annual_leave_entitlement) }} days / year</div>
+            <div><small>Taken this year</small>{{ $n($employee->leaveTakenInYear()) }} days</div>
+            <div><small>Pending</small>{{ $n($employee->leavePendingDays()) }} days</div>
+        </div>
+        @forelse($recentLeave as $l)
+            <div class="d-flex justify-content-between align-items-center border-top py-2 small">
+                <span>{{ $l->leave_type }} · {{ $l->date_from->format('d M') }} – {{ $l->date_to->format('d M Y') }} ({{ $l->total_days }}d)</span>
+                <a href="{{ route('leave.show', $l) }}" class="text-decoration-none">@include('leave.partials.mini-tracker', ['leave' => $l])</a>
+            </div>
+        @empty
+            <div class="small text-muted">No leave requests yet.</div>
+        @endforelse
+    </div>
+</div>
 
-    </div>{{-- end resume-right --}}
+<div class="mt-2 text-end">
+    <form method="POST" action="{{ route('employees.destroy', $employee) }}" class="d-inline"
+          onsubmit="return confirm('Permanently delete {{ addslashes($employee->full_name) }}? To keep their history, set their status to Exited instead.')">
+        @csrf @method('DELETE')
+        <button class="btn btn-link text-danger btn-sm"><i class="bi bi-trash"></i> Delete employee</button>
+    </form>
+</div>
 
-</div>{{-- end resume-card --}}
-
-
-{{-- ===== STYLES ===== --}}
-<style>
-/* ---- Card shell ---- */
-.resume-card {
-    display: flex;
-    gap: 0;
-    background: #fff;
-    border: 1px solid #e0e0e0;
-    border-radius: 12px;
-    overflow: hidden;
-    min-height: 680px;
-    font-size: 13px;
-}
-
-/* ---- Left sidebar ---- */
-.resume-left {
-    width: 230px;
-    flex-shrink: 0;
-    background: #f7f7f5;
-    padding: 28px 20px;
-    border-right: 1px solid #e0e0e0;
-}
-
-.resume-photo-wrap {
-    display: flex;
-    justify-content: center;
-    margin-bottom: 16px;
-}
-
-.resume-photo-circle {
-    width: 90px;
-    height: 90px;
-    border-radius: 50%;
-    border: 3px solid #185FA5;
-    background: #E6F1FB;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-}
-
-.resume-photo-circle img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.resume-photo-initials {
-    font-size: 26px;
-    font-weight: 500;
-    color: #185FA5;
-}
-
-.resume-badges {
-    display: flex;
-    justify-content: center;
-    flex-wrap: wrap;
-    gap: 5px;
-    margin-bottom: 18px;
-}
-
-.resume-badge {
-    display: inline-block;
-    font-size: 11px;
-    font-weight: 500;
-    padding: 3px 10px;
-    border-radius: 20px;
-}
-
-.resume-badge-id        { background: #E6F1FB; color: #0C447C; }
-.resume-badge-active    { background: #EAF3DE; color: #3B6D11; }
-.resume-badge-inactive  { background: #f1f1f1; color: #555; }
-
-.resume-section-label {
-    font-size: 10.5px;
-    font-weight: 600;
-    letter-spacing: 0.07em;
-    text-transform: uppercase;
-    color: #185FA5;
-    border-bottom: 1.5px solid #185FA5;
-    padding-bottom: 4px;
-    margin: 18px 0 10px;
-}
-
-.resume-info-row {
-    display: flex;
-    align-items: flex-start;
-    gap: 7px;
-    margin-bottom: 7px;
-    color: #333;
-    line-height: 1.4;
-}
-
-.resume-info-row i {
-    font-size: 13px;
-    color: #888;
-    margin-top: 1px;
-    flex-shrink: 0;
-}
-
-.resume-salary {
-    margin-top: 10px;
-    font-size: 14px;
-    font-weight: 600;
-    color: #185FA5;
-}
-
-.resume-salary span {
-    font-size: 11px;
-    font-weight: 400;
-    color: #888;
-}
-
-/* ---- Right main ---- */
-.resume-right {
-    flex: 1;
-    padding: 28px 32px;
-    min-width: 0;
-}
-
-.resume-name {
-    font-size: 22px;
-    font-weight: 700;
-    color: #1a1a1a;
-    letter-spacing: 0.03em;
-    line-height: 1.2;
-    margin-bottom: 3px;
-}
-
-.resume-name span {
-    color: #185FA5;
-}
-
-.resume-role {
-    font-size: 13.5px;
-    color: #666;
-    margin-bottom: 4px;
-}
-
-.resume-divider {
-    border: none;
-    border-top: 1.5px solid #e8e8e8;
-    margin: 16px 0;
-}
-
-.resume-section-label-right {
-    font-size: 10.5px;
-    font-weight: 600;
-    letter-spacing: 0.07em;
-    text-transform: uppercase;
-    color: #185FA5;
-    border-bottom: 1.5px solid #185FA5;
-    padding-bottom: 4px;
-    margin: 16px 0 12px;
-}
-
-.resume-grid-2 {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px 20px;
-    margin-bottom: 6px;
-}
-
-.resume-entry-label {
-    font-size: 11px;
-    color: #888;
-    margin-bottom: 2px;
-}
-
-.resume-entry-value {
-    font-size: 13px;
-    font-weight: 500;
-    color: #1a1a1a;
-}
-
-.resume-docs {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-top: 8px;
-}
-
-.resume-doc-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    font-size: 12px;
-    padding: 4px 12px;
-    border: 1px solid #d0d0d0;
-    border-radius: 6px;
-    color: #333;
-    text-decoration: none;
-    background: #fff;
-    transition: background 0.15s;
-}
-
-.resume-doc-btn:hover {
-    background: #f0f0f0;
-    color: #185FA5;
-    text-decoration: none;
-}
-
-.resume-no-docs {
-    font-size: 12px;
-    color: #aaa;
-}
-
-.resume-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
-}
-
-/* ---- Print styles ---- */
-@media print {
-    .resume-card {
-        border: none;
-        box-shadow: none;
+@push('scripts')
+<script>
+(function () {
+    const tabs = [...document.querySelectorAll('.ep-tab')], panes = [...document.querySelectorAll('.ep-pane')];
+    function open(name) {
+        if (!panes.some(p => p.dataset.pane === name)) name = 'overview';
+        tabs.forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+        panes.forEach(p => p.classList.toggle('active', p.dataset.pane === name));
     }
-
-    .resume-actions,
-    .panel.mb-3 {
-        display: none !important;
-    }
-
-    .resume-left {
-        background: #f7f7f5 !important;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-    }
-}
-
-/* ---- Responsive ---- */
-@media (max-width: 640px) {
-    .resume-card {
-        flex-direction: column;
-    }
-
-    .resume-left {
-        width: 100%;
-        border-right: none;
-        border-bottom: 1px solid #e0e0e0;
-    }
-
-    .resume-grid-2 {
-        grid-template-columns: 1fr;
-    }
-}
-</style>
+    tabs.forEach(t => t.addEventListener('click', () => { open(t.dataset.tab); history.replaceState(null, '', '#' + t.dataset.tab); }));
+    open(location.hash.replace('#', '') || 'overview');
+    document.querySelectorAll('.ep-reveal').forEach(b => b.addEventListener('click', () => {
+        const m = b.previousElementSibling; const full = m.dataset.full;
+        if (m.textContent === full) { m.textContent = full.replace(/.(?=.{4})/g, '•'); } else { m.textContent = full; }
+    }));
+})();
+</script>
+@endpush
 
 @endsection

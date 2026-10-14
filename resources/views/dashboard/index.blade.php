@@ -1,596 +1,390 @@
 @extends('layouts.app')
+@section('title', 'HR Dashboard')
 
 @section('content')
-
-{{-- =====================================================================
-     DASHBOARD — TRADESMART HR
-     Structure: KPI ribbon → Workforce Overview (main) + Alerts feed (main)
-                | Quick Actions + Recently Added (rail)
-     Uses shared --admin-* tokens, follows light/dark theme automatically.
-====================================================================== --}}
+@php
+    use App\Services\AttendanceService as Att;
+    $a = $attendance;
+    $first = trim(explode(' ', (string) ($user?->name ?? 'there'))[0]);
+    $circ = 2 * M_PI * 46;
+    $rate = $a['rate'] ?? null;
+    $deptMax = max(1, $byDept->max() ?? 1);
+    $palette = ['#185FA5', '#16a34a', '#d97706', '#7c3aed', '#0891b2', '#db2777', '#dc2626', '#65a30d'];
+    $money = fn ($v) => 'K ' . number_format((float) $v, 0);
+    $kmoney = fn ($v) => (float) $v >= 1e6 ? 'K ' . rtrim(rtrim(number_format($v / 1e6, 2), '0'), '.') . 'm' : ((float) $v >= 1e4 ? 'K ' . number_format($v / 1e3, 0) . 'k' : 'K ' . number_format((float) $v, 0));
+    $actions = [
+        ['Add employee', 'bi-person-plus', route('employees.create'), '#185FA5', null],
+        ['Approve leave', 'bi-calendar-check', route('leave.index'), '#7c3aed', $counts['leave_hr']],
+        ['Detail changes', 'bi-person-lines-fill', route('profile-changes.index'), '#0891b2', $counts['profile']],
+        ['Attendance', 'bi-qr-code-scan', route('attendance.index'), '#16a34a', null],
+        ['Post announcement', 'bi-megaphone', route('announcements.create'), '#db2777', null],
+        ['Record leave', 'bi-journal-plus', route('leave.manage.record'), '#d97706', null],
+        ['Bulk import', 'bi-cloud-arrow-up', route('employees.import'), '#0f766e', null],
+        ['Leave planner', 'bi-calendar3-week', route('leave.manage.planner'), '#9333ea', null],
+        ['QR badges', 'bi-person-badge', route('attendance.qr'), '#475569', null],
+        ['Payroll', 'bi-cash-stack', route('payroll.runs.index'), '#65a30d', null],
+        ['Contract reminders', 'bi-bell', route('settings.contract-reminders.index'), '#dc2626', null],
+        ['Export staff list', 'bi-download', route('employees.export'), '#64748b', null],
+    ];
+    $sevColor = ['danger' => '#dc2626', 'warning' => '#d97706', 'primary' => '#185FA5', 'secondary' => '#64748b'];
+@endphp
 
 <style>
-.hrdash * { box-sizing: border-box; }
-
-.hrdash {
-    font-family: "Segoe UI", Arial, sans-serif;
-    color: var(--admin-text);
-    padding: 0 0 2rem;
-}
-
-/* ── Topbar ── */
-.hrdash-topbar {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: .9rem;
-    margin-bottom: 1.5rem;
-}
-.hrdash-eyebrow {
-    font-size: .72rem;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: .08em;
-    color: var(--admin-primary);
-    margin-bottom: .3rem;
-}
-.hrdash-topbar h1 {
-    font-size: 1.4rem;
-    font-weight: 800;
-    letter-spacing: -.02em;
-    margin: 0;
-    color: var(--admin-text);
-}
-.hrdash-topbar .subtitle {
-    font-size: .82rem;
-    color: var(--admin-muted);
-    margin-top: .2rem;
-}
-.hrdash-actions {
-    display: flex;
-    gap: .6rem;
-    flex-wrap: wrap;
-}
-.hrdash-actions .btn {
-    font-size: .84rem;
-    padding: .5rem .9rem;
-}
-
-/* ── KPI ribbon: single bordered strip, divided sections ── */
-.kpi-ribbon {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    background: var(--admin-surface);
-    border: 1px solid var(--admin-border);
-    border-radius: 8px;
-    box-shadow: var(--admin-shadow-sm);
-    margin-bottom: 1.25rem;
-    overflow: hidden;
-}
-.kpi-item {
-    display: flex;
-    align-items: center;
-    gap: .75rem;
-    padding: 1rem 1.15rem;
-    border-right: 1px solid var(--admin-border);
-    min-width: 0;
-}
-.kpi-item:last-child { border-right: none; }
-.kpi-item .kpi-icon {
-    width: 34px;
-    height: 34px;
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 7px;
-    font-size: 1rem;
-    background: var(--kpi-bg, #eaf2ff);
-    color: var(--kpi-fg, var(--admin-primary));
-}
-.kpi-item.blue  { --kpi-bg: #eaf2ff; --kpi-fg: var(--admin-primary); }
-.kpi-item.green { --kpi-bg: #e7f6f3; --kpi-fg: var(--admin-success); }
-.kpi-item.amber { --kpi-bg: #fff4df; --kpi-fg: var(--admin-warning); }
-.kpi-item.rose  { --kpi-bg: #ffecec; --kpi-fg: var(--admin-danger); }
-html[data-theme="dark"] .kpi-item.blue  { --kpi-bg: rgba(96,165,250,.14); }
-html[data-theme="dark"] .kpi-item.green { --kpi-bg: rgba(45,212,191,.14); }
-html[data-theme="dark"] .kpi-item.amber { --kpi-bg: rgba(251,191,36,.14); }
-html[data-theme="dark"] .kpi-item.rose  { --kpi-bg: rgba(248,113,113,.14); }
-
-.kpi-item-body { min-width: 0; }
-.kpi-item-label {
-    font-size: .68rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: .06em;
-    color: var(--admin-muted);
-}
-.kpi-item-value {
-    font-size: 1.35rem;
-    font-weight: 800;
-    color: var(--admin-text);
-    line-height: 1.25;
-}
-.kpi-item-sub {
-    font-size: .72rem;
-    font-weight: 600;
-    margin-top: .1rem;
-}
-.kpi-item-sub.good  { color: var(--admin-success); }
-.kpi-item-sub.warn  { color: var(--admin-warning); }
-.kpi-item-sub.muted { color: var(--admin-muted); }
-
-@media (max-width: 900px) { .kpi-ribbon { grid-template-columns: repeat(2, 1fr); } .kpi-item:nth-child(2) { border-right: none; } .kpi-item:nth-child(odd) { border-right: 1px solid var(--admin-border); } .kpi-item { border-bottom: 1px solid var(--admin-border); } .kpi-item:nth-last-child(-n+2) { border-bottom: none; } }
-@media (max-width: 540px) { .kpi-ribbon { grid-template-columns: 1fr; } .kpi-item { border-right: none !important; border-bottom: 1px solid var(--admin-border); } .kpi-item:last-child { border-bottom: none; } }
-
-/* ── Main structural grid: dominant column + narrow rail ── */
-.dash-grid {
-    display: grid;
-    grid-template-columns: 2.1fr 1fr;
-    gap: 1.1rem;
-    align-items: start;
-}
-@media (max-width: 992px) { .dash-grid { grid-template-columns: 1fr; } }
-
-.dash-main, .dash-rail {
-    display: flex;
-    flex-direction: column;
-    gap: 1.1rem;
-}
-
-/* ── Panels ── */
-.panel {
-    background: var(--admin-surface);
-    border: 1px solid var(--admin-border);
-    border-radius: 8px;
-    padding: 1.25rem;
-    box-shadow: var(--admin-shadow-sm);
-}
-.panel-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: .75rem;
-    margin-bottom: 1.1rem;
-}
-.panel-title {
-    font-size: .8rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: .06em;
-    color: var(--admin-text);
-    margin: 0;
-    display: flex;
-    align-items: center;
-    gap: .5rem;
-}
-.panel-title i { color: var(--admin-primary); font-size: .9rem; }
-.panel-link {
-    font-size: .74rem;
-    color: var(--admin-primary);
-    font-weight: 700;
-    white-space: nowrap;
-}
-.panel-link:hover { text-decoration: underline; }
-
-/* ── Workforce overview: dept rows as a real data table feel ── */
-.wf-total {
-    font-size: .78rem;
-    color: var(--admin-muted);
-    margin-bottom: 1rem;
-}
-.wf-total strong { color: var(--admin-text); }
-
-.dept-row {
-    display: grid;
-    grid-template-columns: 140px 1fr 60px;
-    align-items: center;
-    gap: .9rem;
-    padding: .55rem 0;
-    border-bottom: 1px solid var(--admin-border);
-}
-.dept-row:last-child { border-bottom: none; }
-.dept-name {
-    font-size: .84rem;
-    font-weight: 600;
-    color: var(--admin-text);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-.dept-bar-track {
-    height: 8px;
-    background: var(--admin-surface-soft);
-    border: 1px solid var(--admin-border);
-    border-radius: 99px;
-    overflow: hidden;
-}
-.dept-bar-fill {
-    height: 100%;
-    background: var(--admin-primary);
-    border-radius: 99px;
-    transition: width .6s ease;
-}
-.dept-figures {
-    text-align: right;
-    font-size: .82rem;
-    font-weight: 700;
-    color: var(--admin-text);
-    white-space: nowrap;
-}
-.dept-figures small {
-    display: block;
-    font-weight: 600;
-    color: var(--admin-muted);
-    font-size: .68rem;
-}
-
-/* ── Alert feed: severity stripe rows ── */
-.feed-item {
-    position: relative;
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: .75rem;
-    padding: .7rem .8rem .7rem .9rem;
-    margin-bottom: .5rem;
-    border-radius: 6px;
-    background: var(--admin-surface-soft);
-    border: 1px solid var(--admin-border);
-    border-left: 3px solid var(--feed-color, var(--admin-primary));
-}
-.feed-item:last-child { margin-bottom: 0; }
-.feed-item.severity-danger  { --feed-color: var(--admin-danger); }
-.feed-item.severity-warning { --feed-color: var(--admin-warning); }
-.feed-item.severity-primary { --feed-color: var(--admin-primary); }
-.feed-item.severity-success { --feed-color: var(--admin-success); }
-
-.feed-message {
-    font-size: .84rem;
-    color: var(--admin-text);
-    line-height: 1.4;
-}
-.badge-pill {
-    font-size: .66rem;
-    font-weight: 700;
-    padding: .22rem .6rem;
-    border-radius: 6px;
-    white-space: nowrap;
-    flex-shrink: 0;
-}
-.badge-danger  { background: #ffecec; color: var(--admin-danger); }
-.badge-warning { background: #fff4df; color: var(--admin-warning); }
-.badge-primary { background: #eaf2ff; color: var(--admin-primary); }
-.badge-success { background: #e7f6f3; color: var(--admin-success); }
-html[data-theme="dark"] .badge-danger  { background: rgba(248,113,113,.16); }
-html[data-theme="dark"] .badge-warning { background: rgba(251,191,36,.16); }
-html[data-theme="dark"] .badge-primary { background: rgba(96,165,250,.16); }
-html[data-theme="dark"] .badge-success { background: rgba(45,212,191,.16); }
-
-/* ── No-data state ── */
-.no-data {
-    text-align: center;
-    padding: 1.75rem 0;
-    color: var(--admin-muted);
-    font-size: .85rem;
-}
-.no-data .icon { font-size: 1.6rem; display: block; margin-bottom: .4rem; }
-
-/* ── Quick actions rail ── */
-.qa-list {
-    display: flex;
-    flex-direction: column;
-    gap: .5rem;
-}
-.qa-item {
-    display: flex;
-    align-items: center;
-    gap: .75rem;
-    padding: .65rem .75rem;
-    border: 1px solid var(--admin-border);
-    border-radius: 7px;
-    color: var(--admin-text);
-    font-size: .85rem;
-    font-weight: 600;
-    transition: border-color .15s ease, background .15s ease;
-}
-.qa-item:hover {
-    border-color: var(--admin-primary);
-    background: var(--admin-surface-soft);
-    color: var(--admin-text);
-}
-.qa-item i {
-    width: 30px;
-    height: 30px;
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 6px;
-    background: #eaf2ff;
-    color: var(--admin-primary);
-    font-size: .92rem;
-}
-html[data-theme="dark"] .qa-item i { background: rgba(96,165,250,.14); }
-.qa-item span { flex: 1; }
-.qa-item small {
-    display: block;
-    font-weight: 500;
-    color: var(--admin-muted);
-    font-size: .72rem;
-    margin-top: .1rem;
-}
-.qa-item .bi-chevron-right {
-    background: none;
-    width: auto;
-    height: auto;
-    color: var(--admin-muted);
-    font-size: .8rem;
-}
-
-/* ── Recently added employees (rail) ── */
-.emp-list { list-style: none; margin: 0; padding: 0; }
-.emp-list li {
-    display: flex;
-    align-items: center;
-    gap: .7rem;
-    padding: .6rem 0;
-    border-bottom: 1px solid var(--admin-border);
-}
-.emp-list li:last-child { border-bottom: none; }
-.emp-avatar {
-    width: 32px; height: 32px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #0d6efd, #4f8cff);
-    color: #fff;
-    font-weight: 700;
-    font-size: .74rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-}
-.emp-info { flex: 1; min-width: 0; }
-.emp-name { font-size: .83rem; font-weight: 600; color: var(--admin-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.emp-meta { font-size: .7rem; color: var(--admin-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.emp-dept {
-    font-size: .68rem;
-    padding: .15rem .55rem;
-    border-radius: 6px;
-    background: var(--admin-surface-soft);
-    border: 1px solid var(--admin-border);
-    color: var(--admin-muted);
-    font-weight: 600;
-    white-space: nowrap;
-    flex-shrink: 0;
+.db-hero { position: relative; overflow: hidden; border-radius: 22px; padding: 1.5rem 1.6rem; color: #fff; background: radial-gradient(900px 400px at 100% 0%, rgba(79,140,255,.55), transparent 60%), linear-gradient(135deg, #185FA5 0%, #0b3b6f 100%); box-shadow: 0 18px 40px rgba(11,59,111,.25); }
+.db-hero::after { content: ""; position: absolute; right: -60px; bottom: -80px; width: 260px; height: 260px; border-radius: 50%; background: rgba(255,255,255,.06); }
+.db-hero .date { font-size: .82rem; letter-spacing: .06em; text-transform: uppercase; opacity: .85; font-weight: 700; }
+.db-hero h1 { font-size: clamp(1.4rem, 3.2vw, 2rem); font-weight: 800; margin: .25rem 0 .1rem; color: #fff; }
+.db-hero .local { opacity: .8; font-style: italic; font-size: .92rem; }
+.db-hero .sum { margin-top: .7rem; font-size: .95rem; opacity: .95; }
+.db-hero .sum b { font-weight: 800; }
+.db-clock { text-align: right; position: relative; z-index: 1; }
+.db-clock .t { font-size: clamp(2.2rem, 5vw, 3.4rem); font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+.db-clock .t small { font-size: .42em; opacity: .7; font-weight: 600; }
+.db-clock .z { font-size: .78rem; opacity: .8; }
+.db-quote { position: relative; z-index: 1; margin-top: 1.1rem; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.18); border-radius: 16px; padding: .9rem 1.1rem; display: flex; gap: .9rem; align-items: flex-start; backdrop-filter: blur(4px); }
+.db-quote .qi { font-size: 2.4rem; line-height: .8; opacity: .6; font-family: Georgia, serif; }
+.db-quote .qt { font-size: 1.08rem; font-weight: 700; font-style: italic; }
+.db-quote .qm { font-size: .86rem; opacity: .9; }
+.db-quote .ql { font-size: .84rem; margin-top: .3rem; opacity: .95; }
+.db-quote .qa { font-size: .7rem; text-transform: uppercase; letter-spacing: .06em; font-weight: 700; opacity: .7; }
+.db-quote button { background: rgba(255,255,255,.15); border: 0; color: #fff; border-radius: 10px; padding: .35rem .55rem; margin-left: auto; flex-shrink: 0; }
+.db-quote button:hover { background: rgba(255,255,255,.25); }
+.db-actions { display: grid; grid-template-columns: repeat(6, 1fr); gap: .6rem; }
+.db-act { position: relative; display: flex; flex-direction: column; align-items: center; gap: .4rem; text-align: center; padding: .85rem .4rem .75rem; border-radius: 14px; border: 1px solid var(--admin-border, #e2e8f0); background: var(--admin-surface-soft, #f8fafc); color: inherit; text-decoration: none; font-size: .78rem; font-weight: 600; line-height: 1.2; transition: all .15s; }
+.db-act:hover { border-color: var(--c); background: var(--admin-surface, #fff); transform: translateY(-2px); box-shadow: 0 8px 18px rgba(15,23,42,.08); }
+.db-act i { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.15rem; color: var(--c); background: color-mix(in srgb, var(--c) 12%, transparent); }
+.db-act .bdg { position: absolute; top: 6px; right: 8px; background: #dc2626; color: #fff; font-size: .66rem; font-weight: 800; border-radius: 999px; padding: .05rem .4rem; }
+.db-att { display: flex; gap: 1rem; align-items: center; }
+.db-att svg { flex-shrink: 0; }
+.db-mini { display: grid; grid-template-columns: repeat(2, 1fr); gap: .45rem; flex: 1; }
+.db-mini div { background: var(--admin-surface-soft, #f8fafc); border-radius: 10px; padding: .4rem .6rem; font-size: .76rem; }
+.db-mini b { display: block; font-size: 1.05rem; }
+.db-stage { display: grid; grid-template-columns: repeat(4, 1fr); gap: .45rem; margin-bottom: .8rem; }
+.db-stage a { text-align: center; text-decoration: none; color: inherit; border-radius: 10px; padding: .5rem .3rem; background: var(--admin-surface-soft, #f8fafc); border-top: 3px solid var(--c); }
+.db-stage b { display: block; font-size: 1.25rem; color: var(--c); }
+.db-stage small { font-size: .64rem; font-weight: 700; text-transform: uppercase; color: var(--admin-muted, #64748b); letter-spacing: .03em; }
+.db-att-item { display: flex; gap: .75rem; align-items: center; padding: .7rem 1.1rem; border-bottom: 1px solid var(--admin-border, #eef2f7); }
+.db-att-item:last-child { border-bottom: 0; }
+.db-att-item .ic { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: var(--c); background: color-mix(in srgb, var(--c) 12%, transparent); flex-shrink: 0; }
+.db-att-item .n { font-weight: 800; color: var(--c); }
+.db-up { display: flex; gap: .75rem; align-items: center; padding: .55rem 1.1rem; text-decoration: none; color: inherit; border-bottom: 1px solid var(--admin-border, #eef2f7); }
+.db-up:last-child { border-bottom: 0; }
+.db-up:hover { background: var(--admin-surface-soft, #f8fafc); }
+.db-up .d { width: 44px; text-align: center; line-height: 1.05; flex-shrink: 0; }
+.db-up .d b { display: block; font-size: 1.05rem; }
+.db-up .d small { font-size: .62rem; text-transform: uppercase; font-weight: 700; color: var(--admin-muted, #64748b); }
+.db-up .ic { color: var(--c); font-size: 1.05rem; }
+.db-feed { padding: .4rem 1.1rem .6rem; }
+.db-feed a { display: flex; gap: .7rem; padding: .45rem 0; color: inherit; text-decoration: none; font-size: .84rem; }
+.db-feed .dot { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; background: var(--c); flex-shrink: 0; font-size: .8rem; }
+.db-dept { display: flex; align-items: center; gap: .55rem; padding: .28rem 0; font-size: .8rem; text-decoration: none; color: inherit; }
+.db-dept .n { width: 36%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.db-dept .b { flex: 1; height: 8px; border-radius: 4px; background: var(--admin-surface-soft, #f1f5f9); overflow: hidden; }
+.db-dept .b span { display: block; height: 100%; border-radius: 4px; }
+.db-find { position: relative; }
+.db-find i { position: absolute; left: .8rem; top: 50%; transform: translateY(-50%); color: var(--admin-muted, #94a3b8); }
+.db-find input { padding-left: 2.2rem; border-radius: 12px; }
+@media (max-width: 1399.98px) { .db-actions { grid-template-columns: repeat(4, 1fr); } }
+@media (max-width: 767.98px) {
+    .db-hero { padding: 1.1rem; border-radius: 18px; }
+    .db-clock { text-align: left; margin-top: .4rem; }
+    .db-actions { grid-template-columns: repeat(3, 1fr); gap: .45rem; }
+    .db-act { font-size: .72rem; padding: .7rem .3rem .6rem; }
+    .db-act i { width: 36px; height: 36px; font-size: 1.05rem; }
+    .db-quote { padding: .75rem .85rem; }
+    .db-quote .qi { display: none; }
+    .db-find { max-width: none !important; width: 100%; }
 }
 </style>
 
-<div class="hrdash">
-
-    {{-- ===== TOPBAR ===== --}}
-    <div class="hrdash-topbar">
-        <div>
-            <div class="hrdash-eyebrow">Overview</div>
-            <h1>HR Dashboard</h1>
-            <div class="subtitle">Workforce summary · {{ now()->format('l, d F Y') }}</div>
+{{-- ============ HERO ============ --}}
+<section class="db-hero mb-3">
+    <div class="row g-2 align-items-start position-relative" style="z-index:1">
+        <div class="col-md-8">
+            <div class="date" id="dbDate">{{ $now->format('l, d F Y') }} · Week {{ $now->isoWeek }}</div>
+            <h1>{{ $greeting }}, {{ $first }} 👋</h1>
+            <div class="local">Muli shani? · Muli bwanji? Welcome back.</div>
+            <div class="sum">
+                @if($a && $a['expected'])
+                    <b>{{ $a['attended'] }}</b> of {{ $a['expected'] }} staff are in{{ $a['late'] ? ' (' . $a['late'] . ' late)' : '' }} ·
+                @elseif($a && $a['holiday'])
+                    Public holiday: <b>{{ $a['holiday'] }}</b> ·
+                @endif
+                <b>{{ $stats['on_leave'] }}</b> on leave ·
+                <b>{{ $stats['approvals'] }}</b> approval{{ $stats['approvals'] === 1 ? '' : 's' }} waiting{{ $attention->isNotEmpty() ? ' · ' . $attention->count() . ' item(s) need attention' : ' · all clear ✓' }}
+            </div>
         </div>
+        <div class="col-md-4 db-clock">
+            <div class="t" id="dbClock">{{ $now->format('H:i') }}<small>:{{ $now->format('s') }}</small></div>
+            <div class="z"><i class="bi bi-geo-alt"></i> Lusaka time (CAT)</div>
+        </div>
+    </div>
+    <div class="db-quote" id="dbQuote" data-i="{{ $quote['index'] }}">
+        <div class="qi">“</div>
+        <div class="flex-grow-1" style="min-width:0">
+            <div class="qa" id="qA">{{ $quote['lang'] }} · Zambian wisdom for HR</div>
+            <div class="qt" id="qT">{{ $quote['text'] }}</div>
+            <div class="qm" id="qM">“{{ $quote['meaning'] }}”</div>
+            <div class="ql" id="qL"><i class="bi bi-lightbulb"></i> {{ $quote['lesson'] }}</div>
+        </div>
+        <button type="button" id="qNext" title="Another proverb" aria-label="Show another proverb"><i class="bi bi-shuffle"></i></button>
+    </div>
+</section>
 
-        <div class="hrdash-actions">
-            <a href="{{ route('employees.index') }}" class="btn btn-light">
-                <i class="bi bi-people"></i> Employees
+{{-- ============ KPIs ============ --}}
+<div class="row g-2 g-md-3 mb-3">
+    @foreach([
+        ['Active staff', $stats['active'], '#185FA5', 'bi-people', ($stats['new_month'] ? '+' . $stats['new_month'] . ' this month · ' : '') . $stats['departments'] . ' departments', route('employees.index')],
+        ['In today', $a && $a['expected'] ? $a['attended'] . '/' . $a['expected'] : '—', '#16a34a', 'bi-qr-code-scan', $rate !== null ? $rate . '% attendance' : (($a['holiday'] ?? null) ? 'public holiday' : 'not a working day'), route('attendance.index')],
+        ['On leave today', $stats['on_leave'], '#7c3aed', 'bi-airplane', $leavePipeline['approved_month'] . ' approved this month', route('leave.manage.index')],
+        ['Approvals waiting', $stats['approvals'], $stats['approvals'] ? '#d97706' : '#64748b', 'bi-inbox', $counts['leave_hr'] . ' leave · ' . $counts['profile'] . ' details · ' . $counts['overtime'] . ' overtime', route('leave.index')],
+        ['Contracts ending', $stats['contracts'], $stats['contracts'] ? '#dc2626' : '#64748b', 'bi-hourglass-split', 'next 30 days or overdue', route('settings.contract-reminders.index')],
+        ['Net payroll', $payrollSummary ? $kmoney($payrollSummary['net_pay']) : '—', '#0f766e', 'bi-cash-stack', $payrollSummary ? $payrollSummary['period'] . ' · ' . $payrollSummary['status'] : 'no run yet', route('payroll.runs.index')],
+    ] as [$l, $v, $c, $ic, $s, $url])
+        <div class="col-6 col-md-4 col-xl-2">
+            <a href="{{ $url }}" class="hr-card hr-stat" style="--c:{{ $c }}">
+                <div class="d-flex justify-content-between align-items-start gap-1"><div class="l">{{ $l }}</div><i class="bi {{ $ic }}" style="color:{{ $c }};opacity:.6"></i></div>
+                <div class="v text-truncate">{{ $v }}</div>
+                <div class="s text-truncate" title="{{ $s }}">{{ $s }}</div>
             </a>
-            <!-- <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#importEmployeesModal">
-                <i class="bi bi-cloud-upload"></i> Import Employees
-            </button> -->
+        </div>
+    @endforeach
+</div>
+
+{{-- ============ QUICK ACTIONS + ATTENTION ============ --}}
+<div class="row g-3 mb-3">
+    <div class="col-xl-7">
+        <div class="hr-card h-100">
+            <div class="hr-card-h">
+                <h6><i class="bi bi-lightning-charge"></i> Quick actions</h6>
+                <form method="GET" action="{{ route('employees.index') }}" class="db-find flex-grow-1" style="max-width:300px" role="search">
+                    <i class="bi bi-search"></i><input type="search" name="q" class="form-control form-control-sm" placeholder="Find an employee: name, EIN, NRC…" aria-label="Find an employee">
+                </form>
+            </div>
+            <div class="hr-card-b">
+                <div class="db-actions">
+                    @foreach($actions as [$label, $icon, $url, $c, $badge])
+                        <a href="{{ $url }}" class="db-act" style="--c:{{ $c }}"><i class="bi {{ $icon }}"></i>{{ $label }}@if($badge)<span class="bdg">{{ $badge }}</span>@endif</a>
+                    @endforeach
+                </div>
+            </div>
         </div>
     </div>
-
-    {{-- ===== KPI RIBBON ===== --}}
-    <div class="kpi-ribbon">
-
-        <div class="kpi-item blue">
-            <div class="kpi-icon"><i class="bi bi-people-fill"></i></div>
-            <div class="kpi-item-body">
-                <div class="kpi-item-label">Employees</div>
-                <div class="kpi-item-value">{{ $stats['employees'] }}</div>
-                <div class="kpi-item-sub {{ $stats['new_this_month'] > 0 ? 'good' : 'muted' }}">
-                    @if($stats['new_this_month'] > 0)
-                        +{{ $stats['new_this_month'] }} this month
-                    @else
-                        {{ $stats['active_employees'] }} active
-                    @endif
-                </div>
+    <div class="col-xl-5">
+        <div class="hr-card h-100">
+            <div class="hr-card-h"><h6><i class="bi bi-bell"></i> Needs your attention</h6><span class="small hr-muted">{{ $attention->count() ?: 'nothing' }}</span></div>
+            <div style="max-height:330px; overflow:auto">
+                @forelse($attention as $it)
+                    <div class="db-att-item" style="--c:{{ $sevColor[$it['sev']] ?? '#64748b' }}">
+                        <span class="ic"><i class="bi {{ $it['icon'] }}"></i></span>
+                        <div class="flex-grow-1 small"><span class="n">{{ $it['n'] }}</span> {{ $it['msg'] }}</div>
+                        @if($it['url'])<a href="{{ $it['url'] }}" class="btn btn-sm btn-light border text-nowrap">{{ $it['cta'] }}</a>@endif
+                    </div>
+                @empty
+                    <div class="hr-empty"><i class="bi bi-check2-circle text-success"></i>All clear. Nothing is waiting on HR right now.</div>
+                @endforelse
             </div>
         </div>
-
-        <div class="kpi-item green">
-            <div class="kpi-icon"><i class="bi bi-diagram-3-fill"></i></div>
-            <div class="kpi-item-body">
-                <div class="kpi-item-label">Departments</div>
-                <div class="kpi-item-value">{{ $stats['departments'] }}</div>
-                <div class="kpi-item-sub muted">Across the org</div>
-            </div>
-        </div>
-
-        <div class="kpi-item blue">
-            <div class="kpi-icon"><i class="bi bi-building"></i></div>
-            <div class="kpi-item-body">
-                <div class="kpi-item-label">Branches</div>
-                <div class="kpi-item-value">{{ $stats['branches'] }}</div>
-                <div class="kpi-item-sub muted">Operating locations</div>
-            </div>
-        </div>
-
-        <div class="kpi-item rose">
-            <div class="kpi-icon"><i class="bi bi-file-earmark-x-fill"></i></div>
-            <div class="kpi-item-body">
-                <div class="kpi-item-label">Expiring Contracts</div>
-                <div class="kpi-item-value">{{ $stats['contracts_expiring'] }}</div>
-                <div class="kpi-item-sub {{ $stats['contracts_expiring'] > 0 ? 'warn' : 'good' }}">
-                    {{ $stats['contracts_expiring'] > 0 ? 'Within 30 days' : 'None due soon' }}
-                </div>
-            </div>
-        </div>
-
     </div>
+</div>
 
-    {{-- ===== STRUCTURAL GRID ===== --}}
-    <div class="dash-grid">
-
-        {{-- ---- MAIN COLUMN ---- --}}
-        <div class="dash-main">
-
-            {{-- Workforce Overview --}}
-            <div class="panel">
-                <div class="panel-head">
-                    <h2 class="panel-title"><i class="bi bi-bar-chart-fill"></i> Workforce Overview</h2>
-                </div>
-
-                @if($departmentBreakdown->isEmpty())
-                    <div class="no-data">
-                        <span class="icon">📊</span>
-                        No department data available yet
-                    </div>
-                @else
-                    @php
-                        $totalHeadcount = $departmentBreakdown->sum('count');
-                        $maxCount = $departmentBreakdown->max('count');
-                    @endphp
-
-                    <div class="wf-total">
-                        <strong>{{ $totalHeadcount }}</strong> employees across
-                        <strong>{{ $departmentBreakdown->count() }}</strong> department(s)
-                    </div>
-
-                    @foreach($departmentBreakdown as $dept)
-                        @php
-                            $pct = $totalHeadcount > 0 ? round(($dept->count / $totalHeadcount) * 100) : 0;
-                            $barWidth = $maxCount > 0 ? round(($dept->count / $maxCount) * 100) : 0;
-                        @endphp
-                        <div class="dept-row">
-                            <div class="dept-name">{{ $dept->department }}</div>
-                            <div class="dept-bar-track">
-                                <div class="dept-bar-fill" style="width: {{ $barWidth }}%"></div>
-                            </div>
-                            <div class="dept-figures">
-                                {{ $dept->count }}
-                                <small>{{ $pct }}%</small>
-                            </div>
+{{-- ============ ATTENDANCE / LEAVE / OUT TODAY ============ --}}
+<div class="row g-3 mb-3">
+    <div class="col-lg-6 col-xl-4">
+        <div class="hr-card h-100">
+            <div class="hr-card-h"><h6><i class="bi bi-qr-code-scan"></i> Attendance today</h6><a href="{{ route('attendance.index') }}" class="small">Open <i class="bi bi-arrow-right"></i></a></div>
+            <div class="hr-card-b">
+                @if($a && $a['expected'])
+                    <div class="db-att">
+                        <svg width="110" height="110" viewBox="0 0 110 110" aria-label="Attendance rate">
+                            <circle cx="55" cy="55" r="46" fill="none" stroke="#e2e8f0" stroke-width="12"/>
+                            <circle cx="55" cy="55" r="46" fill="none" stroke="{{ $rate >= 90 ? '#16a34a' : ($rate >= 75 ? '#d97706' : '#dc2626') }}" stroke-width="12" stroke-linecap="round" stroke-dasharray="{{ $circ }}" stroke-dashoffset="{{ $circ * (1 - $rate / 100) }}" transform="rotate(-90 55 55)"/>
+                            <text x="55" y="58" text-anchor="middle" font-size="22" font-weight="800" fill="currentColor">{{ round($rate) }}%</text>
+                            <text x="55" y="74" text-anchor="middle" font-size="9" fill="#64748b">in today</text>
+                        </svg>
+                        <div class="db-mini">
+                            <div><b class="text-success">{{ $a['present'] + $a['half_day'] }}</b>On time</div>
+                            <div><b style="color:#d97706">{{ $a['late'] }}</b>Late</div>
+                            <div><b class="hr-muted">{{ $a['not_in'] }}</b>Not in yet</div>
+                            <div><b style="color:#7c3aed">{{ $a['on_leave'] }}</b>On leave</div>
                         </div>
-                    @endforeach
-                @endif
-            </div>
-
-            {{-- HR Alerts & Notices --}}
-            <div class="panel">
-                <div class="panel-head">
-                    <h2 class="panel-title"><i class="bi bi-bell-fill"></i> HR Alerts &amp; Notices</h2>
-                </div>
-
-                @if($alerts->isEmpty())
-                    <div class="no-data">
-                        <span class="icon">✅</span>
-                        No active alerts — all clear
                     </div>
-                @else
-                    @foreach($alerts as $alert)
-                        <div class="feed-item severity-{{ $alert['severity'] }}">
-                            <div class="feed-message">{{ $alert['message'] }}</div>
-                            <span class="badge-pill badge-{{ $alert['severity'] }}">{{ $alert['label'] }}</span>
-                        </div>
-                    @endforeach
-                @endif
-            </div>
-
-            {{-- Payroll Health Strip (disabled — re-enable when payroll routes are active) --}}
-            {{--
-            <div class="panel payroll-panel">
-                ... payroll health markup unchanged from before, omitted here while disabled ...
-            </div>
-            --}}
-
-            {{-- Recent Leave Requests (disabled — re-enable when leave routes are active) --}}
-            {{--
-            <div class="panel">
-                ... leave table markup unchanged from before, omitted here while disabled ...
-            </div>
-            --}}
-
-        </div>
-
-        {{-- ---- RAIL COLUMN ---- --}}
-        <div class="dash-rail">
-
-            {{-- Quick Actions --}}
-            <div class="panel">
-                <div class="panel-head">
-                    <h2 class="panel-title"><i class="bi bi-lightning-fill"></i> Quick Actions</h2>
-                </div>
-
-                <div class="qa-list">
-                    <a href="{{ route('employees.index') }}" class="qa-item">
-                        <i class="bi bi-people"></i>
-                        <span>
-                            Manage Employees
-                            <small>View, edit, and add staff records</small>
-                        </span>
-                        <i class="bi bi-chevron-right"></i>
-                    </a>
-
-                    <!-- <button type="button" class="qa-item" style="background:none;text-align:left;width:100%;cursor:pointer;" data-bs-toggle="modal" data-bs-target="#importEmployeesModal">
-                        <i class="bi bi-cloud-upload"></i>
-                        <span>
-                            Import Employees
-                            <small>Bulk create from a CSV file</small>
-                        </span>
-                        <i class="bi bi-chevron-right"></i>
-                    </button>
-
-                    <a href="{{ route('settings.index') }}" class="qa-item">
-                        <i class="bi bi-gear"></i>
-                        <span>
-                            Settings
-                            <small>Configure your HR platform</small>
-                        </span>
-                        <i class="bi bi-chevron-right"></i>
-                    </a> -->
-                </div>
-            </div>
-
-            {{-- Recently Added Employees --}}
-            <div class="panel">
-                <div class="panel-head">
-                    <h2 class="panel-title"><i class="bi bi-person-plus-fill"></i> Recently Added</h2>
-                    <a href="{{ route('employees.index') }}" class="panel-link">View all</a>
-                </div>
-
-                @if($recentEmployees->isEmpty())
-                    <div class="no-data">No employees yet</div>
-                @else
-                    <ul class="emp-list">
-                        @foreach($recentEmployees as $emp)
-                            <li>
-                                <div class="emp-avatar">
-                                    {{ strtoupper(substr($emp->first_name, 0, 1)) }}{{ strtoupper(substr($emp->last_name, 0, 1)) }}
-                                </div>
-                                <div class="emp-info">
-                                    <div class="emp-name">{{ $emp->first_name }} {{ $emp->last_name }}</div>
-                                    <div class="emp-meta">{{ $emp->position ?? '—' }} · {{ $emp->created_at->diffForHumans() }}</div>
-                                </div>
-                                @if($emp->department)
-                                    <span class="emp-dept">{{ $emp->department }}</span>
-                                @endif
-                            </li>
+                    @if($lateToday->isNotEmpty())
+                        <div class="small fw-semibold mt-3 mb-1">Late arrivals</div>
+                        @foreach($lateToday as $r)
+                            <div class="d-flex justify-content-between small py-1 border-bottom gap-2"><span class="text-truncate">{{ $r->employee->full_name }}</span><span class="text-nowrap" style="color:#b45309">{{ $r->record?->in_time }} · +{{ $r->record?->minutes_late }}m</span></div>
                         @endforeach
-                    </ul>
+                    @endif
+                @else
+                    <div class="hr-empty py-3"><i class="bi bi-moon-stars"></i>{{ ($a['holiday'] ?? null) ? 'Public holiday: ' . $a['holiday'] : 'Not a working day.' }}</div>
                 @endif
+                <div class="d-flex gap-2 mt-3 small flex-wrap">
+                    @forelse($kiosks as $k)
+                        <span class="hr-chip" style="{{ $k->is_online ? '--bg:#dcfce7;--c:#166534' : '--bg:#fee2e2;--c:#991b1b' }}"><i class="bi bi-tablet"></i> {{ $k->name }}: {{ $k->is_online ? 'online' : 'offline' }}</span>
+                    @empty
+                        <a href="{{ route('attendance.qr') }}" class="small"><i class="bi bi-plus-circle"></i> Set up the entrance kiosk</a>
+                    @endforelse
+                </div>
             </div>
-
         </div>
-
     </div>
 
+    <div class="col-lg-6 col-xl-4">
+        <div class="hr-card h-100">
+            <div class="hr-card-h"><h6><i class="bi bi-calendar-check"></i> Leave workflow</h6><a href="{{ route('leave.manage.index') }}" class="small">Manage <i class="bi bi-arrow-right"></i></a></div>
+            <div class="hr-card-b pb-2">
+                <div class="db-stage">
+                    <a href="{{ route('leave.index') }}" style="--c:#d97706"><b>{{ $leavePipeline['awaiting_supervisor'] }}</b><small>Supervisor</small></a>
+                    <a href="{{ route('leave.index') }}" style="--c:#0891b2"><b>{{ $leavePipeline['awaiting_hr'] }}</b><small>HR</small></a>
+                    <a href="{{ route('leave.manage.index') }}" style="--c:#16a34a"><b>{{ $leavePipeline['approved_month'] }}</b><small>Approved</small></a>
+                    <a href="{{ route('leave.manage.index') }}" style="--c:#dc2626"><b>{{ $leavePipeline['rejected_month'] }}</b><small>Rejected</small></a>
+                </div>
+                <div class="small hr-muted mb-1">In progress · approved / rejected counts are this month</div>
+                @forelse($leaveInProgress as $l)
+                    <a href="{{ route('leave.show', $l) }}" class="d-flex justify-content-between align-items-center gap-2 py-2 border-bottom text-decoration-none" style="color:inherit">
+                        <span class="small" style="min-width:0"><span class="fw-semibold d-block text-truncate">{{ $l->employee_name }}</span><span class="hr-muted">{{ $l->leave_type }} · {{ $l->date_from?->format('d M') }}–{{ $l->date_to?->format('d M') }} · {{ $l->total_days }}d</span></span>
+                        <span class="hr-chip" style="{{ $l->supervisor_decision ? '--bg:#e0f2fe;--c:#075985' : '--bg:#fef3c7;--c:#92400e' }}">{{ $l->supervisor_decision ? 'With HR' : 'Supervisor' }}</span>
+                    </a>
+                @empty
+                    <div class="small hr-muted py-2">No leave requests waiting.</div>
+                @endforelse
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-12 col-xl-4">
+        <div class="hr-card h-100">
+            <div class="hr-card-h"><h6><i class="bi bi-airplane"></i> Who's away today</h6><span class="small hr-muted">{{ $onLeaveNow->count() }}</span></div>
+            <div style="max-height:300px; overflow:auto">
+                @forelse($onLeaveNow as $l)
+                    <a href="{{ route('leave.show', $l) }}" class="hr-list-item">
+                        <span class="hr-av">@if($l->employee?->passport_photo)<img src="{{ asset('storage/' . $l->employee->passport_photo) }}" alt="">@else{{ $l->employee?->initials ?? strtoupper(substr((string) $l->employee_name, 0, 2)) }}@endif</span>
+                        <div class="flex-grow-1" style="min-width:0"><div class="fw-semibold text-truncate">{{ $l->employee_name }}</div><div class="small hr-muted">{{ $l->leave_type }} · back {{ $l->return_date ? \Carbon\Carbon::parse($l->return_date)->format('D d M') : $l->date_to->copy()->addDay()->format('D d M') }}</div></div>
+                    </a>
+                @empty
+                    <div class="hr-empty"><i class="bi bi-emoji-smile"></i>Everyone is in. No approved leave today.</div>
+                @endforelse
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- ============ UPCOMING / WORKFORCE / ACTIVITY ============ --}}
+<div class="row g-3 mb-3">
+    <div class="col-lg-6 col-xl-4">
+        <div class="hr-card h-100">
+            <div class="hr-card-h"><h6><i class="bi bi-calendar-event"></i> Coming up</h6><span class="small hr-muted">next few weeks</span></div>
+            @forelse($upcoming as $u)
+                <a href="{{ $u['url'] }}" class="db-up" style="--c:{{ $u['c'] }}">
+                    <div class="d"><b>{{ $u['date']->format('d') }}</b><small>{{ $u['date']->format('M') }}</small></div>
+                    <i class="bi {{ $u['icon'] }} ic"></i>
+                    <div class="flex-grow-1" style="min-width:0"><div class="fw-semibold small text-truncate">{{ $u['title'] }}</div><div class="small hr-muted text-truncate">{{ $u['sub'] }} · {{ $u['date']->isSameDay($now) ? 'today' : $u['date']->format('l') }}</div></div>
+                </a>
+            @empty
+                <div class="hr-empty"><i class="bi bi-calendar2-check"></i>No birthdays, anniversaries, contract ends or holidays coming up.</div>
+            @endforelse
+        </div>
+    </div>
+
+    <div class="col-lg-6 col-xl-4">
+        <div class="hr-card h-100">
+            <div class="hr-card-h"><h6><i class="bi bi-diagram-3"></i> Workforce</h6><a href="{{ route('departments.index') }}" class="small">Departments <i class="bi bi-arrow-right"></i></a></div>
+            <div class="hr-card-b">
+                @foreach($byDept->take(7) as $name => $n)
+                    <a href="{{ $name === 'No department' ? route('employees.index') : route('departments.show', \App\Services\DepartmentStats::slug($name)) }}" class="db-dept">
+                        <span class="n" title="{{ $name }}">{{ $name }}</span>
+                        <span class="b"><span style="width:{{ $n / $deptMax * 100 }}%;background:{{ $palette[$loop->index % count($palette)] }}"></span></span>
+                        <b style="width:24px;text-align:right">{{ $n }}</b>
+                    </a>
+                @endforeach
+                @if($byDept->isEmpty())<div class="small hr-muted">No active employees yet.</div>@endif
+                <hr class="my-2">
+                <div class="d-flex justify-content-between small mb-1"><span><i class="bi bi-gender-male text-primary"></i> {{ $workforce['male'] }} men</span><span><i class="bi bi-gender-female" style="color:#db2777"></i> {{ $workforce['female'] }} women</span></div>
+                <div class="hr-bar mb-2">@if($stats['active'])<span style="width:{{ $workforce['male'] / $stats['active'] * 100 }}%;background:#3b82f6"></span><span style="width:{{ $workforce['female'] / $stats['active'] * 100 }}%;background:#ec4899"></span>@endif</div>
+                <div class="d-flex flex-wrap gap-1">
+                    @foreach($workforce['natures'] as $k => $n)<span class="hr-chip">{{ $k }}: {{ $n }}</span>@endforeach
+                    @if($workforce['avg_age'])<span class="hr-chip">Avg age {{ $workforce['avg_age'] }}</span>@endif
+                    @if($stats['exited_year'])<span class="hr-chip" style="--bg:#fee2e2;--c:#991b1b">{{ $stats['exited_year'] }} left this year</span>@endif
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-12 col-xl-4">
+        <div class="hr-card h-100">
+            <div class="hr-card-h"><h6><i class="bi bi-activity"></i> Recent activity</h6></div>
+            <div class="db-feed">
+                @forelse($activity as $x)
+                    <a href="{{ $x['url'] }}" style="--c:{{ $x['c'] }}"><span class="dot"><i class="bi {{ $x['icon'] }}"></i></span><span style="min-width:0"><span class="d-block text-truncate">{{ $x['text'] }}</span><span class="small hr-muted">{{ $x['at']->diffForHumans() }}</span></span></a>
+                @empty
+                    <div class="hr-empty">Nothing yet.</div>
+                @endforelse
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- ============ ANNOUNCEMENTS + PAYROLL ============ --}}
+<div class="row g-3">
+    <div class="col-lg-{{ $payrollSummary ? 7 : 12 }}">
+        <div class="hr-card h-100">
+            <div class="hr-card-h"><h6><i class="bi bi-megaphone"></i> Live announcements</h6><a href="{{ route('announcements.create') }}" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg"></i> New</a></div>
+            @forelse($announcements as $an)
+                @php [, $ci, $cc] = $an->category_meta; @endphp
+                <a href="{{ route('announcements.show', $an) }}" class="an-item">
+                    <span class="an-ic" style="--c:{{ $cc }}"><i class="bi {{ $ci }}"></i></span>
+                    <div style="min-width:0" class="flex-grow-1"><div class="an-title text-truncate">@if($an->pinned)<i class="bi bi-pin-angle-fill text-primary"></i> @endif{{ $an->title }}</div><div class="small hr-muted text-truncate">{{ $an->audience_label }} · {{ $an->excerpt }}</div></div>
+                    <span class="small hr-muted text-nowrap"><i class="bi bi-eye"></i> {{ $an->reads_count }}</span>
+                </a>
+            @empty
+                <div class="hr-empty"><i class="bi bi-megaphone"></i>No live announcements. Share news with everyone or one department. Staff see it in their portal.</div>
+            @endforelse
+        </div>
+    </div>
+    @if($payrollSummary)
+        <div class="col-lg-5">
+            <div class="hr-card h-100">
+                <div class="hr-card-h"><h6><i class="bi bi-cash-stack"></i> Latest payroll</h6><a href="{{ route('payroll.runs.show', $payrollSummary['run']) }}" class="small">Open <i class="bi bi-arrow-right"></i></a></div>
+                <div class="hr-card-b">
+                    <div class="d-flex justify-content-between align-items-center mb-2"><span class="fw-bold">{{ $payrollSummary['period'] }}</span><span class="hr-chip" style="{{ in_array($payrollSummary['status'], ['Approved', 'Paid']) ? '--bg:#dcfce7;--c:#166534' : '--bg:#fef3c7;--c:#92400e' }}">{{ $payrollSummary['status'] }}</span></div>
+                    <div class="row g-2 text-center">
+                        <div class="col-4"><div class="small hr-muted">Employees</div><div class="fw-bold">{{ $payrollSummary['count'] }}</div></div>
+                        <div class="col-4"><div class="small hr-muted">Gross</div><div class="fw-bold">{{ $money($payrollSummary['earnings']) }}</div></div>
+                        <div class="col-4"><div class="small hr-muted">Net pay</div><div class="fw-bold text-success">{{ $money($payrollSummary['net_pay']) }}</div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
 </div>
 @endsection
+
+@push('scripts')
+<script>
+(function () {
+    // Live clock in Lusaka time, whatever the computer's own time zone is.
+    const base = { server: Date.parse(@json($now->format('Y-m-d\TH:i:s')) + 'Z'), perf: performance.now() };
+    const pad = n => String(n).padStart(2, '0');
+    const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const week = @json($now->isoWeek);
+    function tick() {
+        const d = new Date(base.server + (performance.now() - base.perf));
+        document.getElementById('dbClock').innerHTML = pad(d.getUTCHours()) + ':' + pad(d.getUTCMinutes()) + '<small>:' + pad(d.getUTCSeconds()) + '</small>';
+        document.getElementById('dbDate').textContent = DAYS[d.getUTCDay()] + ', ' + pad(d.getUTCDate()) + ' ' + MONTHS[d.getUTCMonth()] + ' ' + d.getUTCFullYear() + ' · Week ' + week;
+    }
+    tick(); setInterval(tick, 1000);
+
+    // Shuffle proverbs
+    const Q = @json($quotes);
+    const box = document.getElementById('dbQuote');
+    document.getElementById('qNext').addEventListener('click', () => {
+        const i = (parseInt(box.dataset.i, 10) + 1) % Q.length; box.dataset.i = i; const q = Q[i];
+        document.getElementById('qA').textContent = q.lang + ' · Zambian wisdom for HR';
+        document.getElementById('qT').textContent = q.text;
+        document.getElementById('qM').textContent = '“' + q.meaning + '”';
+        document.getElementById('qL').innerHTML = '<i class="bi bi-lightbulb"></i> ' + q.lesson.replace(/[<>&]/g, '');
+    });
+})();
+</script>
+@endpush

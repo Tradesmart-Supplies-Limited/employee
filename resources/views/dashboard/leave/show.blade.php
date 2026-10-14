@@ -3,21 +3,20 @@
 @section('content')
 
 {{-- ===== BACK BAR ===== --}}
-<div class="d-flex align-items-center justify-content-between mb-3">
+<div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
     <div>
-        <h4 class="mb-0">Leave Application</h4>
+        <h4 class="mb-0">Leave Application <small class="text-muted fs-6">#LV-{{ str_pad($leave->id, 5, '0', STR_PAD_LEFT) }}</small></h4>
         <small class="text-muted">
             Submitted {{ $leave->created_at->format('D, M d Y') }}
             &nbsp;·&nbsp;
-            <span
-                class="badge bg-{{ $leave->status === 'Approved' ? 'success' : ($leave->status === 'Rejected' ? 'danger' : 'warning text-dark') }}">
-                {{ $leave->status }}
+            <span class="badge bg-{{ $leave->stage_color }} {{ in_array($leave->stage_color, ['warning','info']) ? 'text-dark' : '' }}">
+                <i class="bi {{ $leave->stage_icon }} me-1"></i>{{ $leave->stage_label }}
             </span>
         </small>
     </div>
     <div class="d-flex gap-2">
         <button onclick="window.open('{{ route('leave.print', $leave->id) }}','_blank')"
-            class="btn btn-sm btn-outline-secondary">
+            class="btn btn-sm btn-outline-secondary" title="Print">
             <i class="bi bi-printer"></i>
         </button>
         <a href="{{ route('leave.index') }}" class="btn btn-sm btn-outline-secondary">
@@ -26,18 +25,22 @@
     </div>
 </div>
 
-
-@if($errors->any())
-<div class="alert alert-danger alert-dismissible fade show mb-3" role="alert">
-    <i class="bi bi-exclamation-triangle-fill me-2"></i>
-    <strong>Please fix the following:</strong>
-    <ul class="mb-0 mt-1 ps-3">
-        @foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach
-    </ul>
-    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+{{-- ===== STAGE TRACKER ===== --}}
+<div class="lv-paper mb-3">
+    <div class="p-3 p-md-4">
+        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+            <div class="lv-field-label mb-0">Application progress</div>
+            <div class="small text-muted">
+                Supervisor:
+                <strong>{{ $leave->assigned_supervisor_name ?? 'Not assigned' }}</strong>
+                @if(! $leave->hasAssignedSupervisor() && $employee)
+                    <a href="{{ route('employees.edit', $employee) }}" class="ms-1 small">Assign one</a>
+                @endif
+            </div>
+        </div>
+        @include('leave.partials.tracker', ['leave' => $leave])
+    </div>
 </div>
-@endif
-
 
 {{-- ===== PAPER ===== --}}
 <div class="lv-paper">
@@ -143,6 +146,7 @@
                 <div class="lv-field-label">Total Days Requested</div>
                 <div class="lv-field-value fw-semibold">{{ $leave->total_days }}
                     {{ $leave->total_days == 1 ? 'day' : 'days' }}</div>
+                @include('leave.partials.day-breakdown', ['leave' => $leave])
             </div>
             <div class="lv-field">
                 <div class="lv-field-label">Date Submitted</div>
@@ -193,142 +197,162 @@
 
 
     {{-- =====================================================
-         SECTION 2 — SUPERVISOR (active update form)
+         SECTION 2 — SUPERVISOR RECOMMENDATION
     ====================================================== --}}
-    <form method="POST" action="{{ route('leave.supervisor.update', $leave->id) }}" id="supervisorForm">
-        @csrf
-        @method('PATCH')
-
-        <div class="lv-section lv-section-shaded">
-            <div class="lv-section-heading">To be completed by supervisor</div>
-
-            <div class="lv-approval-row">
-                <label class="lv-approval-option">
-                    <input type="radio" name="supervisor_decision" value="Approved" class="lv-radio"
-                        {{ $leave->supervisor_decision === 'Approved' ? 'checked' : '' }}>
-                    <span>Approved</span>
-                </label>
-                <label class="lv-approval-option">
-                    <input type="radio" name="supervisor_decision" value="Rejected" class="lv-radio"
-                        {{ $leave->supervisor_decision === 'Rejected' ? 'checked' : '' }}>
-                    <span>Rejected</span>
-                </label>
-            </div>
-
-            <div class="lv-field mt-3">
-                <label class="lv-field-label" for="supervisor_comments">Reason(s) for rejection</label>
-                <textarea name="supervisor_comments" id="supervisor_comments" rows="3"
-                    class="lv-textarea">{{ old('supervisor_decision', $leave->supervisor_decision) }} - {{ old('supervisor_comments', $leave->supervisor_comments) }}</textarea>
-            </div>
-
-            <div class="lv-row-2 mt-3">
-                <div class="lv-field">
-                    <label class="lv-field-label" for="supervisor_name">Name</label>
-                    <input type="text" name="supervisor_name" id="supervisor_name" class="lv-input"
-                        value="{{ old('supervisor_name', $leave->supervisor_name) }}">
-                </div>
-                <div class="lv-field">
-                    <label class="lv-field-label" for="supervisor_position">Position</label>
-                    <input type="text" name="supervisor_position" id="supervisor_position" class="lv-input"
-                        value="{{ old('supervisor_position', $leave->supervisor_position) }}">
-                </div>
-            </div>
-
-            <div class="lv-sig-row mt-3">
-                <div class="lv-field">
-                    <div class="lv-field-label">Signature</div>
-                    <div class="lv-sig-line"></div>
-                </div>
-                <div class="lv-field">
-                    <div class="lv-field-label">Date</div>
-                    <div class="lv-sig-line"></div>
-                </div>
-            </div>
-
-            <div class="mt-3">
-                <button type="submit" class="btn btn-sm btn-primary">
-                    <i class="bi bi-check2-circle me-1"></i> Save Supervisor Decision
-                </button>
-            </div>
-
+    <div class="lv-section lv-section-shaded">
+        <div class="lv-section-heading">
+            Step 2 · Supervisor review
+            <span class="lv-heading-note">(recommendation — final decision is made by HR)</span>
         </div>
 
-    </form>{{-- end supervisor form --}}
+        @if(filled($leave->supervisor_decision))
+            @php $rec = $leave->supervisor_decision === 'Approved'; @endphp
+            <div class="lv-decision {{ $rec ? 'lv-decision--ok' : 'lv-decision--no' }}">
+                <i class="bi {{ $rec ? 'bi-hand-thumbs-up-fill' : 'bi-hand-thumbs-down-fill' }}"></i>
+                <div>
+                    <div class="fw-semibold">{{ $rec ? 'Recommended for approval' : 'Not recommended' }}</div>
+                    <div class="small text-muted">
+                        {{ $leave->supervisor_name }}@if($leave->supervisor_position) · {{ $leave->supervisor_position }}@endif
+                        · {{ optional($leave->supervisor_acted_at ?? $leave->supervisor_signature_date)->format('d M Y, H:i') }}
+                    </div>
+                    @if($leave->supervisor_comments)
+                        <div class="mt-2 small">{!! nl2br(e($leave->supervisor_comments)) !!}</div>
+                    @endif
+                </div>
+            </div>
+        @elseif($leave->isFinal())
+            <div class="text-muted small"><i class="bi bi-skip-forward me-1"></i>Skipped. HR made the final decision directly.</div>
+        @else
+            @php $isMine = $leave->isAssignedSupervisor(auth()->user()); @endphp
+            @if(! $isMine)
+                <div class="alert alert-light border small py-2 mb-3">
+                    <i class="bi bi-info-circle me-1"></i>
+                    @if($leave->hasAssignedSupervisor())
+                        Waiting for <strong>{{ $leave->assigned_supervisor_name }}</strong>. You can record the decision on their behalf.
+                    @else
+                        No supervisor is assigned. You can record a supervisor decision, or go straight to the final decision below.
+                    @endif
+                </div>
+            @endif
+
+            <form method="POST" action="{{ route('leave.supervisor.update', $leave->id) }}" id="supervisorForm">
+                @csrf
+                @method('PATCH')
+
+                <div class="lv-approval-row">
+                    <label class="lv-choice lv-choice--ok">
+                        <input type="radio" name="supervisor_decision" value="Approved" @checked(old('supervisor_decision') === 'Approved') required>
+                        <span><i class="bi bi-hand-thumbs-up"></i> Recommend approval</span>
+                    </label>
+                    <label class="lv-choice lv-choice--no">
+                        <input type="radio" name="supervisor_decision" value="Rejected" @checked(old('supervisor_decision') === 'Rejected')>
+                        <span><i class="bi bi-hand-thumbs-down"></i> Recommend rejection</span>
+                    </label>
+                </div>
+
+                <div class="lv-field mt-3">
+                    <label class="lv-field-label" for="supervisor_comments">Comments <span class="lv-hint">(required when recommending rejection)</span></label>
+                    <textarea name="supervisor_comments" id="supervisor_comments" rows="3" class="lv-textarea">{{ old('supervisor_comments') }}</textarea>
+                </div>
+
+                <div class="mt-3 d-flex align-items-center gap-3 flex-wrap">
+                    <button type="submit" class="btn btn-sm btn-primary">
+                        <i class="bi bi-send-check me-1"></i> Submit supervisor decision
+                    </button>
+                    <small class="text-muted">Signed as <strong>{{ auth()->user()->name }}</strong>. Emails the employee, supervisor and HR.</small>
+                </div>
+            </form>
+        @endif
+    </div>
 
 
     {{-- =====================================================
-         SECTION 3 — HR DEPARTMENT (active update form)
+         SECTION 3 — HR FINAL DECISION + LEAVE BALANCE
     ====================================================== --}}
-    <form method="POST" action="{{ route('leave.hr.update', $leave->id) }}" id="hrForm">
-        @csrf
-        @method('PATCH')
-
-        <div class="lv-section lv-section-shaded">
-            <div class="lv-section-heading">
-                To be completed by HR Department
-                <span class="lv-heading-note">(Yearly Annual Leave entitlement — 24 Days)</span>
-            </div>
-
-            <div class="lv-row-2 mt-2">
-                <div class="lv-field">
-                    <label class="lv-field-label" for="days_accrued">Days accrued in this calendar year</label>
-                    <input type="number" name="days_accrued" id="days_accrued" class="lv-input" min="0"
-                        value="{{ old('days_accrued', $leave->days_accrued) }}" oninput="calcBalance()">
-                </div>
-                <div class="lv-field">
-                    <label class="lv-field-label" for="days_available">Number of days available</label>
-                    <input type="number" name="days_available" id="days_available" class="lv-input" min="0"
-                        value="{{ old('days_available', $leave->days_available) }}" oninput="calcBalance()">
-                </div>
-            </div>
-
-            <div class="lv-row-2 mt-3">
-                <div class="lv-field">
-                    <label class="lv-field-label">Less: days requested on this form</label>
-                    <input type="number" name="days_requested_hr" class="lv-input" min="0"
-                        value="{{ old('days_requested_hr', $leave->days_requested_hr ?? $leave->total_days) }}"
-                        oninput="calcBalance()">
-                </div>
-                <div class="lv-field">
-                    <label class="lv-field-label" for="days_balance">Balance to be carried forward</label>
-                    <input type="number" name="days_balance" id="days_balance" class="lv-input" min="0"
-                        value="{{ old('days_balance', $leave->days_balance) }}" readonly style="background:#f5f9ff">
-                </div>
-            </div>
-
-            <div class="lv-row-2 mt-3">
-                <div class="lv-field">
-                    <label class="lv-field-label" for="hr_name">Name</label>
-                    <input type="text" name="hr_name" id="hr_name" class="lv-input"
-                        value="{{ old('hr_name', $leave->hr_name) }}">
-                </div>
-                <div class="lv-field">
-                    <label class="lv-field-label" for="hr_position">Position</label>
-                    <input type="text" name="hr_position" id="hr_position" class="lv-input"
-                        value="{{ old('hr_position', $leave->hr_position) }}">
-                </div>
-            </div>
-
-            <div class="lv-sig-row mt-3">
-                <div class="lv-field">
-                    <div class="lv-field-label">Signature</div>
-                    <div class="lv-sig-line"></div>
-                </div>
-                <div class="lv-field">
-                    <div class="lv-field-label">Date</div>
-                    <div class="lv-sig-line"></div>
-                </div>
-            </div>
-
-            <div class="mt-3">
-                <button type="submit" class="btn btn-sm btn-primary">
-                    <i class="bi bi-check2-circle me-1"></i> Approve Leave & Save HR Record
-                </button>
-            </div>
-
+    @php $n = fn ($v) => $v === null ? '—' : rtrim(rtrim(number_format((float) $v, 1), '0'), '.'); @endphp
+    <div class="lv-section lv-section-shaded">
+        <div class="lv-section-heading">
+            Step 3 · HR final decision
+            <span class="lv-heading-note">(Annual leave entitlement {{ $n($employee->annual_leave_entitlement ?? config('leave.annual_entitlement')) }} days)</span>
         </div>
 
-    </form>{{-- end HR form --}}
+        {{-- Balance strip --}}
+        @if($employee)
+            <div class="lv-balance">
+                @if($leave->status === 'Approved')
+                    <div><span>Balance before</span><strong>{{ $n($leave->days_available) }}</strong></div>
+                    <div><span>Deducted</span><strong class="text-danger">−{{ $n($leave->balance_deducted) }}</strong></div>
+                    <div><span>Balance after</span><strong class="text-success">{{ $n($leave->days_balance) }}</strong></div>
+                    <div><span>Current balance</span><strong>{{ $n($employee->leave_balance) }}</strong></div>
+                @else
+                    <div><span>Current balance</span><strong>{{ $n($balance) }}</strong></div>
+                    <div><span>This request</span><strong>{{ $leave->isDeductible() ? '−' . $n($leave->total_days) : '0' }}</strong></div>
+                    <div><span>Balance after approval</span><strong class="{{ $insufficient ? 'text-danger' : 'text-success' }}">{{ $n($balanceAfter) }}</strong></div>
+                    <div><span>Taken this year</span><strong>{{ $n($employee->leaveTakenInYear()) }}</strong></div>
+                @endif
+            </div>
+            @if(! $leave->isDeductible())
+                <div class="small text-muted mt-2"><i class="bi bi-info-circle me-1"></i>{{ $leave->leave_type }} leave is recorded but doesn't reduce the annual balance.</div>
+            @endif
+        @else
+            <div class="alert alert-warning small py-2">
+                <i class="bi bi-exclamation-triangle me-1"></i>
+                This request isn't linked to an employee record (submitted via the public form with an unknown employee number / email), so no balance will be updated.
+            </div>
+        @endif
+
+        @if($leave->isFinal())
+            @php $ok = $leave->status === 'Approved'; @endphp
+            <div class="lv-decision mt-3 {{ $ok ? 'lv-decision--ok' : 'lv-decision--no' }}">
+                <i class="bi {{ $ok ? 'bi-patch-check-fill' : 'bi-x-octagon-fill' }}"></i>
+                <div>
+                    <div class="fw-semibold">{{ $ok ? 'Approved' : 'Rejected' }}</div>
+                    <div class="small text-muted">
+                        {{ $leave->hr_name }}@if($leave->hr_position) · {{ $leave->hr_position }}@endif
+                        · {{ optional($leave->hr_acted_at ?? $leave->hr_signature_date)->format('d M Y, H:i') }}
+                    </div>
+                    @if($leave->hr_comments)
+                        <div class="mt-2 small">{!! nl2br(e($leave->hr_comments)) !!}</div>
+                    @endif
+                </div>
+            </div>
+        @else
+            @if($leave->awaitingSupervisor())
+                <div class="alert alert-light border small py-2 mt-3 mb-0">
+                    <i class="bi bi-hourglass-split me-1"></i>
+                    The supervisor hasn't reviewed this yet. You can still make the final decision now; the supervisor step will be marked as skipped.
+                </div>
+            @endif
+
+            <div class="row g-3 mt-1">
+                <div class="col-md-6">
+                    <form method="POST" action="{{ route('leave.approve', $leave->id) }}" class="lv-action lv-action--ok"
+                          onsubmit="return confirm('Give final approval{{ $employee && $leave->isDeductible() ? ' and deduct ' . $n($leave->total_days) . ' day(s) from the balance' : '' }}?');">
+                        @csrf
+                        <div class="fw-semibold mb-2"><i class="bi bi-check-circle me-1"></i> Final approval</div>
+                        <textarea name="hr_comments" rows="2" class="lv-textarea" placeholder="Optional note to the employee"></textarea>
+                        @if($insufficient)
+                            <label class="d-flex gap-2 align-items-start small text-danger mt-2">
+                                <input type="checkbox" name="override_balance" value="1" class="mt-1">
+                                <span>Approve anyway: balance will go to {{ $n($balanceAfter) }} days</span>
+                            </label>
+                        @endif
+                        <button class="btn btn-success btn-sm w-100 mt-2"><i class="bi bi-check2-all me-1"></i> Approve leave</button>
+                    </form>
+                </div>
+                <div class="col-md-6">
+                    <form method="POST" action="{{ route('leave.reject', $leave->id) }}" class="lv-action lv-action--no"
+                          onsubmit="return confirm('Reject this leave request?');">
+                        @csrf
+                        <div class="fw-semibold mb-2"><i class="bi bi-x-circle me-1"></i> Final rejection</div>
+                        <textarea name="hr_comments" rows="2" class="lv-textarea" placeholder="Reason (required)" required></textarea>
+                        <button class="btn btn-outline-danger btn-sm w-100 mt-2"><i class="bi bi-x-lg me-1"></i> Reject leave</button>
+                    </form>
+                </div>
+            </div>
+            <small class="text-muted d-block mt-2">Signed as <strong>{{ auth()->user()->name }}</strong>. The employee, supervisor and HR get an email.</small>
+        @endif
+    </div>
 
 
     {{-- FOOTER NOTE --}}
@@ -649,6 +673,36 @@
     font-style: italic;
 }
 
+/* ---- Workflow additions ---- */
+.lv-decision { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border-radius: 8px; border: 1px solid #e5e7eb; background: #fff; }
+.lv-decision > i { font-size: 1.4rem; line-height: 1; }
+.lv-decision--ok { border-color: #bbf7d0; background: #f0fdf4; }
+.lv-decision--ok > i { color: #16a34a; }
+.lv-decision--no { border-color: #fecaca; background: #fef2f2; }
+.lv-decision--no > i { color: #dc2626; }
+
+.lv-choice { position: relative; cursor: pointer; margin: 0; }
+.lv-choice input { position: absolute; opacity: 0; }
+.lv-choice span { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 13px; font-weight: 600; color: #475569; background: #fff; transition: all .15s; }
+.lv-choice--ok input:checked + span { border-color: #16a34a; background: #f0fdf4; color: #15803d; }
+.lv-choice--no input:checked + span { border-color: #dc2626; background: #fef2f2; color: #b91c1c; }
+.lv-choice input:focus-visible + span { outline: 2px solid #185FA5; outline-offset: 2px; }
+
+.lv-balance { display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; background: #fff; }
+.lv-balance > div { padding: 10px 12px; border-right: 1px solid #eef2f7; }
+.lv-balance > div:last-child { border-right: none; }
+.lv-balance span { display: block; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: #888; }
+.lv-balance strong { font-size: 1.25rem; }
+
+.lv-action { border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; background: #fff; height: 100%; }
+.lv-action--ok { border-top: 3px solid #16a34a; }
+.lv-action--no { border-top: 3px solid #dc2626; }
+
+@media (max-width: 640px) {
+    .lv-balance { grid-template-columns: 1fr 1fr; }
+    .lv-balance > div:nth-child(2) { border-right: none; }
+}
+
 /* ---- Print ---- */
 @media print {
     .lv-paper {
@@ -715,19 +769,5 @@
 }
 </style>
 
-
-{{-- ===== SCRIPTS ===== --}}
-<script>
-function calcBalance() {
-    let accrued = parseInt(document.getElementById('days_accrued')?.value || 0);
-    let available = parseInt(document.getElementById('days_available')?.value || 0);
-    let requested = parseInt(document.getElementsByName('days_requested_hr')[0]?.value || 0);
-
-    let balance = (accrued + available) - requested;
-
-    document.getElementById('days_balance').value = balance;
-}
-calcBalance();
-</script>
 
 @endsection
