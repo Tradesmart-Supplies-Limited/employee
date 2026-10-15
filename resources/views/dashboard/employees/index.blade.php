@@ -32,7 +32,7 @@
 .el-table th { font-size: .7rem; text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; color: var(--admin-muted, #64748b); }
 .el-sort { color: inherit; text-decoration: none; } .el-sort i { font-size: .62rem; opacity: .6; }
 .el-person { display: flex; align-items: center; gap: .7rem; min-width: 210px; }
-.el-av { width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0; overflow: hidden; background: linear-gradient(135deg, #185FA5, #4f8cff); color: #fff; font-weight: 700; font-size: .8rem; display: flex; align-items: center; justify-content: center; }
+.el-av { width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0; overflow: hidden; background: linear-gradient(135deg, var(--brand, #185FA5), #4f8cff); color: #fff; font-weight: 700; font-size: .8rem; display: flex; align-items: center; justify-content: center; }
 .el-av img { width: 100%; height: 100%; object-fit: cover; }
 .el-name { font-weight: 700; color: var(--admin-text, #0f172a); text-decoration: none; }
 .el-sub { font-size: .72rem; color: var(--admin-muted, #64748b); }
@@ -44,7 +44,7 @@
 
 <div class="el-head">
     <div>
-        <div class="text-uppercase fw-bold small" style="color:#185FA5; letter-spacing:.08em">Workforce</div>
+        <div class="text-uppercase fw-bold small" style="color:var(--brand-text, #185FA5); letter-spacing:.08em">Workforce</div>
         <h1>Employees</h1>
     </div>
     <div class="d-flex gap-2 flex-wrap">
@@ -56,7 +56,7 @@
 </div>
 
 <div class="el-kpis">
-    <a class="el-kpi {{ ! request()->hasAny(['status', 'attention']) ? 'active' : '' }}" style="--c:#185FA5" href="{{ route('employees.index') }}"><div class="l">All employees</div><div class="v">{{ $kpis['total'] }}</div></a>
+    <a class="el-kpi {{ ! request()->hasAny(['status', 'attention']) ? 'active' : '' }}" style="--c:var(--brand-text, #185FA5)" href="{{ route('employees.index') }}"><div class="l">All employees</div><div class="v">{{ $kpis['total'] }}</div></a>
     <a class="el-kpi {{ request('status') === 'Active' ? 'active' : '' }}" style="--c:#16a34a" href="{{ route('employees.index', ['status' => 'Active']) }}"><div class="l">Active</div><div class="v">{{ $kpis['active'] }}</div></a>
     <a class="el-kpi {{ request('attention') === 'contracts' ? 'active' : '' }}" style="--c:#dc2626" href="{{ route('employees.index', ['attention' => 'contracts']) }}"><div class="l">Contracts ≤ 30 days</div><div class="v">{{ $kpis['contracts'] }}</div></a>
     <a class="el-kpi {{ request('attention') === 'probation' ? 'active' : '' }}" style="--c:#7c3aed" href="{{ route('employees.index', ['attention' => 'probation']) }}"><div class="l">Probation ending</div><div class="v">{{ $kpis['probation'] }}</div></a>

@@ -22,8 +22,8 @@
 .pl td.day { height: 34px; padding: 3px 1px; text-align: center; }
 .pl .off  { background: repeating-linear-gradient(45deg, rgba(148,163,184,.12), rgba(148,163,184,.12) 4px, transparent 4px, transparent 8px); }
 .pl .hol  { background: rgba(245, 158, 11, .13); }
-.pl .today { box-shadow: inset 2px 0 0 #185FA5, inset -2px 0 0 #185FA5; }
-.pl thead th.today { color: #185FA5; }
+.pl .today { box-shadow: inset 2px 0 0 var(--brand, #185FA5), inset -2px 0 0 var(--brand, #185FA5); }
+.pl thead th.today { color: var(--brand-text, #185FA5); }
 .pl-bar { display: block; height: 22px; border-radius: 0; }
 .pl-bar.ap { background: #16a34a; }
 .pl-bar.pe { background: repeating-linear-gradient(45deg, #f59e0b, #f59e0b 5px, #fbbf24 5px, #fbbf24 10px); }

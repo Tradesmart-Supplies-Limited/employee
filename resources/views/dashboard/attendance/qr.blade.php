@@ -11,7 +11,7 @@
 
 <style>
 .kq-step { display: flex; gap: .8rem; align-items: flex-start; font-size: .86rem; }
-.kq-step .n { width: 26px; height: 26px; border-radius: 50%; background: #185FA5; color: #fff; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: .8rem; }
+.kq-step .n { width: 26px; height: 26px; border-radius: 50%; background: var(--brand, #185FA5); color: #fff; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: .8rem; }
 .kq-kiosk { padding: 1rem 1.1rem; border-bottom: 1px solid var(--admin-border, #eef2f7); }
 .kq-kiosk.hl { background: #eff6ff; }
 .kq-link { font-family: ui-monospace, Consolas, monospace; font-size: .76rem; background: var(--admin-surface-soft, #f1f5f9); border-radius: 8px; padding: .4rem .6rem; word-break: break-all; }

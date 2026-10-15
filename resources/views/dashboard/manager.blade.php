@@ -3,16 +3,19 @@
 
 @section('content')
 <style>
-.mg-hero { position: relative; overflow: hidden; border-radius: 22px; padding: 1.4rem 1.5rem; color: #fff; background: radial-gradient(900px 400px at 100% 0%, rgba(45,212,191,.35), transparent 60%), linear-gradient(135deg, #0f766e 0%, #0b3b4f 100%); box-shadow: 0 18px 40px rgba(11,59,79,.22); }
+.mg-hero { --g1: #0b3b4f; --g2: #0f766e; --g3: #155e75; --glow1: rgba(45,212,191,.35); --glow2: rgba(56,189,248,.18); --accent: #5EEAD4;
+    position: relative; overflow: hidden; border-radius: 22px; padding: 1.4rem 1.5rem; color: #fff;
+    background: radial-gradient(620px 320px at 100% 0%, var(--glow1), transparent 62%), radial-gradient(520px 300px at 0% 100%, var(--glow2), transparent 60%), linear-gradient(125deg, var(--g1) 0%, var(--g2) 55%, var(--g3) 100%);
+    box-shadow: 0 1px 0 rgba(255,255,255,.12) inset, 0 20px 44px -18px color-mix(in srgb, var(--g1) 75%, transparent); }
 .mg-hero .date { font-size: .8rem; letter-spacing: .06em; text-transform: uppercase; opacity: .85; font-weight: 700; }
 .mg-hero h1 { font-size: clamp(1.35rem, 3vw, 1.9rem); font-weight: 800; margin: .25rem 0 .2rem; color: #fff; }
 .mg-hero .sum { opacity: .95; }
 .mg-hero .sum b { font-weight: 800; }
 .mg-dept { display: inline-flex; align-items: center; gap: .3rem; background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.25); border-radius: 999px; padding: .15rem .65rem; font-size: .78rem; font-weight: 700; margin: .15rem .2rem 0 0; }
-.mg-quote { margin-top: .9rem; font-size: .85rem; opacity: .9; border-left: 3px solid rgba(255,255,255,.4); padding-left: .7rem; }
+.mg-quote { margin-top: .9rem; font-size: .85rem; color: rgba(255,255,255,.9); border-left: 3px solid var(--accent); padding-left: .7rem; }
 .mg-row { display: flex; align-items: center; gap: .7rem; padding: .6rem 1rem; border-bottom: 1px solid var(--admin-border, #eef2f7); }
 .mg-row:last-child { border-bottom: 0; }
-.mg-av { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #0f766e, #2dd4bf); color: #fff; font-weight: 700; font-size: .74rem; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.mg-av { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, var(--brand, #0f766e), color-mix(in srgb, var(--brand, #0f766e) 55%, #ffffff)); color: #fff; font-weight: 700; font-size: .74rem; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .mg-pill { font-size: .7rem; font-weight: 700; padding: .15rem .55rem; border-radius: 999px; background: var(--bg); color: var(--c); white-space: nowrap; }
 .mg-links a { display: flex; align-items: center; gap: .6rem; padding: .7rem 1rem; border-bottom: 1px solid var(--admin-border, #eef2f7); text-decoration: none; color: inherit; font-weight: 600; font-size: .9rem; }
 .mg-links a:last-child { border-bottom: 0; }
@@ -45,7 +48,7 @@
 
 <div class="row g-2 g-md-3 mb-3">
     @foreach([
-        ['Team', $team, '#0f766e', 'bi-people', 'active staff', route('attendance.summary')],
+        ['Team', $team, 'var(--brand-text, #0f766e)', 'bi-people', 'active staff', route('attendance.summary')],
         ['In today', $t['expected'] ? $t['attended'] . '/' . $t['expected'] : '—', '#16a34a', 'bi-qr-code-scan', $t['rate'] !== null ? $t['rate'] . '% attendance' : 'not a working day', route('attendance.index')],
         ['Late / absent', $t['late'] + $t['absent'], ($t['late'] + $t['absent']) ? '#d97706' : '#64748b', 'bi-alarm', $t['late'] . ' late · ' . $t['absent'] . ' absent', route('attendance.register')],
         ['To review', $toReview->count(), $toReview->count() ? '#dc2626' : '#64748b', 'bi-inbox', $withHr . ' waiting for HR', route('leave.index', ['stage' => 'awaiting_supervisor'])],
@@ -82,7 +85,7 @@
         <div class="hr-card h-100">
             <div class="hr-card-h"><h6><i class="bi bi-grid"></i> Quick links</h6></div>
             <div class="mg-links">
-                <a href="{{ route('attendance.register') }}" style="--c:#185FA5"><i class="bi bi-pencil-square lead"></i> Daily register <span class="ms-auto small hr-muted">correct times</span></a>
+                <a href="{{ route('attendance.register') }}" style="--c:var(--brand-text, #185FA5)"><i class="bi bi-pencil-square lead"></i> Daily register <span class="ms-auto small hr-muted">correct times</span></a>
                 @if($user->hasPermission('rota.manage'))<a href="{{ route('attendance.rota.index') }}" style="--c:#7c3aed"><i class="bi bi-calendar-week lead"></i> Shift rota <span class="ms-auto small hr-muted">plan &amp; publish</span></a>@endif
                 <a href="{{ route('leave.manage.planner') }}" style="--c:#0f766e"><i class="bi bi-calendar3-range lead"></i> Leave planner</a>
                 <a href="{{ route('attendance.summary') }}" style="--c:#d97706"><i class="bi bi-calendar3 lead"></i> Monthly attendance</a>

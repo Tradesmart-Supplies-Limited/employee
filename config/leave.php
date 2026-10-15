@@ -59,4 +59,13 @@ return [
     // Balances at or below this are flagged "low" in reports.
     'low_balance_threshold' => (float) env('LEAVE_LOW_BALANCE_THRESHOLD', 3),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Leave emails: send straight away or queue them?
+    |--------------------------------------------------------------------------
+    | false (default) = sent just after the page loads; no queue worker needed.
+    | true            = queued; only use this if "php artisan queue:work" runs.
+    */
+    'queue_emails' => (bool) env('LEAVE_EMAILS_QUEUED', false),
+
 ];

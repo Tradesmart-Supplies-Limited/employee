@@ -7,7 +7,7 @@
 <style>
 .pc-card { background: var(--admin-surface, #fff); border: 1px solid var(--admin-border, #e2e8f0); border-radius: 14px; margin-bottom: 1rem; overflow: hidden; }
 .pc-head { display: flex; gap: .8rem; align-items: center; padding: .9rem 1.1rem; border-bottom: 1px solid var(--admin-border, #e2e8f0); flex-wrap: wrap; }
-.pc-av { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #185FA5, #4f8cff); color: #fff; font-weight: 700; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.pc-av { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, var(--brand, #185FA5), #4f8cff); color: #fff; font-weight: 700; display: flex; align-items: center; justify-content: center; overflow: hidden; }
 .pc-av img { width: 100%; height: 100%; object-fit: cover; }
 .pc-table { margin: 0; font-size: .86rem; }
 .pc-old { color: #94a3b8; text-decoration: line-through; }
@@ -16,7 +16,7 @@
 </style>
 
 <div class="mb-3">
-    <div class="text-uppercase fw-bold small" style="color:#185FA5; letter-spacing:.08em">Self-service</div>
+    <div class="text-uppercase fw-bold small" style="color:var(--brand-text, #185FA5); letter-spacing:.08em">Self-service</div>
     <h1 class="h4 fw-bold mb-0">Employee detail changes</h1>
     <div class="small text-muted">Sensitive details employees changed in the portal. Nothing changes on their record until you approve.</div>
 </div>

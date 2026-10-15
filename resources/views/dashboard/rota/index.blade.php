@@ -14,7 +14,7 @@
 <style>
 .rw-item { display: flex; align-items: center; gap: .9rem; padding: .85rem 1.1rem; border-bottom: 1px solid var(--admin-border, #eef2f7); flex-wrap: wrap; }
 .rw-item:last-child { border-bottom: 0; }
-.rw-item.now { background: color-mix(in srgb, #185FA5 6%, transparent); }
+.rw-item.now { background: color-mix(in srgb, var(--brand, #185FA5) 6%, transparent); }
 .rw-date { width: 64px; text-align: center; line-height: 1.1; flex-shrink: 0; }
 .rw-date b { font-size: 1.3rem; display: block; }
 .rw-date small { font-size: .68rem; text-transform: uppercase; font-weight: 700; color: var(--admin-muted, #64748b); }

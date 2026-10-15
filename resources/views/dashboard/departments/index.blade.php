@@ -43,7 +43,7 @@
 
 <div class="row g-2 g-md-3 mb-3">
     @foreach([
-        ['Departments', $t['departments'], '#185FA5', $t['unassigned'] ? $t['unassigned'] . ' staff not assigned' : 'everyone assigned'],
+        ['Departments', $t['departments'], 'var(--brand-text, #185FA5)', $t['unassigned'] ? $t['unassigned'] . ' staff not assigned' : 'everyone assigned'],
         ['Active staff', $t['active'], '#16a34a', 'avg ' . $t['avg_team'] . ' per department'],
         ['Largest', $t['largest']?->name ?? '—', '#7c3aed', $t['largest'] ? $t['largest']->active . ' people' : ''],
         ['In today', $t['attended'] . '/' . $t['expected'], '#0891b2', $t['on_leave'] . ' on leave'],

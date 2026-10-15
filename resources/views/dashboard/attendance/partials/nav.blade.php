@@ -15,16 +15,16 @@
 @endphp
 <style>
 .at-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 1rem; flex-wrap: wrap; margin-bottom: .9rem; }
-.at-kicker { color: #185FA5; font-weight: 700; font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; }
+.at-kicker { color: var(--brand-text, #185FA5); font-weight: 700; font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; }
 .at-tabs { display: flex; gap: .3rem; overflow-x: auto; border-bottom: 1px solid var(--admin-border, #e2e8f0); margin-bottom: 1.1rem; scrollbar-width: none; }
 .at-tabs a { white-space: nowrap; padding: .55rem .85rem; font-size: .86rem; font-weight: 600; color: var(--admin-muted, #64748b); text-decoration: none; border-bottom: 2px solid transparent; margin-bottom: -1px; }
-.at-tabs a:hover { color: #185FA5; }
-.at-tabs a.active { color: #185FA5; border-bottom-color: #185FA5; }
+.at-tabs a:hover { color: var(--brand-text, #185FA5); }
+.at-tabs a.active { color: var(--brand-text, #185FA5); border-bottom-color: var(--brand, #185FA5); }
 .at-card { background: var(--admin-surface, #fff); border: 1px solid var(--admin-border, #e2e8f0); border-radius: 14px; }
 .at-card-h { display: flex; justify-content: space-between; align-items: center; gap: .6rem; padding: .85rem 1.1rem; border-bottom: 1px solid var(--admin-border, #e2e8f0); flex-wrap: wrap; }
 .at-card-h h6 { margin: 0; font-weight: 700; font-size: .95rem; }
 .at-chip { display: inline-flex; align-items: center; gap: .3rem; font-size: .72rem; font-weight: 700; padding: .18rem .6rem; border-radius: 999px; white-space: nowrap; background: var(--bg); color: var(--c); }
-.at-av { width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(135deg, #185FA5, #4f8cff); color: #fff; font-weight: 700; font-size: .78rem; display: inline-flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; }
+.at-av { width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(135deg, var(--brand, #185FA5), #4f8cff); color: #fff; font-weight: 700; font-size: .78rem; display: inline-flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; }
 .at-av img { width: 100%; height: 100%; object-fit: cover; }
 .at-table { font-size: .86rem; margin: 0; }
 .at-table th { font-size: .68rem; text-transform: uppercase; letter-spacing: .05em; color: var(--admin-muted, #64748b); white-space: nowrap; font-weight: 700; }

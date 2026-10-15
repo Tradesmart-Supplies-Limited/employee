@@ -31,7 +31,7 @@
         align-items: center;
         gap: 20px;
         padding: 20px 32px 16px;
-        border-bottom: 4px solid #185FA5;
+        border-bottom: 4px solid var(--brand, #185FA5);
     }
 
     .lf-logo {
@@ -55,7 +55,7 @@
     .lf-logo-fallback {
         font-size: 11px;
         font-weight: 700;
-        color: #185FA5;
+        color: var(--brand-text, #185FA5);
         text-align: center;
         line-height: 1.3;
         padding: 6px;
@@ -64,7 +64,7 @@
     .lf-company-name {
         font-size: 21px;
         font-weight: 700;
-        color: #185FA5;
+        color: var(--brand-text, #185FA5);
         letter-spacing: 0.02em;
         margin-bottom: 3px;
     }
@@ -135,7 +135,7 @@
     }
 
     .lf-input:focus {
-        border-bottom-color: #185FA5;
+        border-bottom-color: var(--brand, #185FA5);
         background: transparent;
     }
 
@@ -154,7 +154,7 @@
     }
 
     .lf-textarea:focus {
-        border-color: #185FA5;
+        border-color: var(--brand, #185FA5);
     }
 
     /* ---- Leave type grid ---- */
@@ -206,7 +206,7 @@
     }
 
     .lf-leave-radio {
-        accent-color: #185FA5;
+        accent-color: var(--brand, #185FA5);
         width: 15px;
         height: 15px;
         flex-shrink: 0;
@@ -224,7 +224,7 @@
     }
 
     .lf-file-wrap:hover {
-        border-color: #185FA5;
+        border-color: var(--brand, #185FA5);
         background: #f5f9ff;
     }
 
@@ -241,14 +241,14 @@
 
     .lf-file-label i {
         font-size: 22px;
-        color: #185FA5;
+        color: var(--brand-text, #185FA5);
         display: block;
         margin-bottom: 5px;
     }
 
     .lf-file-name {
         font-size: 12px;
-        color: #185FA5;
+        color: var(--brand-text, #185FA5);
         margin-top: 6px;
         display: none;
     }
@@ -271,7 +271,7 @@
         color: #555;
         line-height: 1.7;
         padding: 12px 32px;
-        border-top: 3px solid #185FA5;
+        border-top: 3px solid var(--brand, #185FA5);
         background: #f2f8ff;
         font-style: italic;
     }

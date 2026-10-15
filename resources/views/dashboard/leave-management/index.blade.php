@@ -22,7 +22,7 @@
 <style>
 .lm * { box-sizing: border-box; }
 .lm-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
-.lm-eyebrow { font-size: .72rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--admin-primary, #185FA5); }
+.lm-eyebrow { font-size: .72rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--admin-primary, var(--brand, #185FA5)); }
 .lm-head h1 { font-size: 1.4rem; font-weight: 800; margin: .15rem 0 0; }
 .lm-card { background: var(--admin-surface, #fff); border: 1px solid var(--admin-border, #e2e8f0); border-radius: 14px; padding: 1rem 1.1rem; }
 .lm-card h2 { font-size: .9rem; font-weight: 700; margin: 0 0 .8rem; display: flex; align-items: center; gap: .45rem; }
@@ -32,7 +32,7 @@
 
 .lm-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: .7rem; margin-bottom: 1rem; }
 .lm-kpi { background: var(--admin-surface, #fff); border: 1px solid var(--admin-border, #e2e8f0); border-radius: 12px; padding: .8rem .95rem; text-decoration: none; color: inherit; display: block; position: relative; overflow: hidden; }
-.lm-kpi::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 3px; background: var(--c, #185FA5); }
+.lm-kpi::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 3px; background: var(--c, var(--brand-text, #185FA5)); }
 .lm-kpi .l { font-size: .68rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--admin-muted, #64748b); }
 .lm-kpi .v { font-size: 1.55rem; font-weight: 800; line-height: 1.15; color: var(--admin-text, #0f172a); }
 .lm-kpi .s { font-size: .74rem; color: var(--admin-muted, #64748b); }
@@ -64,7 +64,7 @@ a.lm-kpi:hover { border-color: var(--c); }
 /* lists */
 .lm-away { display: flex; align-items: center; gap: .6rem; padding: .5rem 0; border-bottom: 1px solid var(--admin-border, #e2e8f0); font-size: .8rem; text-decoration: none; color: inherit; }
 .lm-away:last-child { border-bottom: 0; }
-.lm-av { width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(135deg, #185FA5, #4f8cff); color: #fff; font-weight: 700; font-size: .7rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.lm-av { width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(135deg, var(--brand, #185FA5), #4f8cff); color: #fff; font-weight: 700; font-size: .7rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .lm-badge { font-size: .68rem; font-weight: 700; padding: .12rem .5rem; border-radius: 999px; white-space: nowrap; }
 .lm-badge.ok { background: #dcfce7; color: #166534; } .lm-badge.wait { background: #fef3c7; color: #92400e; }
 .lm-badge.bad { background: #fee2e2; color: #991b1b; } .lm-badge.info { background: #e0f2fe; color: #075985; }
@@ -77,12 +77,12 @@ a.lm-kpi:hover { border-color: var(--c); }
 .lm-sort i { font-size: .65rem; opacity: .6; }
 .lm-util { display: flex; align-items: center; gap: .4rem; min-width: 110px; }
 .lm-util .track { flex: 1; height: 6px; border-radius: 3px; background: var(--admin-surface-soft, #f1f5f9); overflow: hidden; }
-.lm-util .track span { display: block; height: 100%; background: #185FA5; border-radius: 3px; }
+.lm-util .track span { display: block; height: 100%; background: var(--brand, #185FA5); border-radius: 3px; }
 .lm-util small { width: 34px; text-align: right; color: var(--admin-muted, #64748b); }
 .lm-bal { font-weight: 800; }
 .lm-flag-tabs { display: flex; gap: .35rem; flex-wrap: wrap; }
 .lm-flag-tabs a { font-size: .74rem; padding: .25rem .65rem; border-radius: 999px; border: 1px solid var(--admin-border, #e2e8f0); text-decoration: none; color: var(--admin-text, #0f172a); }
-.lm-flag-tabs a.active { background: #185FA5; color: #fff; border-color: #185FA5; }
+.lm-flag-tabs a.active { background: var(--brand, #185FA5); color: #fff; border-color: var(--brand, #185FA5); }
 </style>
 
 <div class="lm">
@@ -142,7 +142,7 @@ a.lm-kpi:hover { border-color: var(--c); }
 
     {{-- ===== KPIs ===== --}}
     <div class="lm-kpis">
-        <div class="lm-kpi" style="--c:#185FA5"><div class="l">Employees</div><div class="v">{{ $k['headcount'] }}</div><div class="s">{{ $n($k['entitlement']) }} days entitled</div></div>
+        <div class="lm-kpi" style="--c:var(--brand-text, #185FA5)"><div class="l">Employees</div><div class="v">{{ $k['headcount'] }}</div><div class="s">{{ $n($k['entitlement']) }} days entitled</div></div>
         <div class="lm-kpi" style="--c:#16a34a"><div class="l">Days taken</div><div class="v">{{ $n($k['taken']) }}</div><div class="s">{{ $k['utilization'] }}% of entitlement used</div></div>
         <div class="lm-kpi" style="--c:#0ea5e9"><div class="l">Days remaining</div><div class="v">{{ $n($k['balance_total']) }}</div><div class="s">avg {{ $n($k['avg_balance']) }} per person</div></div>
         <a class="lm-kpi" style="--c:#f59e0b" href="{{ route('leave.index', ['stage' => 'awaiting_supervisor']) }}"><div class="l">Pending requests</div><div class="v">{{ $k['pending'] }}</div><div class="s">{{ $k['awaiting_supervisor'] }} supervisor · {{ $k['awaiting_hr'] }} HR</div></a>

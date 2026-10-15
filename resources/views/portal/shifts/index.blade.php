@@ -5,13 +5,13 @@
 <style>
 .ms-day { display: flex; align-items: center; gap: .85rem; padding: .7rem 1rem; border-bottom: 1px solid var(--admin-border, #eef2f7); }
 .ms-day:last-child { border-bottom: 0; }
-.ms-day.today { background: color-mix(in srgb, #185FA5 8%, transparent); }
+.ms-day.today { background: color-mix(in srgb, var(--brand, #185FA5) 8%, transparent); }
 .ms-day .d { width: 48px; text-align: center; line-height: 1.1; flex-shrink: 0; }
 .ms-day .d b { font-size: 1.2rem; display: block; }
 .ms-day .d small { font-size: .66rem; text-transform: uppercase; font-weight: 700; color: var(--admin-muted, #64748b); }
 .ms-pill { display: inline-flex; align-items: center; gap: .35rem; font-weight: 800; font-size: .8rem; padding: .25rem .7rem; border-radius: 999px; color: #fff; background: var(--c); }
 .ms-pill.light { color: #3f2d00; }
-.ms-hero { border-radius: 18px; padding: 1.1rem 1.2rem; color: #fff; background: linear-gradient(135deg, var(--c, #185FA5), #0b3b6f); }
+.ms-hero { border-radius: 18px; padding: 1.1rem 1.2rem; color: #fff; background: linear-gradient(135deg, var(--c, var(--brand-text, #185FA5)), #0b3b6f); }
 </style>
 
 @php

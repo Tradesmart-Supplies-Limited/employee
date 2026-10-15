@@ -6,10 +6,10 @@
 .im-steps { display: flex; gap: .6rem; margin-bottom: 1.2rem; flex-wrap: wrap; }
 .im-step { flex: 1 1 180px; display: flex; gap: .7rem; align-items: center; padding: .8rem 1rem; border-radius: 12px; border: 1px solid var(--admin-border, #e2e8f0); background: var(--admin-surface, #fff); font-size: .85rem; }
 .im-step .n { width: 30px; height: 30px; border-radius: 50%; background: var(--admin-surface-soft, #f1f5f9); font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.im-step.active { border-color: #185FA5; } .im-step.active .n { background: #185FA5; color: #fff; }
+.im-step.active { border-color: var(--brand, #185FA5); } .im-step.active .n { background: var(--brand, #185FA5); color: #fff; }
 .im-drop { border: 2px dashed var(--admin-border, #cbd5e1); border-radius: 16px; padding: 2.4rem 1rem; text-align: center; background: var(--admin-surface, #fff); cursor: pointer; transition: all .15s; }
-.im-drop.over { border-color: #185FA5; background: rgba(24, 95, 165, .05); }
-.im-drop i { font-size: 2.4rem; color: #185FA5; }
+.im-drop.over { border-color: var(--brand, #185FA5); background: rgba(var(--brand-rgb, 24, 95, 165), .05); }
+.im-drop i { font-size: 2.4rem; color: var(--brand-text, #185FA5); }
 .im-card { background: var(--admin-surface, #fff); border: 1px solid var(--admin-border, #e2e8f0); border-radius: 14px; padding: 1rem 1.2rem; }
 .im-cols { columns: 2; font-size: .8rem; column-gap: 1.5rem; }
 .im-cols div { break-inside: avoid; padding: .15rem 0; }

@@ -13,8 +13,8 @@
     color: var(--admin-text, #0f172a); text-decoration: none;
     font-size: .82rem; font-weight: 600; background: var(--admin-surface, #fff);
 }
-.lv-tab:hover { border-color: #185FA5; color: #185FA5; }
-.lv-tab.active { background: #185FA5; border-color: #185FA5; color: #fff; }
+.lv-tab:hover { border-color: var(--brand, #185FA5); color: var(--brand-text, #185FA5); }
+.lv-tab.active { background: var(--brand, #185FA5); border-color: var(--brand, #185FA5); color: #fff; }
 .lv-tab .count { font-size: .72rem; padding: .05rem .45rem; border-radius: 999px; background: rgba(0,0,0,.07); }
 .lv-tab.active .count { background: rgba(255,255,255,.25); }
 .lv-tab .dot { width: 8px; height: 8px; border-radius: 50%; }

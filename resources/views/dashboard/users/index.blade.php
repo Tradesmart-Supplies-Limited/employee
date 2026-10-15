@@ -14,9 +14,9 @@
 .ur-row:last-child { border-bottom: 0; }
 .ur-row > summary { list-style: none; display: flex; align-items: center; gap: .8rem; padding: .8rem 1.1rem; cursor: pointer; flex-wrap: wrap; }
 .ur-row > summary::-webkit-details-marker { display: none; }
-.ur-row[open] > summary { background: color-mix(in srgb, #185FA5 5%, transparent); }
+.ur-row[open] > summary { background: color-mix(in srgb, var(--brand, #185FA5) 5%, transparent); }
 .ur-av { width: 38px; height: 38px; border-radius: 50%; color: #fff; font-weight: 700; font-size: .8rem; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; background: var(--c); }
-.ur-edit { padding: 1rem 1.1rem 1.2rem; background: color-mix(in srgb, #185FA5 3%, transparent); border-top: 1px dashed var(--admin-border, #e2e8f0); }
+.ur-edit { padding: 1rem 1.1rem 1.2rem; background: color-mix(in srgb, var(--brand, #185FA5) 3%, transparent); border-top: 1px dashed var(--admin-border, #e2e8f0); }
 .ur-access { font-size: .74rem; color: var(--admin-muted, #64748b); }
 .ur-access i { margin-right: .15rem; }
 .ur-roles-pick { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: .45rem; }
@@ -52,7 +52,7 @@
 
 <div class="d-flex justify-content-between align-items-end flex-wrap gap-2 mb-3">
     <div>
-        <div class="small fw-bold text-uppercase" style="color:#185FA5;letter-spacing:.08em">System</div>
+        <div class="small fw-bold text-uppercase" style="color:var(--brand-text, #185FA5);letter-spacing:.08em">System</div>
         <h1 class="h4 fw-bold mb-0">Users &amp; Roles</h1>
         <div class="small text-muted">Who can sign in, and what each person can see and do.</div>
     </div>

@@ -13,11 +13,11 @@
         display: block; height: 100%; padding: .75rem .8rem; border: 1.5px solid var(--admin-border, #dbe2ea);
         border-radius: 10px; transition: border-color .15s, background .15s;
     }
-    .rp-method .rp-card i { font-size: 1.25rem; color: #185FA5; }
+    .rp-method .rp-card i { font-size: 1.25rem; color: var(--brand-text, #185FA5); }
     .rp-method .rp-card strong { display: block; font-size: .86rem; margin-top: .25rem; }
     .rp-method .rp-card small { display: block; font-size: .74rem; color: var(--admin-muted, #64748b); line-height: 1.35; }
-    .rp-method input:checked + .rp-card { border-color: #185FA5; background: rgba(24, 95, 165, .07); }
-    .rp-method input:focus-visible + .rp-card { outline: 2px solid #185FA5; outline-offset: 2px; }
+    .rp-method input:checked + .rp-card { border-color: var(--brand, #185FA5); background: rgba(var(--brand-rgb, 24, 95, 165), .07); }
+    .rp-method input:focus-visible + .rp-card { outline: 2px solid var(--brand, #185FA5); outline-offset: 2px; }
 </style>
 
 <p class="small text-muted mb-3">

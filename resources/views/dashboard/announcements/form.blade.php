@@ -96,7 +96,7 @@
         <div class="hr-card mb-3">
             <div class="hr-card-h"><h6><i class="bi bi-phone"></i> How staff will see it</h6></div>
             <div class="an-item" id="prev">
-                <span class="an-ic" id="pIc" style="--c:#185FA5"><i class="bi bi-megaphone"></i></span>
+                <span class="an-ic" id="pIc" style="--c:var(--brand-text, #185FA5)"><i class="bi bi-megaphone"></i></span>
                 <div style="min-width:0" class="flex-grow-1">
                     <div class="an-title" id="pTitle">Title</div>
                     <div class="small hr-muted" id="pBody" style="overflow-wrap:anywhere">Message…</div>

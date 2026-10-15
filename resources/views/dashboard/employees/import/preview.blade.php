@@ -23,7 +23,7 @@
 .ip-steps { display: flex; gap: .6rem; margin-bottom: 1rem; flex-wrap: wrap; }
 .ip-step { flex: 1 1 180px; display: flex; gap: .7rem; align-items: center; padding: .7rem 1rem; border-radius: 12px; border: 1px solid var(--admin-border, #e2e8f0); background: var(--admin-surface, #fff); font-size: .85rem; }
 .ip-step .n { width: 28px; height: 28px; border-radius: 50%; background: var(--admin-surface-soft, #f1f5f9); font-weight: 800; display: flex; align-items: center; justify-content: center; }
-.ip-step.done .n { background: #16a34a; color: #fff; } .ip-step.active { border-color: #185FA5; } .ip-step.active .n { background: #185FA5; color: #fff; }
+.ip-step.done .n { background: #16a34a; color: #fff; } .ip-step.active { border-color: var(--brand, #185FA5); } .ip-step.active .n { background: var(--brand, #185FA5); color: #fff; }
 .ip-tiles { display: grid; grid-template-columns: repeat(5, 1fr); gap: .6rem; margin-bottom: 1rem; }
 .ip-tile { display: block; text-decoration: none; color: inherit; border: 1px solid var(--admin-border, #e2e8f0); border-radius: 12px; padding: .7rem .9rem; background: var(--admin-surface, #fff); }
 .ip-tile.active { border-color: var(--c); box-shadow: inset 0 0 0 1px var(--c); }

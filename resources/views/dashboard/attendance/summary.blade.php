@@ -23,7 +23,7 @@
 .sm-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 3px; vertical-align: -1px; }
 .sm-rate { font-weight: 800; }
 th a.sort { color: inherit; text-decoration: none; }
-th a.sort.on { color: #185FA5; }
+th a.sort.on { color: var(--brand-text, #185FA5); }
 </style>
 
 <form method="GET" class="d-flex flex-wrap gap-2 align-items-center mb-3">
@@ -42,7 +42,7 @@ th a.sort.on { color: #185FA5; }
 
 <div class="row g-2 mb-3">
     @foreach([
-        ['Attendance rate', $rate !== null ? $rate . '%' : '—', '#185FA5'],
+        ['Attendance rate', $rate !== null ? $rate . '%' : '—', 'var(--brand-text, #185FA5)'],
         ['Days attended', number_format($all['attended']) . ' / ' . number_format($all['expected']), '#16a34a'],
         ['Late arrivals', $all['late'] . ' · ' . AR::formatMinutes($all['late_minutes']), '#d97706'],
         ['Absences', $all['absent'], '#dc2626'],

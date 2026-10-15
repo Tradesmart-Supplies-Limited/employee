@@ -1,0 +1,132 @@
+/* =========================================================================
+   Colour themes (admin area + self-service portal)
+   -------------------------------------------------------------------------
+   <html data-accent="…"> picks the palette; <html data-theme="dark|light">
+   picks the mode. Every palette defines:
+     --brand        buttons, active states, bars (white text sits on it)
+     --brand-hover  hover / pressed
+     --brand-rgb    the same colour as "r, g, b" for soft tints and rings
+     --brand-text   links, icons and coloured text (lighter in dark mode)
+     --hero-*       the dashboard greeting card gradient
+   All --brand values keep white text at 4.5:1 or better.
+   ========================================================================= */
+
+html[data-accent] {
+    --brand: #185FA5; --brand-hover: #134C84; --brand-rgb: 24, 95, 165; --brand-text: #185FA5; --brand-text-rgb: 24, 95, 165;
+    --hero-g1: #0b3b6f; --hero-g2: #185FA5; --hero-g3: #0f766e; --hero-glow1: rgba(242, 151, 58, .45); --hero-glow2: rgba(45, 212, 191, .22); --hero-accent: #F7B267;
+}
+html[data-accent="zambezi"] {
+    --brand: #0F766E; --brand-hover: #0B5F58; --brand-rgb: 15, 118, 110; --brand-text: #0F766E; --brand-text-rgb: 15, 118, 110;
+    --hero-g1: #053B38; --hero-g2: #0F766E; --hero-g3: #155E75; --hero-glow1: rgba(45, 212, 191, .38); --hero-glow2: rgba(56, 189, 248, .22); --hero-accent: #5EEAD4;
+}
+html[data-accent="copperbelt"] {
+    --brand: #B45309; --brand-hover: #92400E; --brand-rgb: 180, 83, 9; --brand-text: #B45309; --brand-text-rgb: 180, 83, 9;
+    --hero-g1: #431407; --hero-g2: #9A3412; --hero-g3: #B45309; --hero-glow1: rgba(251, 191, 36, .26); --hero-glow2: rgba(244, 63, 94, .18); --hero-accent: #FCD34D;
+}
+html[data-accent="emerald"] {
+    --brand: #047857; --brand-hover: #065F46; --brand-rgb: 4, 120, 87; --brand-text: #047857; --brand-text-rgb: 4, 120, 87;
+    --hero-g1: #022C22; --hero-g2: #065F46; --hero-g3: #047857; --hero-glow1: rgba(52, 211, 153, .34); --hero-glow2: rgba(250, 204, 21, .16); --hero-accent: #6EE7B7;
+}
+html[data-accent="jacaranda"] {
+    --brand: #6D28D9; --brand-hover: #5B21B6; --brand-rgb: 109, 40, 217; --brand-text: #6D28D9; --brand-text-rgb: 109, 40, 217;
+    --hero-g1: #2E1065; --hero-g2: #5B21B6; --hero-g3: #7C3AED; --hero-glow1: rgba(244, 114, 182, .32); --hero-glow2: rgba(167, 139, 250, .30); --hero-accent: #F0ABFC;
+}
+html[data-accent="msasa"] {
+    --brand: #BE123C; --brand-hover: #9F1239; --brand-rgb: 190, 18, 60; --brand-text: #BE123C; --brand-text-rgb: 190, 18, 60;
+    --hero-g1: #4C0519; --hero-g2: #9F1239; --hero-g3: #BE123C; --hero-glow1: rgba(251, 146, 60, .36); --hero-glow2: rgba(244, 114, 182, .20); --hero-accent: #FDA4AF;
+}
+html[data-accent="graphite"] {
+    --brand: #334155; --brand-hover: #1E293B; --brand-rgb: 51, 65, 85; --brand-text: #334155; --brand-text-rgb: 51, 65, 85;
+    --hero-g1: #0F172A; --hero-g2: #1E293B; --hero-g3: #334155; --hero-glow1: rgba(148, 163, 184, .30); --hero-glow2: rgba(56, 189, 248, .16); --hero-accent: #E2E8F0;
+}
+
+/* Dark mode: lighter text/link colour so it reads on dark surfaces */
+html[data-accent][data-theme="dark"]                         { --brand-text: #6CB0F0; --brand-text-rgb: 108, 176, 240; }
+html[data-accent="zambezi"][data-theme="dark"]               { --brand-text: #2DD4BF; --brand-text-rgb: 45, 212, 191; }
+html[data-accent="copperbelt"][data-theme="dark"]            { --brand-text: #F59E0B; --brand-text-rgb: 245, 158, 11; }
+html[data-accent="emerald"][data-theme="dark"]               { --brand-text: #34D399; --brand-text-rgb: 52, 211, 153; }
+html[data-accent="jacaranda"][data-theme="dark"]             { --brand-text: #A78BFA; --brand-text-rgb: 167, 139, 250; }
+html[data-accent="msasa"][data-theme="dark"]                 { --brand-text: #FB7185; --brand-text-rgb: 251, 113, 133; }
+html[data-accent="graphite"][data-theme="dark"]              { --brand: #475569; --brand-hover: #64748B; --brand-rgb: 71, 85, 105; --brand-text: #CBD5E1; --brand-text-rgb: 203, 213, 225; }
+
+/* ---------- hand the palette to the app's own variables and to Bootstrap ---------- */
+html[data-accent],
+html[data-accent][data-theme="dark"] {
+    --admin-primary: var(--brand-text);
+    --admin-primary-dark: var(--brand-hover);
+    --admin-ring: 0 0 0 4px rgba(var(--brand-rgb), .16);
+    --sidebar-accent: var(--brand-text);
+    --admin-sidebar-icon: color-mix(in srgb, var(--brand-text) 45%, #ffffff);
+
+    --bs-primary: var(--brand);
+    --bs-primary-rgb: var(--brand-rgb);
+    --bs-link-color: var(--brand-text);
+    --bs-link-color-rgb: var(--brand-text-rgb);
+    --bs-link-hover-color: var(--brand-hover);
+    --bs-link-hover-color-rgb: var(--brand-rgb);
+    --bs-primary-text-emphasis: var(--brand-hover);
+    --bs-primary-bg-subtle: rgba(var(--brand-rgb), .10);
+    --bs-primary-border-subtle: rgba(var(--brand-rgb), .30);
+    --bs-focus-ring-color: rgba(var(--brand-rgb), .25);
+}
+html[data-accent][data-theme="dark"] {
+    --bs-link-hover-color: color-mix(in srgb, var(--brand-text) 80%, #ffffff);
+    --bs-primary-text-emphasis: var(--brand-text);
+}
+
+html[data-accent] .btn-primary {
+    --bs-btn-bg: var(--brand); --bs-btn-border-color: var(--brand);
+    --bs-btn-hover-bg: var(--brand-hover); --bs-btn-hover-border-color: var(--brand-hover);
+    --bs-btn-active-bg: var(--brand-hover); --bs-btn-active-border-color: var(--brand-hover);
+    --bs-btn-disabled-bg: var(--brand); --bs-btn-disabled-border-color: var(--brand);
+    --bs-btn-focus-shadow-rgb: var(--brand-rgb);
+}
+html[data-accent] .btn-outline-primary {
+    --bs-btn-color: var(--brand-text); --bs-btn-border-color: var(--brand-text);
+    --bs-btn-hover-bg: var(--brand); --bs-btn-hover-border-color: var(--brand); --bs-btn-hover-color: #fff;
+    --bs-btn-active-bg: var(--brand-hover); --bs-btn-active-border-color: var(--brand-hover); --bs-btn-active-color: #fff;
+    --bs-btn-disabled-color: var(--brand-text); --bs-btn-disabled-border-color: var(--brand-text);
+    --bs-btn-focus-shadow-rgb: var(--brand-rgb);
+}
+html[data-accent] .btn-link { --bs-btn-color: var(--brand-text); --bs-btn-hover-color: var(--bs-link-hover-color); }
+html[data-accent] .text-primary { color: var(--brand-text) !important; }
+html[data-accent] .bg-primary, html[data-accent] .text-bg-primary { background-color: var(--brand) !important; color: #fff !important; }
+html[data-accent] .border-primary { border-color: var(--brand) !important; }
+html[data-accent] .link-primary { color: var(--brand-text) !important; }
+html[data-accent] .form-check-input:checked { background-color: var(--brand); border-color: var(--brand); }
+html[data-accent] .form-check-input:focus,
+html[data-accent] .form-control:focus,
+html[data-accent] .form-select:focus { border-color: rgba(var(--brand-rgb), .55); box-shadow: 0 0 0 .25rem rgba(var(--brand-rgb), .18); }
+html[data-accent] .nav-pills { --bs-nav-pills-link-active-bg: var(--brand); }
+html[data-accent] .nav-link { --bs-nav-link-hover-color: var(--brand-text); }
+html[data-accent] .pagination { --bs-pagination-color: var(--brand-text); --bs-pagination-active-bg: var(--brand); --bs-pagination-active-border-color: var(--brand); --bs-pagination-hover-color: var(--brand-hover); --bs-pagination-focus-box-shadow: 0 0 0 .25rem rgba(var(--brand-rgb), .2); }
+html[data-accent] .dropdown-menu { --bs-dropdown-link-active-bg: var(--brand); }
+html[data-accent] .list-group { --bs-list-group-active-bg: var(--brand); --bs-list-group-active-border-color: var(--brand); }
+html[data-accent] .progress, html[data-accent] .progress-stacked { --bs-progress-bar-bg: var(--brand); }
+html[data-accent] .spinner-border.text-primary { color: var(--brand-text) !important; }
+html[data-accent] .btn-check:checked + .btn-outline-primary,
+html[data-accent] .btn-check:checked + .btn-primary { background-color: var(--brand); border-color: var(--brand); color: #fff; }
+
+/* Greeting cards (HR + manager dashboards): use the palette's gradient.
+   Tradesmart blue keeps the morning / afternoon / evening colours. */
+html[data-accent]:not([data-accent="tradesmart"]) .db-hero.db-hero,
+html[data-accent]:not([data-accent="tradesmart"]) .mg-hero.mg-hero {
+    --g1: var(--hero-g1); --g2: var(--hero-g2); --g3: var(--hero-g3);
+    --glow1: var(--hero-glow1); --glow2: var(--hero-glow2); --accent: var(--hero-accent);
+}
+
+/* ---------- the picker in the top bar ---------- */
+.theme-menu { width: 300px; padding: .85rem; border-radius: 16px; }
+.theme-menu h6 { font-size: .78rem; font-weight: 700; color: var(--admin-muted, #6b7280); margin: 0 0 .5rem; }
+.theme-modes { display: grid; grid-template-columns: repeat(3, 1fr); gap: .35rem; margin-bottom: .9rem; }
+.theme-modes button { border: 1.5px solid var(--admin-border, #dbe4ef); background: var(--admin-surface, #fff); color: var(--admin-text, #1f2937); border-radius: 10px; padding: .45rem .3rem; font-size: .8rem; font-weight: 600; display: flex; flex-direction: column; align-items: center; gap: .15rem; }
+.theme-modes button i { font-size: 1.05rem; }
+.theme-modes button[aria-pressed="true"] { border-color: var(--brand-text); color: var(--brand-text); background: rgba(var(--brand-rgb), .08); }
+.theme-swatches { display: grid; grid-template-columns: repeat(4, 1fr); gap: .45rem; }
+.theme-swatch { border: 0; background: none; padding: .3rem .1rem; border-radius: 12px; display: flex; flex-direction: column; align-items: center; gap: .3rem; font-size: .68rem; line-height: 1.15; color: var(--admin-text, #1f2937); text-align: center; }
+.theme-swatch:hover { background: var(--admin-surface-soft, #f8fafc); }
+.theme-swatch .dot { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--sw) 0 50%, var(--sw2) 50% 100%); box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .35); position: relative; }
+.theme-swatch[aria-pressed="true"] .dot { box-shadow: 0 0 0 2px var(--admin-surface, #fff), 0 0 0 4px var(--sw); }
+.theme-swatch[aria-pressed="true"] .dot::after { content: "\2713"; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 800; font-size: .95rem; text-shadow: 0 1px 2px rgba(0, 0, 0, .4); }
+.theme-swatch:focus-visible, .theme-modes button:focus-visible { outline: 2px solid var(--brand-text); outline-offset: 2px; }
+.theme-note { font-size: .72rem; color: var(--admin-muted, #6b7280); margin: .75rem 0 0; }

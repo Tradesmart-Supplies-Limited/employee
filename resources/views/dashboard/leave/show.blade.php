@@ -387,7 +387,7 @@
     align-items: center;
     gap: 18px;
     padding: 20px 32px 16px;
-    border-bottom: 4px solid #185FA5;
+    border-bottom: 4px solid var(--brand, #185FA5);
 }
 
 .lv-logo {
@@ -411,13 +411,13 @@
 .lv-logo-text {
     font-weight: 700;
     font-size: 15px;
-    color: #185FA5;
+    color: var(--brand-text, #185FA5);
 }
 
 .lv-company-name {
     font-size: 20px;
     font-weight: 700;
-    color: #185FA5;
+    color: var(--brand-text, #185FA5);
     margin-bottom: 3px;
 }
 
@@ -570,7 +570,7 @@
 .lv-leave-mark {
     font-size: 14px;
     font-weight: 700;
-    color: #185FA5;
+    color: var(--brand-text, #185FA5);
     width: 16px;
     flex-shrink: 0;
     text-align: center;
@@ -585,7 +585,7 @@
     padding: 5px 14px;
     border: 1px solid #b8d6f5;
     border-radius: 5px;
-    color: #185FA5;
+    color: var(--brand-text, #185FA5);
     background: #f0f7ff;
     text-decoration: none;
     margin-top: 4px;
@@ -620,7 +620,7 @@
 }
 
 .lv-input:focus {
-    border-bottom-color: #185FA5;
+    border-bottom-color: var(--brand, #185FA5);
 }
 
 .lv-textarea {
@@ -639,7 +639,7 @@
 }
 
 .lv-textarea:focus {
-    border-color: #185FA5;
+    border-color: var(--brand, #185FA5);
 }
 
 /* ---- Approval radio ---- */
@@ -661,7 +661,7 @@
 }
 
 .lv-radio {
-    accent-color: #185FA5;
+    accent-color: var(--brand, #185FA5);
     width: 15px;
     height: 15px;
     cursor: pointer;
@@ -673,7 +673,7 @@
     color: #555;
     line-height: 1.7;
     padding: 12px 32px;
-    border-top: 3px solid #185FA5;
+    border-top: 3px solid var(--brand, #185FA5);
     background: #f2f8ff;
     font-style: italic;
 }
@@ -691,7 +691,7 @@
 .lv-choice span { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 13px; font-weight: 600; color: #475569; background: #fff; transition: all .15s; }
 .lv-choice--ok input:checked + span { border-color: #16a34a; background: #f0fdf4; color: #15803d; }
 .lv-choice--no input:checked + span { border-color: #dc2626; background: #fef2f2; color: #b91c1c; }
-.lv-choice input:focus-visible + span { outline: 2px solid #185FA5; outline-offset: 2px; }
+.lv-choice input:focus-visible + span { outline: 2px solid var(--brand, #185FA5); outline-offset: 2px; }
 
 .lv-balance { display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; background: #fff; }
 .lv-balance > div { padding: 10px 12px; border-right: 1px solid #eef2f7; }

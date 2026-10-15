@@ -6,10 +6,10 @@
 
 <style>
 .ti-step { display: flex; gap: .7rem; align-items: center; margin-bottom: .9rem; }
-.ti-step .n { width: 30px; height: 30px; border-radius: 50%; background: #185FA5; color: #fff; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+.ti-step .n { width: 30px; height: 30px; border-radius: 50%; background: var(--brand, #185FA5); color: #fff; font-weight: 800; display: flex; align-items: center; justify-content: center; }
 .ti-drop { border: 2px dashed var(--admin-border, #cbd5e1); border-radius: 14px; padding: 2rem 1rem; text-align: center; cursor: pointer; display: block; transition: all .15s; }
-.ti-drop.over { border-color: #185FA5; background: rgba(24,95,165,.05); }
-.ti-drop i { font-size: 2.4rem; color: #185FA5; }
+.ti-drop.over { border-color: var(--brand, #185FA5); background: rgba(var(--brand-rgb, 24, 95, 165),.05); }
+.ti-drop i { font-size: 2.4rem; color: var(--brand-text, #185FA5); }
 .ti-cols span { display: inline-block; font-size: .72rem; font-weight: 700; padding: .15rem .5rem; border-radius: 6px; background: var(--admin-surface-soft, #f1f5f9); margin: 0 .2rem .3rem 0; }
 .ti-cols span.y { background: #fef9c3; }
 </style>

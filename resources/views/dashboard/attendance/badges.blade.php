@@ -12,12 +12,12 @@ body { margin: 0; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 .bar button { background: #3b82f6; color: #fff; border: 0; border-radius: 8px; padding: 8px 16px; font-weight: 700; cursor: pointer; font-size: 14px; }
 .sheet { width: 190mm; margin: 12px auto; display: grid; grid-template-columns: repeat(2, 85.6mm); gap: 6mm 8mm; justify-content: center; }
 .card { width: 85.6mm; height: 54mm; background: #fff; border-radius: 3mm; border: .3mm dashed #94a3b8; overflow: hidden; display: flex; flex-direction: column; break-inside: avoid; page-break-inside: avoid; }
-.top { background: #185FA5; color: #fff; display: flex; align-items: center; gap: 2mm; padding: 1.8mm 3mm; font-size: 2.6mm; font-weight: 700; letter-spacing: .02em; }
+.top { background: var(--brand, #185FA5); color: #fff; display: flex; align-items: center; gap: 2mm; padding: 1.8mm 3mm; font-size: 2.6mm; font-weight: 700; letter-spacing: .02em; }
 .top img { height: 5.5mm; background: #fff; border-radius: 1mm; padding: .4mm; }
 .top span:last-child { margin-left: auto; font-weight: 600; opacity: .85; font-size: 2.3mm; }
 .body { flex: 1; display: flex; gap: 3mm; padding: 2.6mm 3mm 2.4mm; align-items: stretch; }
 .info { flex: 1; display: flex; flex-direction: column; min-width: 0; }
-.ph { width: 15mm; height: 15mm; border-radius: 50%; background: linear-gradient(135deg, #185FA5, #4f8cff) center/cover; color: #fff; font-weight: 800; font-size: 5mm; display: flex; align-items: center; justify-content: center; margin-bottom: 1.6mm; border: .6mm solid #e2e8f0; }
+.ph { width: 15mm; height: 15mm; border-radius: 50%; background: linear-gradient(135deg, var(--brand, #185FA5), #4f8cff) center/cover; color: #fff; font-weight: 800; font-size: 5mm; display: flex; align-items: center; justify-content: center; margin-bottom: 1.6mm; border: .6mm solid #e2e8f0; }
 .nm { font-weight: 800; font-size: 3.8mm; line-height: 1.15; }
 .ps { font-size: 2.6mm; color: #475569; margin-top: .6mm; line-height: 1.2; }
 .ein { margin-top: auto; font-family: ui-monospace, Consolas, monospace; font-size: 3mm; font-weight: 700; background: #f1f5f9; border-radius: 1mm; padding: .6mm 1.4mm; align-self: flex-start; }

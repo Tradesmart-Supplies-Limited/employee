@@ -24,7 +24,7 @@
 .ov-trend { display: flex; align-items: flex-end; gap: 4px; height: 120px; padding: 0 .2rem; }
 .ov-bar { flex: 1; display: flex; flex-direction: column-reverse; min-width: 6px; border-radius: 4px 4px 0 0; overflow: hidden; position: relative; text-decoration: none; }
 .ov-bar span { display: block; }
-.ov-bar.sel { outline: 2px solid #185FA5; outline-offset: 2px; }
+.ov-bar.sel { outline: 2px solid var(--brand, #185FA5); outline-offset: 2px; }
 .ov-bar.off { opacity: .35; }
 .ov-days { display: flex; gap: 4px; padding: 0 .2rem; font-size: .6rem; color: var(--admin-muted, #94a3b8); }
 .ov-days span { flex: 1; text-align: center; min-width: 6px; overflow: hidden; }

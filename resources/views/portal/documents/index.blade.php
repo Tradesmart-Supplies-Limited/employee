@@ -6,15 +6,15 @@
 <style>
 .md-card { background: var(--admin-surface, #fff); border: 1px solid var(--admin-border, #e2e8f0); border-radius: 14px; padding: 1rem 1.2rem; }
 .md-drop { border: 2px dashed var(--admin-border, #cbd5e1); border-radius: 14px; padding: 1.6rem 1rem; text-align: center; cursor: pointer; transition: all .15s; display: block; }
-.md-drop.over { border-color: #185FA5; background: rgba(24, 95, 165, .05); }
-.md-drop i { font-size: 2rem; color: #185FA5; }
+.md-drop.over { border-color: var(--brand, #185FA5); background: rgba(var(--brand-rgb, 24, 95, 165), .05); }
+.md-drop i { font-size: 2rem; color: var(--brand-text, #185FA5); }
 .md-doc { display: flex; align-items: center; gap: .8rem; padding: .7rem 0; border-bottom: 1px solid var(--admin-border, #eef2f7); }
 .md-doc:last-child { border-bottom: 0; }
-.md-ic { width: 42px; height: 42px; border-radius: 10px; background: var(--admin-surface-soft, #f1f5f9); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: #185FA5; flex-shrink: 0; }
+.md-ic { width: 42px; height: 42px; border-radius: 10px; background: var(--admin-surface-soft, #f1f5f9); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: var(--brand-text, #185FA5); flex-shrink: 0; }
 .md-chip { font-size: .68rem; font-weight: 700; padding: .1rem .5rem; border-radius: 999px; background: #f1f5f9; color: #475569; }
 .md-chip.me { background: #e0f2fe; color: #075985; }
 .md-filter a { font-size: .78rem; padding: .25rem .7rem; border-radius: 999px; border: 1px solid var(--admin-border, #e2e8f0); text-decoration: none; color: inherit; margin: 0 .2rem .3rem 0; display: inline-block; }
-.md-filter a.active { background: #185FA5; border-color: #185FA5; color: #fff; }
+.md-filter a.active { background: var(--brand, #185FA5); border-color: var(--brand, #185FA5); color: #fff; }
 </style>
 
 @php

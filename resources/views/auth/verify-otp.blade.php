@@ -11,7 +11,7 @@
         width: 100%; max-width: 52px; height: 56px; text-align: center; font-size: 1.5rem; font-weight: 700;
         border: 1.5px solid var(--admin-border, #dbe2ea); border-radius: 10px; background: transparent; color: inherit;
     }
-    .otp-boxes input:focus { border-color: #185FA5; outline: none; box-shadow: 0 0 0 3px rgba(24, 95, 165, .15); }
+    .otp-boxes input:focus { border-color: var(--brand, #185FA5); outline: none; box-shadow: 0 0 0 3px rgba(var(--brand-rgb, 24, 95, 165), .15); }
 </style>
 
 <p class="small text-muted mb-3">

@@ -12,14 +12,14 @@
 @endphp
 
 <style>
-.wz { --wz-accent: #185FA5; }
+.wz { --wz-accent: var(--brand-text, #185FA5); }
 .wz-shell { display: grid; grid-template-columns: 240px 1fr; gap: 1.25rem; align-items: start; }
 .wz-nav { position: sticky; top: 1rem; background: var(--admin-surface, #fff); border: 1px solid var(--admin-border, #e2e8f0); border-radius: 14px; padding: .6rem; }
 .wz-nav-item { display: flex; align-items: center; gap: .7rem; width: 100%; border: 0; background: transparent; text-align: left; padding: .65rem .7rem; border-radius: 10px; color: var(--admin-text, #0f172a); font-size: .88rem; cursor: pointer; }
 .wz-nav-item:hover { background: var(--admin-surface-soft, #f1f5f9); }
 .wz-nav-item .num { width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--admin-border, #cbd5e1); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: .8rem; color: var(--admin-muted, #64748b); flex-shrink: 0; background: var(--admin-surface, #fff); }
 .wz-nav-item .t { line-height: 1.2; } .wz-nav-item .t small { display: block; font-size: .72rem; color: var(--admin-muted, #64748b); }
-.wz-nav-item.active { background: rgba(24, 95, 165, .08); font-weight: 700; }
+.wz-nav-item.active { background: rgba(var(--brand-rgb, 24, 95, 165), .08); font-weight: 700; }
 .wz-nav-item.active .num { border-color: var(--wz-accent); color: var(--wz-accent); }
 .wz-nav-item.done .num { background: #16a34a; border-color: #16a34a; color: #fff; }
 .wz-nav-item.has-error .num { background: #dc2626; border-color: #dc2626; color: #fff; }

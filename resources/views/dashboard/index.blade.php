@@ -30,25 +30,51 @@
 @endphp
 
 <style>
-.db-hero { position: relative; overflow: hidden; border-radius: 22px; padding: 1.5rem 1.6rem; color: #fff; background: radial-gradient(900px 400px at 100% 0%, rgba(79,140,255,.55), transparent 60%), linear-gradient(135deg, #185FA5 0%, #0b3b6f 100%); box-shadow: 0 18px 40px rgba(11,59,111,.25); }
-.db-hero::after { content: ""; position: absolute; right: -60px; bottom: -80px; width: 260px; height: 260px; border-radius: 50%; background: rgba(255,255,255,.06); }
-.db-hero .date { font-size: .82rem; letter-spacing: .06em; text-transform: uppercase; opacity: .85; font-weight: 700; }
-.db-hero h1 { font-size: clamp(1.4rem, 3.2vw, 2rem); font-weight: 800; margin: .25rem 0 .1rem; color: #fff; }
-.db-hero .local { opacity: .8; font-style: italic; font-size: .92rem; }
-.db-hero .sum { margin-top: .7rem; font-size: .95rem; opacity: .95; }
-.db-hero .sum b { font-weight: 800; }
+/* Greeting card: the gradient follows the time of day (same rule as the greeting).
+   All stops are dark enough for white text (≥ 4.5:1). */
+.db-hero { --g1: #0b3b6f; --g2: #185FA5; --g3: #0f766e; --glow1: rgba(242,151,58,.42); --glow2: rgba(45,212,191,.22); --accent: #F7B267;
+    position: relative; overflow: hidden; isolation: isolate; border-radius: 22px; padding: 1.5rem 1.6rem; color: #fff;
+    background:
+        radial-gradient(620px 320px at 100% 0%, var(--glow1), transparent 62%),
+        radial-gradient(520px 300px at 0% 100%, var(--glow2), transparent 60%),
+        linear-gradient(125deg, var(--g1) 0%, var(--g2) 52%, var(--g3) 100%);
+    box-shadow: 0 1px 0 rgba(255,255,255,.12) inset, 0 20px 44px -18px color-mix(in srgb, var(--g1) 75%, transparent);
+    transition: background .8s ease; }
+.db-hero.is-morning   { --g1: #0b3b6f; --g2: #185FA5; --g3: #0f766e; --glow1: rgba(242,151,58,.55); --glow2: rgba(45,212,191,.22); --accent: #F7B267; }
+.db-hero.is-afternoon { --g1: #0c4a7d; --g2: #1666b0; --g3: #0e7490; --glow1: rgba(56,189,248,.38); --glow2: rgba(16,185,129,.24); --accent: #7DD3FC; }
+.db-hero.is-evening   { --g1: #1e1b4b; --g2: #312e81; --g3: #0b3b6f; --glow1: rgba(167,139,250,.40); --glow2: rgba(242,151,58,.20); --accent: #C4B5FD; }
+.db-hero::before { /* fine diagonal sheen for depth, never behind the text */
+    content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+    background: repeating-linear-gradient(125deg, rgba(255,255,255,.035) 0 2px, transparent 2px 14px);
+    mask-image: linear-gradient(90deg, transparent 35%, #000 100%); -webkit-mask-image: linear-gradient(90deg, transparent 35%, #000 100%); }
+.db-hero::after { content: ""; position: absolute; right: -70px; bottom: -90px; width: 280px; height: 280px; border-radius: 50%; z-index: -1;
+    background: radial-gradient(circle, rgba(255,255,255,.10), rgba(255,255,255,0) 70%); }
+.db-hero .date { font-size: .8rem; letter-spacing: .06em; text-transform: uppercase; font-weight: 700; color: rgba(255,255,255,.82); }
+.db-hero h1 { font-size: clamp(1.45rem, 3.2vw, 2.05rem); font-weight: 800; margin: .3rem 0 .15rem; color: #fff; letter-spacing: -.01em; text-shadow: 0 1px 2px rgba(0,0,0,.18); }
+.db-hero .local { color: rgba(255,255,255,.82); font-style: italic; font-size: .93rem; }
+.db-hero .sum { margin-top: .75rem; font-size: .96rem; color: rgba(255,255,255,.95); }
+.db-hero .sum b { font-weight: 800; color: #fff; }
 .db-clock { text-align: right; position: relative; z-index: 1; }
-.db-clock .t { font-size: clamp(2.2rem, 5vw, 3.4rem); font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
-.db-clock .t small { font-size: .42em; opacity: .7; font-weight: 600; }
-.db-clock .z { font-size: .78rem; opacity: .8; }
-.db-quote { position: relative; z-index: 1; margin-top: 1.1rem; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.18); border-radius: 16px; padding: .9rem 1.1rem; display: flex; gap: .9rem; align-items: flex-start; backdrop-filter: blur(4px); }
-.db-quote .qi { font-size: 2.4rem; line-height: .8; opacity: .6; font-family: Georgia, serif; }
-.db-quote .qt { font-size: 1.08rem; font-weight: 700; font-style: italic; }
-.db-quote .qm { font-size: .86rem; opacity: .9; }
-.db-quote .ql { font-size: .84rem; margin-top: .3rem; opacity: .95; }
-.db-quote .qa { font-size: .7rem; text-transform: uppercase; letter-spacing: .06em; font-weight: 700; opacity: .7; }
-.db-quote button { background: rgba(255,255,255,.15); border: 0; color: #fff; border-radius: 10px; padding: .35rem .55rem; margin-left: auto; flex-shrink: 0; }
-.db-quote button:hover { background: rgba(255,255,255,.25); }
+.db-clock .t { display: inline-block; font-size: clamp(2.2rem, 5vw, 3.3rem); font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -.02em;
+    padding: .35rem .7rem; border-radius: 16px; background: rgba(255,255,255,.10); border: 1px solid rgba(255,255,255,.16); }
+.db-clock .t small { font-size: .42em; color: var(--accent); font-weight: 700; }
+.db-clock .z { font-size: .78rem; color: rgba(255,255,255,.8); margin-top: .45rem; }
+.db-clock .z i { color: var(--accent); }
+/* Proverb: a darker glass panel so long text stays easy to read on any gradient */
+.db-quote { position: relative; z-index: 1; margin-top: 1.15rem; display: flex; gap: .9rem; align-items: flex-start;
+    background: linear-gradient(135deg, rgba(4,16,36,.38), rgba(4,16,36,.22)); border: 1px solid rgba(255,255,255,.14); border-left: 4px solid var(--accent);
+    border-radius: 16px; padding: .95rem 1.1rem; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.db-quote .qi { font-size: 2.6rem; line-height: .8; color: var(--accent); font-family: Georgia, serif; }
+.db-quote .qa { font-size: .72rem; letter-spacing: .04em; font-weight: 700; color: var(--accent); }
+.db-quote .qt { font-size: 1.12rem; font-weight: 700; font-style: italic; color: #fff; margin-top: .1rem; }
+.db-quote .qm { font-size: .88rem; color: rgba(255,255,255,.88); }
+.db-quote .ql { font-size: .86rem; margin-top: .35rem; color: #fff; }
+.db-quote .ql i { color: var(--accent); }
+.db-quote button { background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.2); color: #fff; border-radius: 10px; padding: .4rem .6rem; margin-left: auto; flex-shrink: 0; transition: background .15s, transform .15s; }
+.db-quote button:hover { background: rgba(255,255,255,.26); }
+.db-quote button:active { transform: rotate(-12deg); }
+.db-quote button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .db-hero { transition: none; } .db-quote button { transition: none; } }
 .db-actions { display: grid; grid-template-columns: repeat(6, 1fr); gap: .6rem; }
 .db-act { position: relative; display: flex; flex-direction: column; align-items: center; gap: .4rem; text-align: center; padding: .85rem .4rem .75rem; border-radius: 14px; border: 1px solid var(--admin-border, #e2e8f0); background: var(--admin-surface-soft, #f8fafc); color: inherit; text-decoration: none; font-size: .78rem; font-weight: 600; line-height: 1.2; transition: all .15s; }
 .db-act:hover { border-color: var(--c); background: var(--admin-surface, #fff); transform: translateY(-2px); box-shadow: 0 8px 18px rgba(15,23,42,.08); }
@@ -98,7 +124,8 @@
 </style>
 
 {{-- ============ HERO ============ --}}
-<section class="db-hero mb-3">
+@php $dayPart = $now->hour >= 5 && $now->hour < 12 ? 'morning' : ($now->hour >= 12 && $now->hour < 17 ? 'afternoon' : 'evening'); @endphp
+<section class="db-hero is-{{ $dayPart }} mb-3" id="dbHero">
     <div class="row g-2 align-items-start position-relative" style="z-index:1">
         <div class="col-md-8">
             <div class="date" id="dbDate">{{ $now->format('l, d F Y') }} · Week {{ $now->isoWeek }}</div>
@@ -372,6 +399,10 @@
         const d = new Date(base.server + (performance.now() - base.perf));
         document.getElementById('dbClock').innerHTML = pad(d.getUTCHours()) + ':' + pad(d.getUTCMinutes()) + '<small>:' + pad(d.getUTCSeconds()) + '</small>';
         document.getElementById('dbDate').textContent = DAYS[d.getUTCDay()] + ', ' + pad(d.getUTCDate()) + ' ' + MONTHS[d.getUTCMonth()] + ' ' + d.getUTCFullYear() + ' · Week ' + week;
+        // Keep the card's colours in step with the time of day.
+        const h = d.getUTCHours(), part = h >= 5 && h < 12 ? 'morning' : (h >= 12 && h < 17 ? 'afternoon' : 'evening');
+        const hero = document.getElementById('dbHero');
+        if (!hero.classList.contains('is-' + part)) { hero.classList.remove('is-morning', 'is-afternoon', 'is-evening'); hero.classList.add('is-' + part); }
     }
     tick(); setInterval(tick, 1000);
 

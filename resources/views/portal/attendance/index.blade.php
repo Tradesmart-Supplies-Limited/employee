@@ -13,7 +13,7 @@
 
 <style>
 .ma-card { background: var(--admin-surface, #fff); border: 1px solid var(--admin-border, #e2e8f0); border-radius: 16px; }
-.ma-qr { background: linear-gradient(160deg, #185FA5, #0b3b6f); color: #fff; border-radius: 18px; padding: 1.3rem; text-align: center; }
+.ma-qr { background: linear-gradient(160deg, var(--brand, #185FA5), #0b3b6f); color: #fff; border-radius: 18px; padding: 1.3rem; text-align: center; }
 .ma-qr .code { background: #fff; border-radius: 14px; padding: 12px; width: min(250px, 72vw); margin: .8rem auto; }
 .ma-qr .code svg { display: block; width: 100%; height: auto; }
 .ma-stat { padding: .8rem 1rem; border-left: 4px solid var(--c); }
@@ -78,7 +78,7 @@
         @if($row)
         <div class="row g-2 mb-3">
             @foreach([
-                ['Attendance', $row->rate !== null ? $row->rate . '%' : '—', '#185FA5'],
+                ['Attendance', $row->rate !== null ? $row->rate . '%' : '—', 'var(--brand-text, #185FA5)'],
                 ['Days in', $row->attended . '/' . $row->expected, '#16a34a'],
                 ['Late', $row->late, '#d97706'],
                 ['Absent', $row->absent, '#dc2626'],

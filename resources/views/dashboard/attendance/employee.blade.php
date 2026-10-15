@@ -25,7 +25,7 @@
 .ec-day { min-height: 74px; border-radius: 10px; border: 1px solid var(--admin-border, #e2e8f0); padding: 6px 7px; font-size: .72rem; position: relative; background: var(--admin-surface, #fff); text-decoration: none; color: inherit; display: block; }
 .ec-day .n { font-weight: 800; font-size: .82rem; }
 .ec-day.out { opacity: .3; }
-.ec-day.today { box-shadow: 0 0 0 2px #185FA5; }
+.ec-day.today { box-shadow: 0 0 0 2px var(--brand, #185FA5); }
 .ec-day .st { position: absolute; left: 0; right: 0; bottom: 0; height: 4px; border-radius: 0 0 10px 10px; }
 .ec-photo { width: 54px; height: 54px; border-radius: 10px; object-fit: cover; }
 </style>
@@ -43,7 +43,7 @@
 @if($row)
 <div class="row g-2 mb-3">
     @foreach([
-        ['Attendance', $row->rate !== null ? $row->rate . '%' : '—', '#185FA5', $row->attended . ' of ' . $row->expected . ' days'],
+        ['Attendance', $row->rate !== null ? $row->rate . '%' : '—', 'var(--brand-text, #185FA5)', $row->attended . ' of ' . $row->expected . ' days'],
         ['Late', $row->late, '#d97706', AR::formatMinutes($row->late_minutes) . ' in total'],
         ['Absent', $row->absent, '#dc2626', 'no scan, no leave'],
         ['On leave', $row->on_leave, '#7c3aed', 'approved leave days'],

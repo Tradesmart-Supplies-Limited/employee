@@ -30,7 +30,7 @@
 
 <div class="d-flex justify-content-between align-items-end flex-wrap gap-2 mb-3">
     <div>
-        <div class="text-uppercase fw-bold small" style="color:#185FA5; letter-spacing:.08em">Employees</div>
+        <div class="text-uppercase fw-bold small" style="color:var(--brand-text, #185FA5); letter-spacing:.08em">Employees</div>
         <h1 class="h4 fw-bold mb-0">Contract &amp; Probation Reminders</h1>
         <div class="small text-muted">Active employees whose contract or probation is ending, and when HR will be reminded.</div>
     </div>

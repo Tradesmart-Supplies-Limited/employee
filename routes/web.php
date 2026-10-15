@@ -24,6 +24,7 @@ use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\RotaController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\AccountPasswordController;
+use App\Http\Controllers\AccountThemeController;
 use App\Http\Controllers\WelcomeController;
 use App\Http\Controllers\Auth\SetupController;
 
@@ -149,6 +150,9 @@ Route::post('/payroll/runs/{run}/email-all', [PayslipMailController::class, 'sen
 |--------------------------------------------------------------------------
 */
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');
+
+// Colour theme picked in the top bar (admin area and portal)
+Route::post('/account/theme', [AccountThemeController::class, 'update'])->middleware(['auth', 'throttle:30,1'])->name('account.theme');
 
 // Change password for admin-area logins without a portal (temporary passwords land here first)
 Route::middleware(['auth', 'staff'])->group(function () {

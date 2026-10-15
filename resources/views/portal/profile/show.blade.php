@@ -30,7 +30,7 @@
 
 <style>
 .mp-hero { display: flex; gap: 1.2rem; align-items: center; flex-wrap: wrap; background: var(--admin-surface, #fff); border: 1px solid var(--admin-border, #e2e8f0); border-radius: 16px; padding: 1.2rem 1.4rem; margin-bottom: 1rem; }
-.mp-photo { width: 96px; height: 96px; border-radius: 50%; overflow: hidden; background: linear-gradient(135deg, #185FA5, #4f8cff); color: #fff; font-size: 2rem; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.mp-photo { width: 96px; height: 96px; border-radius: 50%; overflow: hidden; background: linear-gradient(135deg, var(--brand, #185FA5), #4f8cff); color: #fff; font-size: 2rem; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .mp-photo img { width: 100%; height: 100%; object-fit: cover; }
 .mp-card { background: var(--admin-surface, #fff); border: 1px solid var(--admin-border, #e2e8f0); border-radius: 14px; padding: 1rem 1.2rem; margin-bottom: 1rem; }
 .mp-card h2 { font-size: .95rem; font-weight: 800; margin: 0; display: flex; align-items: center; gap: .45rem; }

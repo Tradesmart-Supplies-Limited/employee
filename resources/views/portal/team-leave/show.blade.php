@@ -56,7 +56,7 @@
 
     <div class="col-lg-5">
         @if($leave->awaitingSupervisor())
-            <div class="card shadow-sm border-0" style="border-top:3px solid #185FA5 !important;">
+            <div class="card shadow-sm border-0" style="border-top:3px solid var(--brand, #185FA5) !important;">
                 <div class="card-header bg-transparent"><strong>Your recommendation</strong></div>
                 <form method="POST" action="{{ route('portal.team-leave.decide', $leave) }}" class="card-body">
                     @csrf

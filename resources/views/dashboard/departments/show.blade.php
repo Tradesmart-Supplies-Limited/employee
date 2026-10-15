@@ -29,7 +29,7 @@
 
 <div class="row g-2 g-md-3 mb-3">
     @foreach([
-        ['Active staff', $d->active, '#185FA5', $d->inactive ? $d->inactive . ' former employee(s)' : ($d->new_30 ? $d->new_30 . ' joined in 30 days' : 'all current')],
+        ['Active staff', $d->active, 'var(--brand-text, #185FA5)', $d->inactive ? $d->inactive . ' former employee(s)' : ($d->new_30 ? $d->new_30 . ' joined in 30 days' : 'all current')],
         ['In today', $att['expected'] ? $att['attended'] . '/' . $att['expected'] : '—', '#16a34a', $att['late'] ? $att['late'] . ' late' : ($att['rate'] !== null ? $att['rate'] . '% attendance' : 'no one expected')],
         ['On leave today', $d->on_leave, '#7c3aed', $d->on_leave_list->pluck('first_name')->take(3)->implode(', ') ?: 'nobody'],
         ['Average age', $d->avg_age ?? '—', '#0891b2', 'years'],

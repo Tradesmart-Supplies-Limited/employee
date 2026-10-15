@@ -21,14 +21,14 @@
 
 <style>
 .ep-hero { background: var(--admin-surface, #fff); border: 1px solid var(--admin-border, #e2e8f0); border-radius: 16px; padding: 1.2rem 1.4rem; display: flex; gap: 1.2rem; align-items: center; flex-wrap: wrap; margin-bottom: 1rem; }
-.ep-photo { width: 92px; height: 92px; border-radius: 50%; overflow: hidden; flex-shrink: 0; background: linear-gradient(135deg, #185FA5, #4f8cff); color: #fff; font-size: 2rem; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+.ep-photo { width: 92px; height: 92px; border-radius: 50%; overflow: hidden; flex-shrink: 0; background: linear-gradient(135deg, var(--brand, #185FA5), #4f8cff); color: #fff; font-size: 2rem; font-weight: 800; display: flex; align-items: center; justify-content: center; }
 .ep-photo img { width: 100%; height: 100%; object-fit: cover; }
 .ep-hero h1 { font-size: 1.45rem; font-weight: 800; margin: 0; }
 .ep-meta { font-size: .85rem; color: var(--admin-muted, #64748b); }
 .ep-chip { font-size: .72rem; font-weight: 700; padding: .18rem .6rem; border-radius: 999px; display: inline-flex; gap: .3rem; align-items: center; margin: .15rem .2rem .15rem 0; }
 .ep-tabs { display: flex; gap: .2rem; border-bottom: 1px solid var(--admin-border, #e2e8f0); margin-bottom: 1rem; overflow-x: auto; }
 .ep-tab { border: 0; background: none; padding: .65rem .95rem; font-size: .88rem; font-weight: 600; color: var(--admin-muted, #64748b); border-bottom: 2px solid transparent; white-space: nowrap; }
-.ep-tab.active { color: #185FA5; border-bottom-color: #185FA5; }
+.ep-tab.active { color: var(--brand-text, #185FA5); border-bottom-color: var(--brand, #185FA5); }
 .ep-tab .count { font-size: .7rem; background: var(--admin-surface-soft, #f1f5f9); padding: .05rem .4rem; border-radius: 999px; margin-left: .2rem; }
 .ep-pane { display: none; } .ep-pane.active { display: block; }
 .ep-card { background: var(--admin-surface, #fff); border: 1px solid var(--admin-border, #e2e8f0); border-radius: 14px; padding: 1rem 1.2rem; margin-bottom: 1rem; }
@@ -46,7 +46,7 @@
 .ep-tl small { color: var(--admin-muted, #64748b); display: block; }
 .ep-doc { display: flex; align-items: center; gap: .8rem; padding: .6rem 0; border-bottom: 1px solid var(--admin-border, #eef2f7); }
 .ep-doc:last-child { border-bottom: 0; }
-.ep-doc .ic { width: 38px; height: 38px; border-radius: 10px; background: var(--admin-surface-soft, #f1f5f9); display: flex; align-items: center; justify-content: center; font-size: 1.1rem; color: #185FA5; flex-shrink: 0; }
+.ep-doc .ic { width: 38px; height: 38px; border-radius: 10px; background: var(--admin-surface-soft, #f1f5f9); display: flex; align-items: center; justify-content: center; font-size: 1.1rem; color: var(--brand-text, #185FA5); flex-shrink: 0; }
 .ep-progress { height: 8px; border-radius: 4px; background: var(--admin-surface-soft, #f1f5f9); overflow: hidden; }
 .ep-progress span { display: block; height: 100%; background: #16a34a; }
 @media print { .ep-tabs, .ep-actions, .ep-reveal, form, .admin-sidebar { display: none !important; } .ep-pane { display: block !important; } }
@@ -132,7 +132,7 @@
                 <div class="ep-timeline">
                     @php
                         $events = collect([
-                            ['Started', $employee->contract_start, '#185FA5'],
+                            ['Started', $employee->contract_start, 'var(--brand-text, #185FA5)'],
                             ['Probation ends', $employee->probation_end, '#7c3aed'],
                             ['Contract ends', $employee->contract_end, '#dc2626'],
                         ])->filter(fn ($e) => $e[1])->sortBy(fn ($e) => $e[1]);
