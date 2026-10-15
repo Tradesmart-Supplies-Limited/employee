@@ -23,6 +23,7 @@ use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\RotaController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\AccountPasswordController;
 use App\Http\Controllers\WelcomeController;
 use App\Http\Controllers\Auth\SetupController;
 
@@ -149,6 +150,12 @@ Route::post('/payroll/runs/{run}/email-all', [PayslipMailController::class, 'sen
 */
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');
 
+// Change password for admin-area logins without a portal (temporary passwords land here first)
+Route::middleware(['auth', 'staff'])->group(function () {
+    Route::get('/account/password', [AccountPasswordController::class, 'edit'])->name('account.password.edit');
+    Route::put('/account/password', [AccountPasswordController::class, 'update'])->name('account.password.update');
+});
+
 Route::middleware(['auth', 'staff', 'password.change'])->group(function () {
 
     // Everyone in the admin area (Admin, HR, Director, Manager)
@@ -190,6 +197,7 @@ Route::middleware(['auth', 'staff', 'password.change'])->group(function () {
         Route::get('/users', [UserController::class, 'index'])->name('users.index');
         Route::post('/users', [UserController::class, 'store'])->name('users.store');
         Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
+        Route::post('/users/{user}/reset', [UserController::class, 'resetPassword'])->name('users.reset');
         Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
 
         // Others

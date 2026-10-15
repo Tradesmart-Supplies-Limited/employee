@@ -8,7 +8,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Sends users with a temporary password to the change-password page
- * (in the portal, so only for logins that have one).
+ * (the portal page, or the admin-area page for logins without a portal).
  * Alias: "password.change"
  */
 class ForcePasswordChange
@@ -17,10 +17,14 @@ class ForcePasswordChange
     {
         $user = $request->user();
 
-        if ($user && $user->must_change_password && $user->canUsePortal()) {
-            return redirect()
-                ->route('portal.password.edit')
-                ->with('error', 'Please set a new password before continuing.');
+        if ($user && $user->must_change_password) {
+            // Portal logins use the portal page; Directors / Admins without one use the admin page.
+            if ($user->canUsePortal()) {
+                return redirect()->route('portal.password.edit')->with('error', 'Please set a new password before continuing.');
+            }
+            if ($user->canUseAdmin()) {
+                return redirect()->route('account.password.edit');
+            }
         }
 
         return $next($request);

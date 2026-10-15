@@ -100,7 +100,7 @@
                 <div class="col-md-5">
                     <label class="form-label small fw-semibold">Password <span class="text-muted fw-normal">(optional)</span></label>
                     <input name="password" type="text" minlength="8" class="form-control form-control-sm" autocomplete="new-password" placeholder="Leave blank to generate one">
-                    <div class="form-text">Blank: a temporary password is emailed (linked employees) or shown to you once.</div>
+                    <div class="form-text">Leave blank and a temporary password is emailed to them; they choose their own when they first sign in.</div>
                 </div>
                 <div class="col-md-7 d-flex align-items-end justify-content-end"><button class="btn btn-primary btn-sm"><i class="bi bi-check2"></i> Create login</button></div>
             </div>
@@ -171,6 +171,11 @@
                         </div>
                     </form>
                     @unless($self)
+                        <form method="POST" action="{{ route('users.reset', $u) }}" class="mt-3 pt-3 border-top d-flex align-items-center gap-2 flex-wrap" onsubmit="return confirm('Email {{ addslashes($u->name) }} a new temporary password? Their current password will stop working.')">
+                            @csrf
+                            <button class="btn btn-outline-secondary btn-sm"><i class="bi bi-envelope"></i> Email new login details</button>
+                            <span class="small text-muted">{{ $u->must_change_password ? 'Hasn\'t chosen their own password yet.' : 'Sends a new temporary password to ' . $u->email . '.' }}</span>
+                        </form>
                         <form method="POST" action="{{ route('users.destroy', $u) }}" class="mt-2 text-end" onsubmit="return confirm('Remove {{ addslashes($u->name) }}\'s login? They will no longer be able to sign in. Their employee record is kept.')">
                             @csrf @method('DELETE')
                             <button class="btn btn-link btn-sm text-danger p-0"><i class="bi bi-person-x"></i> Remove login</button>

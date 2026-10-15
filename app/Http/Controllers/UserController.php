@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Mail\PortalWelcomeMail;
+use App\Mail\StaffLoginMail;
 use App\Models\Employee;
 use App\Models\User;
 use App\Support\Roles;
@@ -78,28 +79,42 @@ class UserController extends Controller
             'password'             => $password,
             'role'                 => $data['role'],
             'employee_id'          => $data['employee_id'] ?? null,
-            'must_change_password' => $generated && ! empty($data['employee_id']) && $data['role'] !== Roles::DIRECTOR,
+            // A generated password is temporary: they choose their own at first sign-in.
+            'must_change_password' => $generated,
         ]);
 
-        // Linked employees get the usual welcome email with their login details.
-        $emailed = false;
-        if ($user->employee && $generated) {
-            try {
-                Mail::to($user->email)->send(new PortalWelcomeMail($user, $user->employee, $password));
-                $emailed = true;
-            } catch (\Throwable $e) {
-                Log::error('Users: welcome email failed for ' . $user->email, ['error' => $e->getMessage()]);
-            }
-        }
+        $emailed = $this->sendLoginEmail($user, $generated ? $password : null, $request->user()->name);
 
         $msg = "{$user->name} can now sign in as " . Roles::label($user->role) . '.';
-        if ($generated) {
-            $msg .= $emailed
-                ? ' Their login details were emailed to ' . $user->email . '.'
-                : ' Temporary password (shown once, pass it on securely): ' . $password;
+        if ($emailed) {
+            $msg .= ' Their login details were emailed to ' . $user->email . '.';
+        } elseif ($generated) {
+            $msg .= ' The email could not be sent (check the MAIL_ settings). Temporary password, shown once, pass it on securely: ' . $password;
+        } else {
+            $msg .= ' The email could not be sent (check the MAIL_ settings). Give them the password you set.';
         }
 
-        return redirect()->route('users.index')->with('success', $msg);
+        return redirect()->route('users.index')->with($emailed ? 'success' : 'error', $msg);
+    }
+
+    /** Issue a new temporary password and email it (also fixes "they never got the email"). */
+    public function resetPassword(Request $request, User $user)
+    {
+        $me = $request->user();
+        $this->guardAdminRole($me, $user->roleKey());
+        if ($user->is($me)) {
+            return back()->with('error', 'Use "Forgot password" on the sign-in page to change your own password.');
+        }
+
+        $password = $this->tempPassword();
+        $user->update(['password' => $password, 'must_change_password' => true]);
+
+        if ($this->sendLoginEmail($user, $password, $me->name, true)) {
+            return redirect()->route('users.index', $request->only('q', 'role'))->with('success', "New login details emailed to {$user->email}. Their old password no longer works.");
+        }
+
+        return redirect()->route('users.index', $request->only('q', 'role'))
+            ->with('error', "The email to {$user->email} could not be sent (check the MAIL_ settings). Temporary password, shown once, pass it on securely: {$password}");
     }
 
     public function update(Request $request, User $user)
@@ -155,6 +170,27 @@ class UserController extends Controller
         $user->delete();
 
         return redirect()->route('users.index')->with('success', "{$name}'s login was removed. Their employee record is unchanged.");
+    }
+
+    /**
+     * Employee logins get the portal welcome; everyone else gets an email
+     * that explains their role. Sent straight away (it may hold a password).
+     */
+    private function sendLoginEmail(User $user, ?string $tempPassword, string $by, bool $isReset = false): bool
+    {
+        try {
+            if ($user->roleKey() === Roles::EMPLOYEE && $user->employee && $tempPassword) {
+                Mail::to($user->email)->send(new PortalWelcomeMail($user, $user->employee, $tempPassword, $isReset));
+            } else {
+                Mail::to($user->email)->send(new StaffLoginMail($user, $tempPassword, $by, $isReset));
+            }
+
+            return true;
+        } catch (\Throwable $e) {
+            Log::error('Users: login email failed for ' . $user->email, ['error' => $e->getMessage()]);
+
+            return false;
+        }
     }
 
     /** Only Admins may grant, change or remove the Admin role. */

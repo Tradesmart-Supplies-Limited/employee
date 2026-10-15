@@ -116,7 +116,7 @@ final class Roles
             ],
             self::DIRECTOR => [
                 'who'   => 'Company directors.',
-                'can'   => ['See everything HR sees, across the company', 'Review leave, attendance and staff reports', 'Approve when HR is away', 'Stay out of attendance and leave reports yourself'],
+                'can'   => ['See everything HR sees, across the company', 'Review leave, attendance and staff reports', 'Give final approval on leave and overtime when needed', 'Stay out of attendance and leave reports yourself'],
                 'lands' => 'The HR dashboard',
                 'tip'   => 'Directors don\'t have a self-service portal and aren\'t asked to scan in.',
             ],
