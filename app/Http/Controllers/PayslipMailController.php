@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Payroll;
 use App\Models\PayrollRun;
-use App\Jobs\SendPayslipEmail;
+use App\Services\Jobs\SendPayslipEmail;
 use Illuminate\Http\Request;
 
 class PayslipMailController extends Controller

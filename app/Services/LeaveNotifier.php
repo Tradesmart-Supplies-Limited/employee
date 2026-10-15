@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Jobs\SendLeaveWorkflowEmail;
+use App\Services\Jobs\SendLeaveWorkflowEmail;
 use App\Models\LeaveRequest;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;

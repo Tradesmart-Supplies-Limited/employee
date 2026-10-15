@@ -12,7 +12,7 @@ use App\Http\Controllers\LeaveManagementController;
 use App\Http\Controllers\PayrollController;
 use App\Http\Controllers\PayrollRunController;
 use App\Http\Controllers\PayrollRuleController;
-use App\Http\Controllers\PayrollReportController;
+use App\Http\Controllers\PayrollReportsController;
 use App\Http\Controllers\PayslipMailController;
 use App\Http\Controllers\ContractReminderSettingController;
 use App\Http\Controllers\AttendanceController;
@@ -100,35 +100,35 @@ Route::prefix('settings')->name('settings.')->group(function () {
 Route::prefix('payroll/reports')->name('payroll.reports.')->group(function () {
  
     // Main dashboard — pick a run, see summary, jump to any export
-    Route::get('/', [PayrollReportController::class, 'index'])->name('index');
+    Route::get('/', [PayrollReportsController::class, 'index'])->name('index');
  
     // Management reports — PDF export
     // {report} = total_earnings | total_deductions | net_payable |
     //            statutory_summary | comprehensive | department | branch
     Route::get('/{run}/management/{report}/pdf',
-        [PayrollReportController::class, 'exportManagementPdf'])
+        [PayrollReportsController::class, 'exportManagementPdf'])
         ->name('management.pdf');
  
     // Statutory submissions
     Route::get('/{run}/napsa/csv',
-        [PayrollReportController::class, 'exportNapsaCsv'])
+        [PayrollReportsController::class, 'exportNapsaCsv'])
         ->name('napsa.csv');
  
     Route::get('/{run}/zra/excel',
-        [PayrollReportController::class, 'exportZraExcel'])
+        [PayrollReportsController::class, 'exportZraExcel'])
         ->name('zra.excel');
  
     Route::get('/{run}/nhima/csv',
-        [PayrollReportController::class, 'exportNhimaCsv'])
+        [PayrollReportsController::class, 'exportNhimaCsv'])
         ->name('nhima.csv');
  
     Route::get('/{run}/wcfcb/csv',
-        [PayrollReportController::class, 'exportWcfcbCsv'])
+        [PayrollReportsController::class, 'exportWcfcbCsv'])
         ->name('wcfcb.csv');
  
     // Banking & payments
     Route::get('/{run}/bank-payments/csv',
-        [PayrollReportController::class, 'exportBankPaymentsCsv'])
+        [PayrollReportsController::class, 'exportBankPaymentsCsv'])
         ->name('bank_payments.csv');
  
 });
