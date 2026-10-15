@@ -48,32 +48,9 @@
 
     </div>
 
-    {{-- POSITION / ROLE --}}
-    <div class="mb-3">
-
-        <label class="form-label small fw-semibold text-muted">
-            Position / Role
-        </label>
-
-        <div class="input-group">
-
-            <span class="input-group-text bg-light border-end-0">
-                <i class="bi bi-briefcase"></i>
-            </span>
-
-            <input type="text"
-                   name="role"
-                   value="{{ old('role') }}"
-                   class="form-control border-start-0"
-                   placeholder="HR Manager"
-                   required>
-
-        </div>
-
-        @error('role')
-            <small class="text-danger">{{ $message }}</small>
-        @enderror
-
+    <div class="alert alert-info small py-2 mb-3">
+        <i class="bi bi-shield-lock"></i> This sets up the <strong>first account</strong>, which becomes the system <strong>Admin</strong>.
+        Everyone else is added later under <em>Users &amp; Roles</em>, or gets a self-service login from their employee profile.
     </div>
 
     {{-- EMAIL --}}

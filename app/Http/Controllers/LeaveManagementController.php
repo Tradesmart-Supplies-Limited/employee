@@ -9,6 +9,7 @@ use App\Models\PublicHoliday;
 use App\Services\LeaveBalance;
 use App\Services\LeaveDayCalculator;
 use App\Services\LeaveReport;
+use App\Support\DeptScope;
 use App\Services\LeaveWorkflow;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
@@ -34,12 +35,13 @@ class LeaveManagementController extends Controller
 
     public function index(Request $request)
     {
+        $this->scopeDepartment($request);
         $report = new LeaveReport($request->only(['year', 'department', 'branch', 'q', 'include_inactive', 'flag', 'sort', 'dir']));
 
         return view('dashboard.leave-management.index', [
             'r'       => $report,
             'f'       => $report->filters,
-            'options' => LeaveReport::filterOptions(),
+            'options' => $this->options($request),
             'carryMax'=> config('leave.carry_forward_max'),
             'startedYears' => \App\Models\LeaveBalanceAdjustment::where('type', 'year_start')->distinct()->pluck('year')->all(),
         ]);
@@ -47,6 +49,7 @@ class LeaveManagementController extends Controller
 
     public function exportBalances(Request $request)
     {
+        $this->scopeDepartment($request);
         $report = new LeaveReport($request->only(['year', 'department', 'branch', 'q', 'include_inactive', 'flag', 'sort', 'dir']));
         $year = $report->filters['year'];
 
@@ -64,6 +67,7 @@ class LeaveManagementController extends Controller
 
     public function exportRequests(Request $request)
     {
+        $this->scopeDepartment($request);
         $year = (int) $request->input('year', now()->year);
 
         $rows = LeaveRequest::with(['employee', 'supervisorEmployee', 'supervisorUser'])
@@ -87,15 +91,38 @@ class LeaveManagementController extends Controller
         );
     }
 
+    /** Managers: always their own department (they can't pick "All"). */
+    private function scopeDepartment(Request $request): void
+    {
+        $user = $request->user();
+        if ($user && ! $user->hasFullAccess()) {
+            $all = LeaveReport::filterOptions()['departments']->all();
+            $request->merge(['department' => DeptScope::pick($user, $request->input('department'), $all)[0]]);
+        }
+    }
+
+    private function options(Request $request): array
+    {
+        $o = LeaveReport::filterOptions();
+        $user = $request->user();
+        if ($user && ! $user->hasFullAccess()) {
+            $o['departments'] = collect(DeptScope::pick($user, null, [])[1]);
+        }
+
+        return $o;
+    }
+
     /* ===================== PLANNER (month grid) ===================== */
 
     public function planner(Request $request)
     {
+        $this->scopeDepartment($request);
         $month = Carbon::createFromFormat('Y-m', $request->input('month', now()->format('Y-m')))->startOfMonth();
         $start = $month->copy();
         $end = $month->copy()->endOfMonth();
 
         $leaves = LeaveRequest::with('employee')
+            ->where(fn ($q) => $q->whereNull('employee_id')->orWhereHas('employee', fn ($e) => $e->tracked()))
             ->whereIn('status', $request->boolean('approved_only') ? ['Approved'] : ['Approved', 'Pending'])
             ->whereDate('date_from', '<=', $end)
             ->whereDate('date_to', '>=', $start)
@@ -121,7 +148,7 @@ class LeaveManagementController extends Controller
             'days'     => collect(CarbonPeriod::create($start, $end)),
             'rows'     => $rows,
             'holidays' => $holidays,
-            'options'  => LeaveReport::filterOptions(),
+            'options'  => $this->options($request),
         ]);
     }
 

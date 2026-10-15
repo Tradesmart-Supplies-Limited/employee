@@ -55,8 +55,7 @@ class LeaveNotifier
             return $configured;
         }
 
-        return User::whereNull('employee_id')
-            ->whereIn(DB::raw('LOWER(role)'), ['admin', 'hr'])
+        return User::whereIn(DB::raw('LOWER(role)'), ['admin', 'hr'])
             ->pluck('email')
             ->all();
     }

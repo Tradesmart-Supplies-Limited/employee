@@ -7,6 +7,7 @@ use App\Models\AttendanceRecord;
 use App\Models\AttendanceScan;
 use App\Models\Employee;
 use App\Services\AttendanceService;
+use App\Support\DeptScope;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -26,7 +27,7 @@ class AttendanceController extends Controller
 
         $today = AttendanceService::today();
         $date = $this->date($request->query('date'), $today);
-        $dept = $request->query('department') ?: null;
+        [$dept, $departments] = $this->scope($request);
 
         $day = $this->att->day($date, $dept);
         $trend = $this->att->trend($date->copy()->subDays(20), $date, $dept);
@@ -34,14 +35,15 @@ class AttendanceController extends Controller
         $byDept = $day['rows']->groupBy(fn ($r) => $r->employee->department ?: 'No department')
             ->map(fn ($g, $n) => ['name' => $n] + $this->att->totals($g))->sortBy('name')->values();
 
-        $scans = AttendanceScan::with(['employee', 'kiosk'])->whereDate('date', $date->toDateString())
+        $scans = DeptScope::viaEmployee(AttendanceScan::query(), $request->user())
+            ->with(['employee', 'kiosk'])->whereDate('date', $date->toDateString())
             ->latest('scanned_at')->latest('id')->limit(12)->get();
 
         return view('dashboard.attendance.index', [
             'date'        => $date,
             'isToday'     => $date->isSameDay($today),
             'department'  => $dept,
-            'departments' => $this->departments(),
+            'departments' => $departments,
             'day'         => $day,
             'trend'       => $trend,
             'byDept'      => $byDept,
@@ -57,9 +59,9 @@ class AttendanceController extends Controller
     {
         $today = AttendanceService::today();
         $since = (int) $request->query('since', 0);
-        $day = $this->att->day($today, $request->query('department') ?: null);
+        $day = $this->att->day($today, $this->scope($request)[0]);
 
-        $new = AttendanceScan::with('employee')->where('id', '>', $since)->whereDate('date', $today->toDateString())
+        $new = DeptScope::viaEmployee(AttendanceScan::query(), $request->user())->with('employee')->where('id', '>', $since)->whereDate('date', $today->toDateString())
             ->orderBy('id')->limit(20)->get()
             ->map(fn ($s) => [
                 'id'     => $s->id,
@@ -86,12 +88,12 @@ class AttendanceController extends Controller
         if ($date->gt($today)) {
             $date = $today;
         }
-        $dept = $request->query('department') ?: null;
+        [$dept, $departments] = $this->scope($request);
 
         return view('dashboard.attendance.register', [
             'date'        => $date,
             'department'  => $dept,
-            'departments' => $this->departments(),
+            'departments' => $departments,
             'day'         => $this->att->day($date, $dept),
             'settings'    => $this->att->settings(),
             'isToday'     => $date->isSameDay($today),
@@ -116,8 +118,8 @@ class AttendanceController extends Controller
 
         foreach ($request->input('entries', []) as $id => $e) {
             $emp = $employees[$id] ?? null;
-            if (! $emp) {
-                continue;
+            if (! $emp || ! $request->user()?->canSeeEmployee($emp)) {
+                continue; // managers can only change their own department
             }
             $inRaw = trim((string) ($e['in'] ?? ''));
             $outRaw = trim((string) ($e['out'] ?? ''));
@@ -172,7 +174,7 @@ class AttendanceController extends Controller
     public function summary(Request $request)
     {
         [$from, $to, $month] = $this->month($request->query('month'));
-        $dept = $request->query('department') ?: null;
+        [$dept, $departments] = $this->scope($request);
         $rows = $this->att->summary($from, $to, $dept);
 
         $sort = $request->query('sort', 'name');
@@ -202,7 +204,7 @@ class AttendanceController extends Controller
             'from'        => $from,
             'to'          => $to,
             'department'  => $dept,
-            'departments' => $this->departments(),
+            'departments' => $departments,
             'sort'        => $sort,
             'all'         => $all,
         ]);
@@ -211,7 +213,7 @@ class AttendanceController extends Controller
     public function export(Request $request)
     {
         // Single day: the full register.  Month: one line per employee per day.
-        if ($request->filled('date')) {
+        if ($request->filled('date') && $request->user()?->hasFullAccess()) {
             $date = $this->date($request->query('date'), AttendanceService::today());
 
             return response($this->att->reportCsv($date), 200, [
@@ -220,8 +222,14 @@ class AttendanceController extends Controller
             ]);
         }
 
-        [$from, $to, $month] = $this->month($request->query('month'));
-        $m = $this->att->matrix($from, $to, $request->query('department') ?: null);
+        if ($request->filled('date')) {
+            // Managers: just their department for that day.
+            $from = $to = $this->date($request->query('date'), AttendanceService::today());
+            $month = $from->toDateString();
+        } else {
+            [$from, $to, $month] = $this->month($request->query('month'));
+        }
+        $m = $this->att->matrix($from, $to, $this->scope($request)[0]);
 
         return response()->streamDownload(function () use ($m) {
             $h = fopen('php://output', 'w');
@@ -246,6 +254,7 @@ class AttendanceController extends Controller
 
     public function employee(Request $request, Employee $employee)
     {
+        abort_unless($request->user()?->canSeeEmployee($employee), 403, 'This employee isn\'t in your department.');
         [$from, $to, $month] = $this->month($request->query('month'));
         $row = $this->att->summary($from, $to, null, $employee->id)->first();
 
@@ -303,6 +312,12 @@ class AttendanceController extends Controller
         }
 
         return [$from, $to, $from->format('Y-m')];
+    }
+
+    /** @return array{0: ?string, 1: string[]} department to show, departments to offer */
+    private function scope(Request $request): array
+    {
+        return DeptScope::pick($request->user(), $request->query('department') ?: $request->input('department'), $this->departments());
     }
 
     private function departments(): array

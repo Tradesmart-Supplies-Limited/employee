@@ -5,6 +5,22 @@
 
 @section('content')
 
+@if($needsSetup ?? false)
+    <a href="{{ route('setup') }}" class="alert alert-warning small py-2 d-flex gap-2 align-items-center text-decoration-none">
+        <i class="bi bi-stars"></i><span><strong>No logins exist yet.</strong> Set up the system to create the first Admin.</span>
+    </a>
+@endif
+
+@if($asRole ?? null)
+    <div class="d-flex gap-2 align-items-start p-2 mb-3 rounded-3" style="background:color-mix(in srgb, {{ $asRole['color'] }} 10%, transparent);border-left:4px solid {{ $asRole['color'] }}">
+        <i class="bi {{ $asRole['icon'] }} fs-5" style="color:{{ $asRole['color'] }}"></i>
+        <div class="small">
+            <div><strong>Signing in as {{ ['employee' => 'an employee', 'manager' => 'a manager', 'hr' => 'HR', 'director' => 'a director', 'admin' => 'an admin'][$as] }}</strong> &middot; <a href="{{ route('home') }}#pickTitle" class="text-decoration-none">change</a></div>
+            <div class="text-muted">{{ $asGuide['tip'] }}</div>
+        </div>
+    </div>
+@endif
+
 @include('auth.partials.flash')
 
 <form method="POST"
@@ -114,5 +130,9 @@
     
 
 </form>
+
+<p class="small text-muted text-center mt-3 mb-0">
+    Not sure which login you have? <a href="{{ route('home') }}" class="text-decoration-none">Find your badge</a>
+</p>
 
 @endsection

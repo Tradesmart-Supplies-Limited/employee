@@ -15,6 +15,7 @@
         {{-- NAVIGATION --}}
     <nav class="sidebar-nav">
 
+        @php $me = auth()->user(); $full = (bool) $me?->hasFullAccess(); @endphp
         <span class="nav-group-label nav-text">Main</span>
 
         <a class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}"
@@ -23,6 +24,7 @@
             <span class="nav-text">Dashboard</span>
         </a>
 
+        @if($full)
         <a class="nav-link {{ request()->routeIs('employees.*') ? 'active' : '' }}"
            href="{{ route('employees.index') }}">
             <i class="bi bi-people nav-icon"></i>
@@ -55,11 +57,21 @@
             <span class="nav-text">Announcements</span>
         </a>
 
-        <a class="nav-link {{ request()->routeIs('attendance.*') ? 'active' : '' }}"
+        @endif
+
+        <a class="nav-link {{ request()->routeIs('attendance.*') && ($full || ! request()->routeIs('attendance.rota.*')) ? 'active' : '' }}"
            href="{{ route('attendance.index') }}">
             <i class="bi bi-clock-history nav-icon"></i>
             <span class="nav-text">Attendance</span>
         </a>
+
+        @if(! $full && $me?->hasPermission('rota.manage'))
+        <a class="nav-link {{ request()->routeIs('attendance.rota.*') ? 'active' : '' }}"
+           href="{{ route('attendance.rota.index') }}">
+            <i class="bi bi-calendar-week nav-icon"></i>
+            <span class="nav-text">Shift Rota</span>
+        </a>
+        @endif
 
         <span class="nav-group-label nav-text">Leave</span>
 
@@ -72,7 +84,7 @@
         <a class="nav-link {{ request()->routeIs('leave.manage.index', 'leave.manage.employee') ? 'active' : '' }}"
            href="{{ route('leave.manage.index') }}">
             <i class="bi bi-bar-chart-line nav-icon"></i>
-            <span class="nav-text">Leave Reports &amp; Balances</span>
+            <span class="nav-text">{{ $full ? 'Leave Reports & Balances' : 'Team Leave Balances' }}</span>
         </a>
 
         <a class="nav-link {{ request()->routeIs('leave.manage.planner') ? 'active' : '' }}"
@@ -81,6 +93,7 @@
             <span class="nav-text">Leave Planner</span>
         </a>
 
+        @if($full)
         <a class="nav-link {{ request()->routeIs('leave.manage.record') ? 'active' : '' }}"
            href="{{ route('leave.manage.record') }}">
             <i class="bi bi-journal-plus nav-icon"></i>
@@ -98,6 +111,7 @@
             <i class="bi bi-calendar-plus nav-icon"></i>
             <span class="nav-text">Apply for Leave</span>
         </a>
+        @endif
 
         <!-- <span class="nav-group-label nav-text">Payroll</span>
 
@@ -133,7 +147,15 @@
             <span class="nav-text">Reports</span>
         </a> -->
 
-        <span class="nav-group-label nav-text">System</span>
+        <span class="nav-group-label nav-text">{{ $full ? 'System' : 'Me' }}</span>
+
+        @if($full)
+        <a class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}"
+           href="{{ route('users.index') }}">
+            <i class="bi bi-shield-lock nav-icon"></i>
+            <span class="nav-text">Users &amp; Roles</span>
+        </a>
+
 
         <a class="nav-link {{ request()->routeIs('settings.contract-reminders.*') ? 'active' : '' }}"
            href="{{ route('settings.contract-reminders.index') }}">
@@ -146,6 +168,14 @@
             <i class="bi bi-gear nav-icon"></i>
             <span class="nav-text">Settings</span>
         </a>
+        @endif
+
+        @if($me?->canUsePortal())
+        <a class="nav-link" href="{{ route('portal.dashboard') }}" title="Switch to your own self-service portal">
+            <i class="bi bi-arrow-left-right nav-icon"></i>
+            <span class="nav-text">My Self-Service</span>
+        </a>
+        @endif
 
         <a class="nav-link {{ request()->routeIs('profile.*') ? 'active' : '' }}"
            href="{{ route('profile.index') }}">
@@ -175,7 +205,7 @@
 
         <span class="sidebar-footer-text">
             <strong>{{ Auth::user()->name ?? 'Guest' }}</strong>
-            <small>{{ Auth::user()->role ?? 'User' }}</small>
+            <small>{{ Auth::user()?->roleLabel() ?? 'User' }}</small>
         </span>
 
         <form action="{{ route('logout') }}" method="POST" class="sidebar-logout text-end text-danger">
@@ -188,3 +218,5 @@
     </div>
 
 </aside>
+{{-- main.js fills the footer from this: show the signed-in role instead of a fixed label --}}
+<script>window.adminHMDUser = @json(['name' => auth()->user()?->name ?? 'Guest', 'workspace' => (auth()->user()?->roleLabel() ?? 'User') . ' · HR Workspace', 'avatar' => null]);</script>

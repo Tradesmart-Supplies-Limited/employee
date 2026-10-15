@@ -7,6 +7,11 @@
             @if($employee->user)
                 <small class="text-muted">
                     Login: <strong>{{ $employee->user->email }}</strong>
+                    &middot; Role: <strong>{{ $employee->user->roleLabel() }}</strong>
+                    <a href="{{ route('users.index', ['q' => $employee->user->email]) }}" class="ms-1">change</a>
+                    @if($employee->user->isDirector())
+                        &middot; <span class="text-muted">not counted in attendance or leave reports</span>
+                    @endif
                     @if($employee->user->must_change_password)
                         &middot; <span class="text-warning">has not set their own password yet</span>
                     @endif

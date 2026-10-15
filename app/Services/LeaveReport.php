@@ -49,6 +49,7 @@ class LeaveReport
         $today = now()->startOfDay();
 
         $employees = Employee::with(['supervisorEmployee', 'supervisorUser'])
+            ->tracked() // directors aren't counted in employee leave reports
             ->when(! $f['include_inactive'], fn ($q) => $q->where('employment_status', 'Active'))
             ->when($f['department'], fn ($q, $v) => $q->where('department', $v))
             ->when($f['branch'], fn ($q, $v) => $q->where('branch', $v))

@@ -10,10 +10,10 @@
     <option value="">— No supervisor (HR reviews directly) —</option>
 
     @if($supervisorUsers->isNotEmpty())
-        <optgroup label="Admin / HR users">
+        <optgroup label="Admin / HR / Director users (no employee record)">
             @foreach($supervisorUsers as $u)
                 <option value="user:{{ $u->id }}" @selected($selected === 'user:' . $u->id)>
-                    {{ $u->name }} — {{ ucfirst($u->role ?? 'staff') }}
+                    {{ $u->name }} — {{ $u->roleLabel() }}
                 </option>
             @endforeach
         </optgroup>

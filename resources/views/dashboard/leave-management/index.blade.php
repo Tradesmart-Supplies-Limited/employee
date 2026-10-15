@@ -1,4 +1,5 @@
 @extends('layouts.app')
+@php $hr = (bool) auth()->user()?->hasFullAccess(); @endphp
 
 @section('content')
 
@@ -94,7 +95,7 @@ a.lm-kpi:hover { border-color: var(--c); }
             <div class="small text-muted">Everyone's entitlement, days taken, balances and requests in one place.</div>
         </div>
         <div class="d-flex gap-2 flex-wrap">
-            <a href="{{ route('leave.manage.record') }}" class="btn btn-primary btn-sm"><i class="bi bi-journal-plus"></i> Record leave</a>
+            @if($hr)<a href="{{ route('leave.manage.record') }}" class="btn btn-primary btn-sm"><i class="bi bi-journal-plus"></i> Record leave</a>@endif
             <a href="{{ route('leave.manage.planner') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-calendar3-range"></i> Planner</a>
             <div class="dropdown">
                 <button class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-download"></i> Export</button>
@@ -106,7 +107,7 @@ a.lm-kpi:hover { border-color: var(--c); }
                     <li><a class="dropdown-item" href="#" onclick="window.print();return false;"><i class="bi bi-printer"></i> Print this report</a></li>
                 </ul>
             </div>
-            <button class="btn btn-outline-success btn-sm" data-bs-toggle="modal" data-bs-target="#newYearModal"><i class="bi bi-arrow-repeat"></i> New leave year</button>
+            @if($hr)<button class="btn btn-outline-success btn-sm" data-bs-toggle="modal" data-bs-target="#newYearModal"><i class="bi bi-arrow-repeat"></i> New leave year</button>@endif
         </div>
     </div>
 
@@ -118,7 +119,7 @@ a.lm-kpi:hover { border-color: var(--c); }
                 @foreach($options['years'] as $y)<option value="{{ $y }}" @selected($y == $year)>{{ $y }}</option>@endforeach
             </select>
             <select name="department" class="form-select form-select-sm" onchange="this.form.submit()">
-                <option value="">All departments</option>
+                @if(auth()->user()?->hasFullAccess())<option value="">All departments</option>@endif
                 @foreach($options['departments'] as $d)<option @selected($f['department'] === $d)>{{ $d }}</option>@endforeach
             </select>
             @if($options['branches']->isNotEmpty())
@@ -321,7 +322,7 @@ a.lm-kpi:hover { border-color: var(--c); }
                     @forelse($r->employees as $row)
                         <tr>
                             <td>
-                                <a href="{{ route('leave.manage.employee', $row->employee) }}" class="fw-semibold text-decoration-none">{{ $row->name }}</a>
+                                @if($hr)<a href="{{ route('leave.manage.employee', $row->employee) }}" class="fw-semibold text-decoration-none">{{ $row->name }}</a>@else<span class="fw-semibold">{{ $row->name }}</span>@endif
                                 <div class="text-muted" style="font-size:.72rem">{{ $row->employee->employee_id }}{{ $row->employee->supervisor_name ? ' · reports to ' . $row->employee->supervisor_name : '' }}</div>
                             </td>
                             <td>{{ $row->department ?? '—' }}</td>
@@ -339,8 +340,10 @@ a.lm-kpi:hover { border-color: var(--c); }
                                 @elseif($row->is_low)<span class="lm-badge wait">Low</span>@endif
                             </td>
                             <td class="text-end text-nowrap">
+@if($hr)
                                 <a href="{{ route('leave.manage.employee', $row->employee) }}" class="btn btn-sm btn-outline-secondary" title="Leave record &amp; adjust balance"><i class="bi bi-sliders"></i></a>
                                 <a href="{{ route('leave.manage.record', ['employee' => $row->employee->id]) }}" class="btn btn-sm btn-outline-primary" title="Record leave"><i class="bi bi-journal-plus"></i></a>
+                                @endif
                             </td>
                         </tr>
                     @empty
@@ -372,6 +375,7 @@ a.lm-kpi:hover { border-color: var(--c); }
 
 {{-- ===== NEW LEAVE YEAR MODAL ===== --}}
 @push('modals')
+@if($hr)
 <div class="modal fade" id="newYearModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <form method="POST" action="{{ route('leave.manage.new-year') }}" class="modal-content">
@@ -411,6 +415,7 @@ a.lm-kpi:hover { border-color: var(--c); }
         </form>
     </div>
 </div>
+@endif
 @endpush
 
 <style media="print">

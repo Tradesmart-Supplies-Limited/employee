@@ -41,24 +41,30 @@ class RotaService
 
     // ---------------------------------------------------------- permissions
 
-    /** HR/admin staff: every rota department. Supervisors: the departments of the people who report to them. */
+    /**
+     * Rota departments this user may plan:
+     *   Admin / HR / Director  – every rota department
+     *   Manager                – their own department(s)
+     *   anyone who supervises staff (portal) – the departments of their direct reports
+     */
     public function managedDepartments(?User $u): array
     {
         if (! $u) {
             return [];
         }
         $all = $this->departments();
-        if (method_exists($u, 'isStaff') ? $u->isStaff() : $u->employee_id === null) {
+        if ($u->hasFullAccess()) {
             return $all;
         }
-        $me = $u->employee;
-        if (! $me) {
-            return [];
-        }
-        $theirs = Employee::where('supervisor_employee_id', $me->id)->whereRaw('LOWER(employment_status) = ?', ['active'])
-            ->pluck('department')->filter()->unique()->all();
 
-        return array_values(array_intersect($all, $theirs));
+        $theirs = $u->isManager() ? ($u->managedDepartments() ?? []) : [];
+        if ($me = $u->employee) {
+            $theirs = array_merge($theirs, Employee::where('supervisor_employee_id', $me->id)
+                ->whereRaw('LOWER(employment_status) = ?', ['active'])
+                ->pluck('department')->filter()->all());
+        }
+
+        return array_values(array_intersect($all, array_unique($theirs)));
     }
 
     public function canManage(?User $u, string $department): bool
@@ -140,7 +146,7 @@ class RotaService
         $ids = $rota->exists ? $rota->assignments()->pluck('employee_id')->unique() : collect();
 
         return Employee::query()
-            ->where(fn ($q) => $q->where(fn ($w) => $w->where('department', $rota->department)->whereRaw('LOWER(employment_status) = ?', ['active']))
+            ->where(fn ($q) => $q->where(fn ($w) => $w->where('department', $rota->department)->whereRaw('LOWER(employment_status) = ?', ['active'])->tracked())
                 ->orWhereIn('id', $ids))
             ->orderBy('first_name')->orderBy('last_name')->get();
     }

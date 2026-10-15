@@ -21,9 +21,9 @@
 </style>
 
 @if(! $enabled)
-    <div class="alert alert-warning"><i class="bi bi-toggle-off"></i> Weekly rotas are switched off. @unless($portal)Turn them on under <a href="{{ route('attendance.settings') }}">Attendance → Settings → Shift rota</a>.@endunless</div>
+    <div class="alert alert-warning"><i class="bi bi-toggle-off"></i> Weekly rotas are switched off. @if(! $portal && auth()->user()?->hasFullAccess())Turn them on under <a href="{{ route('attendance.settings') }}">Attendance → Settings → Shift rota</a>.@endif</div>
 @elseif(! $departments)
-    <div class="alert alert-info"><i class="bi bi-info-circle"></i> No department uses a rota yet. @unless($portal)Pick the departments under <a href="{{ route('attendance.settings') }}">Attendance → Settings → Shift rota</a> (e.g. Operations).@endunless</div>
+    <div class="alert alert-info"><i class="bi bi-info-circle"></i> No department uses a rota yet. @if(! $portal && auth()->user()?->hasFullAccess())Pick the departments under <a href="{{ route('attendance.settings') }}">Attendance → Settings → Shift rota</a> (e.g. Operations).@endif</div>
 @else
     @if(count($departments) > 1)
         <div class="d-flex gap-1 flex-wrap mb-3">

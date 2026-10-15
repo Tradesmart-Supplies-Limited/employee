@@ -130,6 +130,7 @@
                                 class="btn btn-sm btn-outline-secondary" title="Print">
                                 <i class="bi bi-printer"></i>
                             </button>
+                            @if(auth()->user()?->hasFullAccess())
                             <form action="{{ route('leave.destroy', $leave->id) }}" method="POST" class="m-0">
                                 @csrf
                                 @method('DELETE')
@@ -138,6 +139,7 @@
                                     <i class="bi bi-trash"></i>
                                 </button>
                             </form>
+                            @endif
                         </div>
                     </td>
 

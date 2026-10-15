@@ -8,10 +8,12 @@ use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
-| EMPLOYEE SELF-SERVICE PORTAL  (employees only)
+| EMPLOYEE SELF-SERVICE PORTAL
 |--------------------------------------------------------------------------
 | auth      : must be logged in
-| portal    : must be a linked, Active employee account
+| portal    : Employee, HR or Manager login linked to an Active employee
+|             record (HR / Managers switch here from the admin area;
+|             Directors have no portal)
 | password.change : temporary-password users must set a new one first
 */
 Route::middleware(['auth', 'portal'])
@@ -88,10 +90,10 @@ Route::middleware(['auth', 'portal'])
 
 /*
 |--------------------------------------------------------------------------
-| ADMIN / HR SIDE OF THE PORTAL  (staff only)
+| ADMIN / HR SIDE OF THE PORTAL  (Admin, HR, Director)
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth', 'staff'])->group(function () {
+Route::middleware(['auth', 'staff', 'perm:full'])->group(function () {
 
     // Overtime approvals
     Route::get('/overtime', [AdminOvertimeController::class, 'index'])->name('overtime.index');

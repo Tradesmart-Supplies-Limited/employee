@@ -34,7 +34,7 @@ th a.sort.on { color: #185FA5; }
         @else<span class="btn btn-sm btn-outline-secondary disabled"><i class="bi bi-chevron-right"></i></span>@endif
     </div>
     <select name="department" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()">
-        <option value="">All departments</option>
+        @if(auth()->user()?->hasFullAccess())<option value="">All departments</option>@endif
         @foreach($departments as $d)<option @selected($department === $d)>{{ $d }}</option>@endforeach
     </select>
     <input type="hidden" name="sort" value="{{ $sort }}">

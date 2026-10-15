@@ -238,6 +238,13 @@ class AttendanceService
         $base['ein'] = $e->employee_id;
         $base['photo'] = $e->passport_photo ? asset('storage/' . $e->passport_photo) : null;
 
+        if ($e->is_director) {
+            $msg = 'Attendance isn\'t recorded for directors.';
+            $this->logScan($e, $kiosk, $now, 'rejected', $method, $code, $msg, null, $ip);
+
+            return array_merge($base, ['ok' => true, 'kind' => 'info', 'title' => 'Welcome, ' . $e->first_name, 'message' => $msg]);
+        }
+
         if (strtolower((string) $e->employment_status) !== 'active') {
             $msg = 'Not an active employee (' . ($e->employment_status ?: 'no status') . '). Please see HR.';
             $this->logScan($e, $kiosk, $now, 'rejected', $method, $code, $msg, null, $ip);
@@ -553,11 +560,11 @@ class AttendanceService
             : self::today()->toDateString());
     }
 
-    /** Active employees (optionally one department), sorted by name. */
+    /** Active employees (optionally one department), sorted by name. Directors are not tracked. */
     public function employees(?string $department = null, ?int $onlyId = null): Collection
     {
         return Employee::query()
-            ->when(! $onlyId, fn ($q) => $q->whereRaw('LOWER(employment_status) = ?', ['active']))
+            ->when(! $onlyId, fn ($q) => $q->whereRaw('LOWER(employment_status) = ?', ['active'])->tracked())
             ->when($department, fn ($q) => $q->where('department', $department))
             ->when($onlyId, fn ($q) => $q->whereKey($onlyId))
             ->orderBy('first_name')->orderBy('last_name')
@@ -586,7 +593,7 @@ class AttendanceService
         // Include people with records in range who are no longer active.
         $missing = $records->keys()->diff($employees->pluck('id'));
         if ($missing->isNotEmpty()) {
-            $employees = $employees->merge(Employee::whereIn('id', $missing)
+            $employees = $employees->merge(Employee::whereIn('id', $missing)->tracked()
                 ->when($department, fn ($q) => $q->where('department', $department))->get())
                 ->sortBy(fn ($e) => strtolower($e->first_name . ' ' . $e->last_name))->values();
         }

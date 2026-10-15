@@ -12,9 +12,16 @@ class AuthController extends Controller
     /**
      * Show login page
      */
-    public function showLogin()
+    public function showLogin(Request $request)
     {
-        return view('auth.login');
+        $as = \App\Support\Roles::normalize($request->query('as'));
+
+        return view('auth.login', [
+            'as'         => $as ?: null,
+            'asRole'     => $as ? \App\Support\Roles::options()[$as] : null,
+            'asGuide'    => $as ? \App\Support\Roles::guide()[$as] : null,
+            'needsSetup' => ! User::exists(),
+        ]);
     }
 
     /**
@@ -34,14 +41,23 @@ class AuthController extends Controller
 
             $user = Auth::user();
 
-            // Employee self-service accounts go to the portal.
-            if ($user->isPortalUser()) {
+            // Employee (portal-only) accounts go to the portal.
+            if ($user->isPortalUser() && $user->canUsePortal()) {
                 return redirect()->route('portal.dashboard')
-                    ->with('success', 'Welcome back, ' . $user->employee->first_name . '!');
+                    ->with('success', 'Welcome back, ' . ($user->employee?->first_name ?? $user->name) . '!');
             }
 
-            return redirect()->route('dashboard')
-                ->with('success', 'Welcome back!');
+            // Admin, HR, Director, Manager → admin area.
+            if ($user->canUseAdmin()) {
+                return redirect()->route('dashboard')
+                    ->with('success', 'Welcome back!');
+            }
+
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return back()->withErrors(['email' => 'Your account has no access role yet. Please contact HR.'])->onlyInput('email');
         }
 
 
@@ -55,32 +71,40 @@ class AuthController extends Controller
      */
     public function showRegister()
     {
+        // Self-registration only sets up the very first (Admin) account.
+        if (User::exists()) {
+            return redirect()->route('login')->withErrors(['email' => 'Accounts are created by HR. Ask HR or an Admin for a login.']);
+        }
+
         return view('auth.register');
     }
 
     /**
-     * Handle register request
+     * Handle register request (first Admin account only)
      */
     public function register(Request $request)
     {
+        if (User::exists()) {
+            return redirect()->route('login')->withErrors(['email' => 'Accounts are created by HR. Ask HR or an Admin for a login.']);
+        }
+
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
-            'password' => 'required|min:6|confirmed',
-            'role' => 'required|in:admin,hr'
+            'password' => 'required|min:8|confirmed',
         ]);
 
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'role' => $request->role
+            'role' => \App\Support\Roles::ADMIN,
         ]);
 
         Auth::login($user);
 
         return redirect()->route('dashboard')
-            ->with('success', 'Account created successfully!');
+            ->with('success', 'Admin account created. Add your team under Users & Roles.');
     }
 
     /**

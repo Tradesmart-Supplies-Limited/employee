@@ -23,7 +23,7 @@
         <section class="auth-card">
 
             {{-- BRAND --}}
-            <a class="auth-brand" href="#">
+            <a class="auth-brand" href="{{ route('home') }}">
                 <img src="http://misc.tradesmartzm.com/logo.png" width="36" height="36" alt="Tradesmart Supplies Logo"
                     class="brand-logo">
 

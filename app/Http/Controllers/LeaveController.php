@@ -6,6 +6,7 @@ use App\Models\Employee;
 use App\Models\LeaveRequest;
 use App\Services\LeaveDayCalculator;
 use App\Services\LeaveWorkflow;
+use App\Support\DeptScope;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -110,7 +111,10 @@ class LeaveController extends Controller
     {
         $stage = $request->query('stage');
 
-        $applications = LeaveRequest::with(['employee', 'supervisorEmployee', 'supervisorUser'])
+        // Managers: only their department's requests.
+        $base = fn () => DeptScope::viaEmployee(LeaveRequest::query(), $request->user());
+
+        $applications = $base()->with(['employee', 'supervisorEmployee', 'supervisorUser'])
             ->stage($stage)
             ->when($request->filled('q'), function ($q) use ($request) {
                 $term = '%' . $request->q . '%';
@@ -123,11 +127,11 @@ class LeaveController extends Controller
             ->withQueryString();
 
         $counts = [
-            'all'                           => LeaveRequest::count(),
-            LeaveRequest::STAGE_SUPERVISOR  => LeaveRequest::stage(LeaveRequest::STAGE_SUPERVISOR)->count(),
-            LeaveRequest::STAGE_HR          => LeaveRequest::stage(LeaveRequest::STAGE_HR)->count(),
-            LeaveRequest::STAGE_APPROVED    => LeaveRequest::stage(LeaveRequest::STAGE_APPROVED)->count(),
-            LeaveRequest::STAGE_REJECTED    => LeaveRequest::stage(LeaveRequest::STAGE_REJECTED)->count(),
+            'all'                           => $base()->count(),
+            LeaveRequest::STAGE_SUPERVISOR  => $base()->stage(LeaveRequest::STAGE_SUPERVISOR)->count(),
+            LeaveRequest::STAGE_HR          => $base()->stage(LeaveRequest::STAGE_HR)->count(),
+            LeaveRequest::STAGE_APPROVED    => $base()->stage(LeaveRequest::STAGE_APPROVED)->count(),
+            LeaveRequest::STAGE_REJECTED    => $base()->stage(LeaveRequest::STAGE_REJECTED)->count(),
         ];
 
         return view('dashboard.leave.index', compact('applications', 'counts', 'stage'));
@@ -138,6 +142,7 @@ class LeaveController extends Controller
      */
     public function show(LeaveRequest $leave)
     {
+        $this->authorizeLeave($leave);
         $leave->load(['employee.supervisorEmployee', 'employee.supervisorUser', 'supervisorEmployee.user', 'supervisorUser']);
 
         $employee = $leave->employee;
@@ -165,6 +170,8 @@ class LeaveController extends Controller
         ], [
             'supervisor_comments.required_if' => 'Please give a reason when recommending rejection.',
         ]);
+
+        $this->authorizeLeave($leave);
 
         try {
             $this->workflow->supervisorDecision($leave, $request->user(), $data['supervisor_decision'], $data['supervisor_comments'] ?? null);
@@ -257,8 +264,16 @@ class LeaveController extends Controller
     public function print($id)
     {
         $leave = LeaveRequest::findOrFail($id);
+        $this->authorizeLeave($leave);
 
         return view('dashboard.leave.print', compact('leave'));
+    }
+
+    /** Managers may only open their own department's requests. */
+    private function authorizeLeave(LeaveRequest $leave): void
+    {
+        $user = request()->user();
+        abort_unless($user && ($user->hasFullAccess() || $user->canSeeEmployee($leave->employee)), 403, 'This request isn\'t from your department.');
     }
 
     private function matchEmployee(?string $number, ?string $email): ?Employee

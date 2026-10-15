@@ -11,8 +11,10 @@
     $gridStart = $start->copy()->startOfWeek();
     $gridEnd = $end->copy()->endOfWeek();
     $cells = $row->cells ?? [];
-    $actions = '<a href="' . route('attendance.badges', ['ids' => [$employee->id]]) . '" target="_blank" class="btn btn-sm btn-outline-secondary"><i class="bi bi-printer"></i> Print QR badge</a>'
-             . '<a href="' . route('employees.show', $employee) . '" class="btn btn-sm btn-outline-secondary"><i class="bi bi-person"></i> Profile</a>';
+    $actions = auth()->user()?->hasFullAccess()
+        ? '<a href="' . route('attendance.badges', ['ids' => [$employee->id]]) . '" target="_blank" class="btn btn-sm btn-outline-secondary"><i class="bi bi-printer"></i> Print QR badge</a>'
+             . '<a href="' . route('employees.show', $employee) . '" class="btn btn-sm btn-outline-secondary"><i class="bi bi-person"></i> Profile</a>'
+        : null;
 @endphp
 
 @include('dashboard.attendance.partials.nav', ['title' => $employee->full_name, 'subtitle' => $employee->employee_id . ($employee->position ? ' · ' . e($employee->position) : '') . ($employee->department ? ' · ' . e($employee->department) : ''), 'actions' => $actions])
@@ -99,10 +101,12 @@
                 @endforelse
             </div>
         </div>
+        @if(auth()->user()?->hasFullAccess())
         <form method="POST" action="{{ route('attendance.qr.reissue', $employee) }}" class="mt-2 small" onsubmit="return confirm('Cancel {{ addslashes($employee->full_name) }}\'s current QR code and issue a new one? Their old badge will stop working.')">
             @csrf
             <i class="bi bi-shield-exclamation at-muted"></i> Badge lost? <button class="btn btn-link btn-sm p-0 align-baseline">Cancel the old QR code and issue a new one</button>
         </form>
+        @endif
     </div>
 </div>
 @endsection

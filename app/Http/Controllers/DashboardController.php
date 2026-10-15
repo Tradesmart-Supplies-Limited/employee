@@ -32,6 +32,11 @@ class DashboardController extends Controller
             }
         }
 
+        // Managers get a dashboard of their own department.
+        if ($user && ! $user->hasFullAccess()) {
+            return $this->managerDashboard($user, $now, $today);
+        }
+
         /* ---------------- people ---------------- */
         $employees = Employee::all();
         $active = $employees->filter(fn ($e) => strtolower((string) $e->employment_status) === 'active');
@@ -240,5 +245,65 @@ class DashboardController extends Controller
     public function settings()
     {
         return view('dashboard.settings.index');
+    }
+
+    /** Manager home: their department's attendance today, leave to review, who's away, the rota. */
+    private function managerDashboard(\App\Models\User $user, Carbon $now, Carbon $today)
+    {
+        $depts = $user->managedDepartments() ?? [];
+        $att = app(\App\Services\AttendanceService::class);
+
+        $rows = collect();
+        foreach ($depts as $d) {
+            try {
+                $rows = $rows->merge($att->day($today, $d)['rows']);
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
+        $totals = $att->totals($rows);
+        $attention = $rows->filter(fn ($r) => in_array($r->status, ['late', 'absent', 'not_in'], true))
+            ->sortBy(fn ($r) => ['absent' => 0, 'late' => 1, 'not_in' => 2][$r->status])->values();
+
+        $leave = fn () => \App\Support\DeptScope::viaEmployee(LeaveRequest::query(), $user);
+        $toReview = $leave()->with('employee')->where('status', 'Pending')->whereNull('supervisor_decision')->oldest()->limit(8)->get();
+        $withHr = $leave()->where('status', 'Pending')->whereNotNull('supervisor_decision')->count();
+        $away = $leave()->with('employee')->where('status', 'Approved')
+            ->whereDate('date_from', '<=', $today->toDateString())->whereDate('date_to', '>=', $today->toDateString())->orderBy('date_to')->get();
+        $upcoming = $leave()->with('employee')->whereIn('status', ['Approved', 'Pending'])
+            ->whereDate('date_from', '>', $today->toDateString())->whereDate('date_from', '<=', $today->copy()->addDays(14)->toDateString())
+            ->orderBy('date_from')->get();
+
+        $rotas = collect();
+        if ($user->hasPermission('rota.manage')) {
+            $rs = app(\App\Services\RotaService::class);
+            $monday = \App\Services\RotaService::monday($today);
+            foreach ($rs->managedDepartments($user) as $d) {
+                foreach ([0, 1] as $w) {
+                    $wk = $monday->copy()->addWeeks($w);
+                    $r = $rs->find($d, $wk);
+                    $rotas->push((object) ['department' => $d, 'week' => $wk, 'rota' => $r, 'pending' => $r ? $rs->hasPendingChanges($r) : false]);
+                }
+            }
+        }
+
+        $team = \App\Support\DeptScope::employees(Employee::query(), $user)->tracked()
+            ->whereRaw('LOWER(employment_status) = ?', ['active'])->count();
+
+        return view('dashboard.manager', [
+            'user'      => $user,
+            'depts'     => $depts,
+            'team'      => $team,
+            'today'     => $today,
+            'greeting'  => $now->hour < 12 ? 'Good morning' : ($now->hour < 17 ? 'Good afternoon' : 'Good evening'),
+            'quote'     => \App\Support\ZambianWisdom::today(),
+            'totals'    => $totals,
+            'attention' => $attention,
+            'toReview'  => $toReview,
+            'withHr'    => $withHr,
+            'away'      => $away,
+            'upcoming'  => $upcoming,
+            'rotas'     => $rotas,
+        ]);
     }
 }

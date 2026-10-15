@@ -219,6 +219,21 @@ class Employee extends Model
         return $this->hasOne(User::class);
     }
 
+    /**
+     * Everyone treated as an employee in attendance, rotas and leave reports:
+     * leaves out people whose login has the Director role.
+     */
+    public function scopeTracked($query)
+    {
+        return $query->whereDoesntHave('user', fn ($u) => $u->whereRaw('LOWER(role) = ?', ['director']));
+    }
+
+    /** Linked to a Director login (exempt from attendance / employee reports). */
+    public function getIsDirectorAttribute(): bool
+    {
+        return strtolower((string) $this->user?->role) === 'director';
+    }
+
     public function leaveRequests(): HasMany
     {
         return $this->hasMany(LeaveRequest::class);

@@ -54,7 +54,7 @@
     </div>
     @unless($isToday)<a href="{{ route('attendance.index', array_filter(['department' => $department])) }}" class="btn btn-sm btn-light border">Today</a>@endunless
     <select name="department" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()">
-        <option value="">All departments</option>
+        @if(auth()->user()?->hasFullAccess())<option value="">All departments</option>@endif
         @foreach($departments as $d)<option @selected($department === $d)>{{ $d }}</option>@endforeach
     </select>
     @if($isToday)<span class="ov-live ms-1"><i></i> LIVE · <span id="liveNow">{{ Att::now()->format('H:i') }}</span></span>@endif
@@ -220,7 +220,7 @@
     {{-- live feed + kiosks --}}
     <div class="col-xl-4">
         <div class="at-card mb-3">
-            <div class="at-card-h"><h6><i class="bi bi-broadcast"></i> {{ $isToday ? 'Live scans' : 'Scans that day' }}</h6><a href="{{ route('attendance.qr') }}" class="small text-decoration-none">Kiosks</a></div>
+            <div class="at-card-h"><h6><i class="bi bi-broadcast"></i> {{ $isToday ? 'Live scans' : 'Scans that day' }}</h6>@if(auth()->user()?->hasFullAccess())<a href="{{ route('attendance.qr') }}" class="small text-decoration-none">Kiosks</a>@endif</div>
             <div class="ov-feed" id="feed">
                 @forelse($scans as $s)
                     @php $ac = ['in' => ['bi-box-arrow-in-right', '#dcfce7', '#16a34a'], 'out' => ['bi-box-arrow-right', '#dbeafe', '#2563eb'], 'duplicate' => ['bi-arrow-repeat', '#f1f5f9', '#64748b'], 'rejected' => ['bi-x-octagon', '#fee2e2', '#dc2626']][$s->action] ?? ['bi-dot', '#f1f5f9', '#64748b']; @endphp
@@ -239,6 +239,7 @@
             </div>
         </div>
 
+        @if(auth()->user()?->hasFullAccess())
         <div class="at-card">
             <div class="at-card-h"><h6><i class="bi bi-tablet"></i> Entrance kiosks</h6></div>
             <div class="px-3 py-2">
@@ -253,6 +254,7 @@
                 @endforelse
             </div>
         </div>
+        @endif
     </div>
 </div>
 @endsection

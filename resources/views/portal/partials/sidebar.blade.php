@@ -114,6 +114,13 @@
             <span class="nav-text">Change Password</span>
         </a>
 
+        @if(auth()->user()?->canUseAdmin())
+        <a class="nav-link" href="{{ route('dashboard') }}" title="Switch back to the {{ auth()->user()->isManager() ? 'manager' : 'HR' }} admin area" style="color:#0f766e">
+            <i class="bi bi-arrow-left-right nav-icon"></i>
+            <span class="nav-text">{{ auth()->user()->isManager() ? 'Manager View' : 'HR Admin' }}</span>
+        </a>
+        @endif
+
     </nav>
 
     {{-- USER --}}

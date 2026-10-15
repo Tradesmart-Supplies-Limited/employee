@@ -1,14 +1,16 @@
 {{-- Attendance module header + tabs. Params: $title, $subtitle (optional), slot 'actions' via $actions (html) --}}
 @php
     $tabs = [
-        'attendance.index'    => ['Overview', 'bi-speedometer2'],
-        'attendance.register' => ['Daily register', 'bi-pencil-square'],
-        'attendance.rota.index' => ['Shift rota', 'bi-calendar-week'],
-        'attendance.summary'  => ['Monthly summary', 'bi-calendar3'],
-        'attendance.import'   => ['Import timesheets', 'bi-file-earmark-arrow-up'],
-        'attendance.qr'       => ['QR & kiosks', 'bi-qr-code'],
-        'attendance.settings' => ['Settings', 'bi-sliders'],
+        'attendance.index'    => ['Overview', 'bi-speedometer2', 'attendance.view'],
+        'attendance.register' => ['Daily register', 'bi-pencil-square', 'attendance.view'],
+        'attendance.rota.index' => ['Shift rota', 'bi-calendar-week', 'rota.manage'],
+        'attendance.summary'  => ['Monthly summary', 'bi-calendar3', 'attendance.view'],
+        'attendance.import'   => ['Import timesheets', 'bi-file-earmark-arrow-up', 'full'],
+        'attendance.qr'       => ['QR & kiosks', 'bi-qr-code', 'full'],
+        'attendance.settings' => ['Settings', 'bi-sliders', 'full'],
     ];
+    $u = auth()->user();
+    $tabs = array_filter($tabs, fn ($t) => $u && ($t[2] === 'full' ? $u->hasFullAccess() : $u->hasPermission($t[2])));
     $current = request()->route()?->getName();
 @endphp
 <style>

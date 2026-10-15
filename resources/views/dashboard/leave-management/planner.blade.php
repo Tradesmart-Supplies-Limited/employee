@@ -48,7 +48,7 @@
         <input type="month" name="month" value="{{ $month->format('Y-m') }}" class="form-control form-control-sm" style="width:150px" onchange="this.form.submit()">
         <a href="{{ route('leave.manage.planner', array_merge($keep, ['month' => $next])) }}" class="btn btn-sm btn-outline-secondary" title="Next month"><i class="bi bi-chevron-right"></i></a>
         <select name="department" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()">
-            <option value="">All departments</option>
+            @if(auth()->user()?->hasFullAccess())<option value="">All departments</option>@endif
             @foreach($options['departments'] as $d)<option @selected(request('department') === $d)>{{ $d }}</option>@endforeach
         </select>
         <div class="form-check small mb-0">
@@ -77,7 +77,7 @@
                 @forelse($rows as $row)
                     <tr>
                         <th class="name">
-                            @if($row->employee)
+                            @if($row->employee && auth()->user()?->hasFullAccess())
                                 <a href="{{ route('leave.manage.employee', $row->employee) }}" class="text-decoration-none fw-semibold">{{ $row->name }}</a>
                             @else
                                 <span class="fw-semibold">{{ $row->name }}</span>

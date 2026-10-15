@@ -14,8 +14,8 @@ class HrRecipients
     /** @return string[] lower-cased, unique, valid addresses */
     public static function all(array $except = []): array
     {
-        $users = User::whereNull('employee_id')
-            ->whereIn(DB::raw('LOWER(role)'), ['admin', 'hr'])
+        // Admin and HR logins (HR staff may also be linked to their own employee record).
+        $users = User::whereIn(DB::raw('LOWER(role)'), ['admin', 'hr'])
             ->pluck('email')
             ->all();
 

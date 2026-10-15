@@ -22,6 +22,9 @@ use App\Http\Controllers\KioskController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\RotaController;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\WelcomeController;
+use App\Http\Controllers\Auth\SetupController;
 
 /*
 |--------------------------------------------------------------------------
@@ -36,6 +39,14 @@ Route::prefix('kiosk/{token}')->name('kiosk.')->where(['token' => '[A-Za-z0-9]{2
 
 /*
 |--------------------------------------------------------------------------
+| HOME: welcome page that helps people pick the right login
+|--------------------------------------------------------------------------
+*/
+Route::get('/', [WelcomeController::class, 'index'])->name('home');
+Route::get('/setup/done', [SetupController::class, 'done'])->middleware('auth')->name('setup.done');
+
+/*
+|--------------------------------------------------------------------------
 | GUEST ROUTES (NOT LOGGED IN)
 |--------------------------------------------------------------------------
 */
@@ -44,8 +55,15 @@ Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login']);
 
-    Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
-    Route::post('/register', [AuthController::class, 'register']);
+    // First-time setup: creates the first Admin login, with email confirmation.
+    // Only open while there are no logins at all (the controller closes it after).
+    Route::get('/setup', [SetupController::class, 'show'])->name('setup');
+    Route::post('/setup/details', [SetupController::class, 'details'])->middleware('throttle:10,1')->name('setup.details');
+    Route::post('/setup/verify', [SetupController::class, 'verify'])->middleware('throttle:15,1')->name('setup.verify');
+    Route::post('/setup/resend', [SetupController::class, 'resend'])->middleware('throttle:6,1')->name('setup.resend');
+    Route::post('/setup/password', [SetupController::class, 'password'])->middleware('throttle:10,1')->name('setup.password');
+    Route::post('/setup/restart', [SetupController::class, 'restart'])->name('setup.restart');
+    Route::redirect('/register', '/setup')->name('register');
 
     // Forgot / reset password (all users) — by emailed link or 6-digit code
     Route::get('/forgot-password', [PasswordResetController::class, 'create'])->name('password.request');
@@ -58,7 +76,7 @@ Route::middleware('guest')->group(function () {
 /*
 | Staff-only admin tools (were reachable without login before)
 */
-Route::middleware(['auth', 'staff'])->group(function () {
+Route::middleware(['auth', 'staff', 'perm:full'])->group(function () {
 
 Route::prefix('settings')->name('settings.')->group(function () {
     Route::get('contract-reminders', [ContractReminderSettingController::class, 'index'])
@@ -131,95 +149,111 @@ Route::post('/payroll/runs/{run}/email-all', [PayslipMailController::class, 'sen
 */
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');
 
-Route::middleware(['auth', 'staff'])->group(function () {
+Route::middleware(['auth', 'staff', 'password.change'])->group(function () {
 
-    // ✅ STATIC ROUTES FIRST
-    Route::get('/employees/sample-csv', [EmployeeController::class, 'downloadSampleCsv'])
-        ->name('employees.sample-csv');
+    // Everyone in the admin area (Admin, HR, Director, Manager)
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::view('/profile', 'dashboard.profile')->name('profile.index');
 
-    // Bulk import: upload → preview → confirm
-    Route::get('/employees/import', [EmployeeImportController::class, 'create'])->name('employees.import');
-    Route::get('/employees/import/template', [EmployeeImportController::class, 'template'])->name('employees.import.template');
-    Route::post('/employees/import/preview', [EmployeeImportController::class, 'preview'])->name('employees.import.preview');
-    Route::get('/employees/import/preview/{token}', [EmployeeImportController::class, 'showPreview'])->name('employees.import.show');
-    Route::post('/employees/import/commit/{token}', [EmployeeImportController::class, 'commit'])->name('employees.import.commit');
+    // ------------------------------------------------------------------
+    // Admin / HR / Director only
+    // ------------------------------------------------------------------
+    Route::middleware('perm:full')->group(function () {
 
-    Route::get('/employees/export', [EmployeeController::class, 'export'])->name('employees.export');
+        // ✅ STATIC ROUTES FIRST
+        Route::get('/employees/sample-csv', [EmployeeController::class, 'downloadSampleCsv'])
+            ->name('employees.sample-csv');
 
-    // Employee documents
-    Route::post('/employees/{employee}/documents', [EmployeeController::class, 'documentStore'])->name('employees.documents.store');
-    Route::get('/employees/{employee}/documents/{index}', [EmployeeController::class, 'documentDownload'])->whereNumber('index')->name('employees.documents.download');
-    Route::delete('/employees/{employee}/documents/{index}', [EmployeeController::class, 'documentDestroy'])->whereNumber('index')->name('employees.documents.destroy');
+        // Bulk import: upload → preview → confirm
+        Route::get('/employees/import', [EmployeeImportController::class, 'create'])->name('employees.import');
+        Route::get('/employees/import/template', [EmployeeImportController::class, 'template'])->name('employees.import.template');
+        Route::post('/employees/import/preview', [EmployeeImportController::class, 'preview'])->name('employees.import.preview');
+        Route::get('/employees/import/preview/{token}', [EmployeeImportController::class, 'showPreview'])->name('employees.import.show');
+        Route::post('/employees/import/commit/{token}', [EmployeeImportController::class, 'commit'])->name('employees.import.commit');
 
-    // Employee self-service change requests (HR approval)
-    Route::get('/profile-changes', [ProfileChangeController::class, 'index'])->name('profile-changes.index');
-    Route::post('/profile-changes/{change}/approve', [ProfileChangeController::class, 'approve'])->name('profile-changes.approve');
-    Route::post('/profile-changes/{change}/reject', [ProfileChangeController::class, 'reject'])->name('profile-changes.reject');
+        Route::get('/employees/export', [EmployeeController::class, 'export'])->name('employees.export');
 
-    // Dashboard
-    Route::get('/dashboard', [DashboardController::class, 'index'])
-        ->name('dashboard');
+        // Employee documents
+        Route::post('/employees/{employee}/documents', [EmployeeController::class, 'documentStore'])->name('employees.documents.store');
+        Route::get('/employees/{employee}/documents/{index}', [EmployeeController::class, 'documentDownload'])->whereNumber('index')->name('employees.documents.download');
+        Route::delete('/employees/{employee}/documents/{index}', [EmployeeController::class, 'documentDestroy'])->whereNumber('index')->name('employees.documents.destroy');
 
-    // Employees
-    Route::resource('employees', EmployeeController::class);
-    
+        // Employee self-service change requests (HR approval)
+        Route::get('/profile-changes', [ProfileChangeController::class, 'index'])->name('profile-changes.index');
+        Route::post('/profile-changes/{change}/approve', [ProfileChangeController::class, 'approve'])->name('profile-changes.approve');
+        Route::post('/profile-changes/{change}/reject', [ProfileChangeController::class, 'reject'])->name('profile-changes.reject');
 
-    // Others
-    Route::get('/departments', [DepartmentController::class, 'index'])->name('departments.index');
-    Route::get('/departments/{slug}', [DepartmentController::class, 'show'])->where('slug', '[a-z0-9\-]+')->name('departments.show');
+        // Employees
+        Route::resource('employees', EmployeeController::class);
 
-    // Announcements (shown in the employee portal; optional email)
-    Route::get('announcements/{announcement}/attachment', [AnnouncementController::class, 'attachment'])->name('announcements.attachment');
-    Route::resource('announcements', AnnouncementController::class);
-    Route::get('/leave', [LeaveController::class, 'index'])->name('leave.index');
+        // Users & roles (who can log in, and what they can do)
+        Route::get('/users', [UserController::class, 'index'])->name('users.index');
+        Route::post('/users', [UserController::class, 'store'])->name('users.store');
+        Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
+        Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
 
-    // Attendance (HR)
-    Route::prefix('attendance')->name('attendance.')->group(function () {
-        Route::get('/', [AttendanceController::class, 'index'])->name('index');
-        Route::get('live', [AttendanceController::class, 'live'])->name('live');
-        Route::get('register', [AttendanceController::class, 'register'])->name('register');
-        Route::post('register', [AttendanceController::class, 'registerSave'])->name('register.save');
-        Route::get('summary', [AttendanceController::class, 'summary'])->name('summary');
-        Route::get('export', [AttendanceController::class, 'export'])->name('export');
-        Route::get('employee/{employee}', [AttendanceController::class, 'employee'])->name('employee');
-        Route::get('photo', [AttendanceController::class, 'photo'])->name('photo');
+        // Others
+        Route::get('/departments', [DepartmentController::class, 'index'])->name('departments.index');
+        Route::get('/departments/{slug}', [DepartmentController::class, 'show'])->where('slug', '[a-z0-9\-]+')->name('departments.show');
 
-        Route::get('import', [AttendanceImportController::class, 'create'])->name('import');
-        Route::get('import/template', [AttendanceImportController::class, 'template'])->name('import.template');
-        Route::post('import', [AttendanceImportController::class, 'preview'])->name('import.preview');
-        Route::get('import/{token}', [AttendanceImportController::class, 'show'])->name('import.show');
-        Route::post('import/{token}', [AttendanceImportController::class, 'commit'])->name('import.commit');
+        // Announcements (shown in the employee portal; optional email)
+        Route::get('announcements/{announcement}/attachment', [AnnouncementController::class, 'attachment'])->name('announcements.attachment');
+        Route::resource('announcements', AnnouncementController::class);
 
-        Route::get('settings', [AttendanceSetupController::class, 'settings'])->name('settings');
-        Route::put('settings', [AttendanceSetupController::class, 'updateSettings'])->name('settings.update');
-        Route::post('settings/test-report', [AttendanceSetupController::class, 'testReport'])->name('settings.test');
-        Route::post('settings/send-day', [AttendanceSetupController::class, 'sendDay'])->name('settings.send-day');
-
-        // Weekly shift rotas (HR)
-        Route::get('rota', [RotaController::class, 'index'])->name('rota.index');
-        Route::post('rota', [RotaController::class, 'store'])->name('rota.store');
-        Route::get('rota/{rota}', [RotaController::class, 'edit'])->name('rota.edit');
-        Route::put('rota/{rota}', [RotaController::class, 'update'])->name('rota.update');
-        Route::post('rota/{rota}/publish', [RotaController::class, 'publish'])->name('rota.publish');
-        Route::post('rota/{rota}/unpublish', [RotaController::class, 'unpublish'])->name('rota.unpublish');
-        Route::post('rota/{rota}/copy', [RotaController::class, 'copyPrevious'])->name('rota.copy');
-        Route::get('rota/{rota}/print', [RotaController::class, 'print'])->name('rota.print');
-        Route::delete('rota/{rota}', [RotaController::class, 'destroy'])->name('rota.destroy');
-
-        Route::get('qr', [AttendanceSetupController::class, 'qr'])->name('qr');
-        Route::get('qr/badges', [AttendanceSetupController::class, 'badges'])->name('badges');
-        Route::post('qr/{employee}/reissue', [AttendanceSetupController::class, 'reissue'])->name('qr.reissue');
-        Route::post('kiosks', [AttendanceSetupController::class, 'storeKiosk'])->name('kiosks.store');
-        Route::put('kiosks/{kiosk}', [AttendanceSetupController::class, 'updateKiosk'])->name('kiosks.update');
-        Route::post('kiosks/{kiosk}/regenerate', [AttendanceSetupController::class, 'regenerateKiosk'])->name('kiosks.regenerate');
-        Route::delete('kiosks/{kiosk}', [AttendanceSetupController::class, 'destroyKiosk'])->name('kiosks.destroy');
+        Route::get('/payroll/runs/all', [DashboardController::class, 'payroll'])->name('payroll.index');
+        Route::get('/reports', [DashboardController::class, 'reports'])->name('reports.index');
+        Route::view('/settings', 'dashboard.settings')->name('settings.index');
     });
 
-    Route::get('/payroll/runs/all', [DashboardController::class, 'payroll'])->name('payroll.index');
-    Route::get('/reports', [DashboardController::class, 'reports'])->name('reports.index');
+    // ------------------------------------------------------------------
+    // Attendance: Managers see their own department; setup is HR only
+    // ------------------------------------------------------------------
+    Route::prefix('attendance')->name('attendance.')->group(function () {
+        Route::middleware('perm:attendance.view')->group(function () {
+            Route::get('/', [AttendanceController::class, 'index'])->name('index');
+            Route::get('live', [AttendanceController::class, 'live'])->name('live');
+            Route::get('register', [AttendanceController::class, 'register'])->name('register');
+            Route::get('summary', [AttendanceController::class, 'summary'])->name('summary');
+            Route::get('export', [AttendanceController::class, 'export'])->name('export');
+            Route::get('employee/{employee}', [AttendanceController::class, 'employee'])->name('employee');
+            Route::get('photo', [AttendanceController::class, 'photo'])->name('photo');
+        });
+        Route::post('register', [AttendanceController::class, 'registerSave'])->middleware('perm:attendance.edit')->name('register.save');
 
-    Route::view('/profile', 'dashboard.profile')->name('profile.index');
-    Route::view('/settings', 'dashboard.settings')->name('settings.index');
+        // Weekly shift rotas (HR: every rota department; Managers: their own)
+        Route::middleware('perm:rota.manage')->group(function () {
+            Route::get('rota', [RotaController::class, 'index'])->name('rota.index');
+            Route::post('rota', [RotaController::class, 'store'])->name('rota.store');
+            Route::get('rota/{rota}', [RotaController::class, 'edit'])->name('rota.edit');
+            Route::put('rota/{rota}', [RotaController::class, 'update'])->name('rota.update');
+            Route::post('rota/{rota}/publish', [RotaController::class, 'publish'])->name('rota.publish');
+            Route::post('rota/{rota}/unpublish', [RotaController::class, 'unpublish'])->name('rota.unpublish');
+            Route::post('rota/{rota}/copy', [RotaController::class, 'copyPrevious'])->name('rota.copy');
+            Route::get('rota/{rota}/print', [RotaController::class, 'print'])->name('rota.print');
+            Route::delete('rota/{rota}', [RotaController::class, 'destroy'])->name('rota.destroy');
+        });
+
+        Route::middleware('perm:full')->group(function () {
+            Route::get('import', [AttendanceImportController::class, 'create'])->name('import');
+            Route::get('import/template', [AttendanceImportController::class, 'template'])->name('import.template');
+            Route::post('import', [AttendanceImportController::class, 'preview'])->name('import.preview');
+            Route::get('import/{token}', [AttendanceImportController::class, 'show'])->name('import.show');
+            Route::post('import/{token}', [AttendanceImportController::class, 'commit'])->name('import.commit');
+
+            Route::get('settings', [AttendanceSetupController::class, 'settings'])->name('settings');
+            Route::put('settings', [AttendanceSetupController::class, 'updateSettings'])->name('settings.update');
+            Route::post('settings/test-report', [AttendanceSetupController::class, 'testReport'])->name('settings.test');
+            Route::post('settings/send-day', [AttendanceSetupController::class, 'sendDay'])->name('settings.send-day');
+
+            Route::get('qr', [AttendanceSetupController::class, 'qr'])->name('qr');
+            Route::get('qr/badges', [AttendanceSetupController::class, 'badges'])->name('badges');
+            Route::post('qr/{employee}/reissue', [AttendanceSetupController::class, 'reissue'])->name('qr.reissue');
+            Route::post('kiosks', [AttendanceSetupController::class, 'storeKiosk'])->name('kiosks.store');
+            Route::put('kiosks/{kiosk}', [AttendanceSetupController::class, 'updateKiosk'])->name('kiosks.update');
+            Route::post('kiosks/{kiosk}/regenerate', [AttendanceSetupController::class, 'regenerateKiosk'])->name('kiosks.regenerate');
+            Route::delete('kiosks/{kiosk}', [AttendanceSetupController::class, 'destroyKiosk'])->name('kiosks.destroy');
+        });
+    });
 });
 
 /*
@@ -245,54 +279,52 @@ Route::post('/leave/apply', [LeaveController::class, 'store'])
 | POST  /leave/{leave}/reject     → stage 3: FINAL rejection
 */
 
-Route::middleware(['auth', 'staff'])->group(function () {
+Route::middleware(['auth', 'staff', 'password.change'])->group(function () {
 
-    Route::get('/leave', [LeaveController::class, 'index'])
-        ->name('leave.index');
-
-    Route::get('/leave/{leave}', [LeaveController::class, 'show'])
-        ->name('leave.show');
-
-    Route::post('/leave/{leave}/approve', [LeaveController::class, 'approve'])
-        ->name('leave.approve');
-
-    Route::post('/leave/{leave}/reject', [LeaveController::class, 'reject'])
-        ->name('leave.reject');
-
-        Route::delete('/leave/{leave}', [LeaveController::class, 'destroy'])
-    ->name('leave.destroy');
-
-    Route::get('/leave/{leave}/print', [LeaveController::class, 'print'])
-    ->name('leave.print');
-
-
+    // Managers: their department's requests + the supervisor step
+    Route::middleware('perm:leave.view')->group(function () {
+        Route::get('/leave', [LeaveController::class, 'index'])->name('leave.index');
+        Route::get('/leave/{leave}', [LeaveController::class, 'show'])->name('leave.show');
+        Route::get('/leave/{leave}/print', [LeaveController::class, 'print'])->name('leave.print');
+    });
     Route::patch('/leave/{leave}/supervisor', [LeaveController::class, 'updateSupervisor'])
-    ->name('leave.supervisor.update');
+        ->middleware('perm:leave.supervise')->name('leave.supervisor.update');
 
-    Route::patch('/leave/{leave}/hr', [LeaveController::class, 'updateHr'])
-        ->name('leave.hr.update');
+    // Final decision, deletion, paper HR record: HR / Admin / Director
+    Route::middleware('perm:full')->group(function () {
+        Route::post('/leave/{leave}/approve', [LeaveController::class, 'approve'])->name('leave.approve');
+        Route::post('/leave/{leave}/reject', [LeaveController::class, 'reject'])->name('leave.reject');
+        Route::delete('/leave/{leave}', [LeaveController::class, 'destroy'])->name('leave.destroy');
+        Route::patch('/leave/{leave}/hr', [LeaveController::class, 'updateHr'])->name('leave.hr.update');
+    });
 
     /*
-    | Leave Management (HR): reports, planner, balances, holidays
+    | Leave Management: reports, planner, balances, holidays
+    | (Managers: their department's balances and planner only)
     */
     Route::prefix('leave-management')->name('leave.manage.')->controller(LeaveManagementController::class)->group(function () {
-        Route::get('/', 'index')->name('index');
-        Route::get('/planner', 'planner')->name('planner');
-        Route::get('/export/balances', 'exportBalances')->name('export.balances');
-        Route::get('/export/requests', 'exportRequests')->name('export.requests');
-        Route::post('/new-year', 'startYear')->name('new-year');
+        Route::middleware('perm:leave.reports')->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::get('/planner', 'planner')->name('planner');
+            Route::get('/export/balances', 'exportBalances')->name('export.balances');
+            Route::get('/export/requests', 'exportRequests')->name('export.requests');
+        });
 
-        Route::get('/record', 'recordForm')->name('record');
-        Route::post('/record', 'recordStore')->name('record.store');
+        Route::middleware('perm:full')->group(function () {
+            Route::post('/new-year', 'startYear')->name('new-year');
 
-        Route::get('/employees/{employee}', 'employee')->name('employee');
-        Route::post('/employees/{employee}/adjust', 'adjust')->name('adjust');
+            Route::get('/record', 'recordForm')->name('record');
+            Route::post('/record', 'recordStore')->name('record.store');
 
-        Route::get('/holidays', 'holidays')->name('holidays');
-        Route::post('/holidays', 'holidayStore')->name('holidays.store');
-        Route::post('/holidays/generate', 'holidayGenerate')->name('holidays.generate');
-        Route::patch('/holidays/{holiday}/toggle', 'holidayToggle')->name('holidays.toggle');
-        Route::delete('/holidays/{holiday}', 'holidayDestroy')->name('holidays.destroy');
+            Route::get('/employees/{employee}', 'employee')->name('employee');
+            Route::post('/employees/{employee}/adjust', 'adjust')->name('adjust');
+
+            Route::get('/holidays', 'holidays')->name('holidays');
+            Route::post('/holidays', 'holidayStore')->name('holidays.store');
+            Route::post('/holidays/generate', 'holidayGenerate')->name('holidays.generate');
+            Route::patch('/holidays/{holiday}/toggle', 'holidayToggle')->name('holidays.toggle');
+            Route::delete('/holidays/{holiday}', 'holidayDestroy')->name('holidays.destroy');
+        });
     });
 
 });
@@ -301,7 +333,7 @@ Route::get('/payroll/rules', function () {
     return "RULES WORKING";
 });
 
-Route::middleware(['auth', 'staff'])->prefix('payroll')->name('payroll.')->group(function () {
+Route::middleware(['auth', 'staff', 'perm:full'])->prefix('payroll')->name('payroll.')->group(function () {
 
     // -------------------------
     // PAYROLL (EMPLOYEE LEVEL)

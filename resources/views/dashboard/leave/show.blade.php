@@ -33,7 +33,7 @@
             <div class="small text-muted">
                 Supervisor:
                 <strong>{{ $leave->assigned_supervisor_name ?? 'Not assigned' }}</strong>
-                @if(! $leave->hasAssignedSupervisor() && $employee)
+                @if(! $leave->hasAssignedSupervisor() && $employee && auth()->user()?->hasFullAccess())
                     <a href="{{ route('employees.edit', $employee) }}" class="ms-1 small">Assign one</a>
                 @endif
             </div>
@@ -315,6 +315,11 @@
                         <div class="mt-2 small">{!! nl2br(e($leave->hr_comments)) !!}</div>
                     @endif
                 </div>
+            </div>
+        @elseif(! auth()->user()?->hasFullAccess())
+            <div class="alert alert-light border small py-2 mt-3 mb-0">
+                <i class="bi bi-hourglass-split me-1"></i>
+                Waiting for HR's final decision. {{ filled($leave->supervisor_decision) ? 'Your recommendation has been sent to HR.' : 'Record your recommendation above first.' }}
             </div>
         @else
             @if($leave->awaitingSupervisor())

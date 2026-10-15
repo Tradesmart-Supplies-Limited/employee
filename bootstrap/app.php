@@ -15,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'staff'           => \App\Http\Middleware\EnsureStaff::class,
             'portal'          => \App\Http\Middleware\EnsureEmployeePortal::class,
             'password.change' => \App\Http\Middleware\ForcePasswordChange::class,
+            'perm'            => \App\Http\Middleware\EnsurePermission::class,
         ]);
 
         // The entrance tablet stays open for days; its secret link authenticates it,

@@ -24,7 +24,7 @@
 <form method="GET" class="d-flex flex-wrap gap-2 align-items-center mb-3">
     <input type="date" name="date" value="{{ $date->toDateString() }}" max="{{ Att::today()->toDateString() }}" class="form-control form-control-sm" style="width:160px" onchange="this.form.submit()">
     <select name="department" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()">
-        <option value="">All departments</option>
+        @if(auth()->user()?->hasFullAccess())<option value="">All departments</option>@endif
         @foreach($departments as $d)<option @selected($department === $d)>{{ $d }}</option>@endforeach
     </select>
     @if($day['holiday'])<span class="badge rounded-pill" style="background:#e0f2fe;color:#075985"><i class="bi bi-flag"></i> {{ $day['holiday'] }}</span>
