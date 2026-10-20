@@ -11,23 +11,33 @@ class LeaveRequest extends Model
 {
     /*
     |--------------------------------------------------------------------------
-    | WORKFLOW STAGES
+    | APPROVAL CHAIN
     |--------------------------------------------------------------------------
-    | 1. Submitted            → status Pending, no supervisor decision
-    | 2. Supervisor reviewed  → status Pending, supervisor_decision set
-    | 3. Final HR decision    → status Approved / Rejected
-    | 4. Balance updated      → happens with an Approved final decision
+    | Employee submits → each step in the chain approves in turn → the last
+    | step's approval is final and updates the balance. A rejection at any
+    | step ends the request. The chain is fixed when the request is submitted
+    | (see LeaveApprovalSetting); older requests use supervisor → HR.
     */
+    public const STEPS = [
+        'supervisor' => ['label' => 'Supervisor', 'title' => 'Supervisor approval', 'icon' => 'bi-person-check',   'who' => 'Supervisor'],
+        'hr'         => ['label' => 'HR',         'title' => 'HR approval',         'icon' => 'bi-building-check', 'who' => 'HR'],
+        'director'   => ['label' => 'Management', 'title' => 'Management approval', 'icon' => 'bi-briefcase',      'who' => 'Management'],
+    ];
+
+    public const LEGACY_CHAIN = ['supervisor', 'hr'];
+
     public const STAGE_SUPERVISOR = 'awaiting_supervisor';
     public const STAGE_HR         = 'awaiting_hr';
+    public const STAGE_DIRECTOR   = 'awaiting_director';
     public const STAGE_APPROVED   = 'approved';
     public const STAGE_REJECTED   = 'rejected';
 
     public const STAGES = [
         self::STAGE_SUPERVISOR => ['label' => 'Awaiting supervisor', 'color' => 'warning', 'icon' => 'bi-person-check'],
-        self::STAGE_HR         => ['label' => 'Awaiting HR approval', 'color' => 'info', 'icon' => 'bi-building-check'],
-        self::STAGE_APPROVED   => ['label' => 'Approved', 'color' => 'success', 'icon' => 'bi-check-circle'],
-        self::STAGE_REJECTED   => ['label' => 'Rejected', 'color' => 'danger', 'icon' => 'bi-x-circle'],
+        self::STAGE_HR         => ['label' => 'Awaiting HR',         'color' => 'info',    'icon' => 'bi-building-check'],
+        self::STAGE_DIRECTOR   => ['label' => 'Awaiting Management', 'color' => 'primary', 'icon' => 'bi-briefcase'],
+        self::STAGE_APPROVED   => ['label' => 'Approved',            'color' => 'success', 'icon' => 'bi-check-circle'],
+        self::STAGE_REJECTED   => ['label' => 'Rejected',            'color' => 'danger',  'icon' => 'bi-x-circle'],
     ];
 
     protected $fillable = [
@@ -84,12 +94,35 @@ class LeaveRequest extends Model
         'hr_acted_at',
         'balance_deducted',
 
+        // Approval chain + Management
+        'approval_chain',
+        'current_step',
+        'director_decision',
+        'director_comments',
+        'director_name',
+        'director_position',
+        'director_signature_date',
+        'director_acted_by',
+        'director_acted_at',
+
         // Supporting Documents
         'supporting_document',
 
         // Emails
         'email',
     ];
+
+    /** Pending requests always know which step they are waiting on (also for rows saved outside LeaveWorkflow). */
+    protected static function booted(): void
+    {
+        static::saving(function (self $leave) {
+            if ($leave->status === 'Pending' && blank($leave->current_step)) {
+                $leave->current_step = $leave->currentStep();
+            } elseif (in_array($leave->status, ['Approved', 'Rejected'], true)) {
+                $leave->current_step = null;
+            }
+        });
+    }
 
     protected $casts = [
         'date_from'                 => 'date',
@@ -100,6 +133,9 @@ class LeaveRequest extends Model
         'hr_signature_date'         => 'date',
         'supervisor_acted_at'       => 'datetime',
         'hr_acted_at'               => 'datetime',
+        'director_signature_date'   => 'date',
+        'director_acted_at'         => 'datetime',
+        'approval_chain'            => 'array',
         'days_available'            => 'decimal:1',
         'days_balance'              => 'decimal:1',
         'balance_deducted'          => 'decimal:1',
@@ -140,6 +176,11 @@ class LeaveRequest extends Model
         return $this->belongsTo(User::class, 'hr_acted_by');
     }
 
+    public function directorActor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'director_acted_by');
+    }
+
     /*
     |--------------------------------------------------------------------------
     | STAGE HELPERS
@@ -148,12 +189,14 @@ class LeaveRequest extends Model
 
     public function getStageAttribute(): string
     {
-        return match (true) {
-            $this->status === 'Approved'        => self::STAGE_APPROVED,
-            $this->status === 'Rejected'        => self::STAGE_REJECTED,
-            filled($this->supervisor_decision)  => self::STAGE_HR,
-            default                             => self::STAGE_SUPERVISOR,
-        };
+        if ($this->status === 'Approved') {
+            return self::STAGE_APPROVED;
+        }
+        if ($this->status === 'Rejected') {
+            return self::STAGE_REJECTED;
+        }
+
+        return 'awaiting_' . ($this->currentStep() ?? 'hr');
     }
 
     public function getStageLabelAttribute(): string
@@ -181,6 +224,138 @@ class LeaveRequest extends Model
         return $this->stage === self::STAGE_SUPERVISOR;
     }
 
+    // ---------------------------------------------------------- chain
+
+    /** The steps this request goes through, in order (e.g. supervisor, hr, director). */
+    public function chain(): array
+    {
+        $c = $this->approval_chain;
+
+        return is_array($c) && $c ? array_values($c) : self::LEGACY_CHAIN;
+    }
+
+    public function inChain(string $step): bool
+    {
+        return in_array($step, $this->chain(), true);
+    }
+
+    /** The step it is waiting on, or null once decided. */
+    public function currentStep(): ?string
+    {
+        if ($this->isFinal()) {
+            return null;
+        }
+        if ($this->current_step && $this->inChain($this->current_step)) {
+            return $this->current_step;
+        }
+        foreach ($this->chain() as $step) {
+            if (blank($this->{$step . '_decision'})) {
+                return $step;
+            }
+        }
+
+        return last($this->chain());
+    }
+
+    public function isLastStep(?string $step): bool
+    {
+        return $step !== null && last($this->chain()) === $step;
+    }
+
+    /** The chain step after $step (skipping any already skipped), or null. */
+    public function nextStepAfter(?string $step): ?string
+    {
+        $chain = $this->chain();
+        $i = array_search($step, $chain, true);
+        foreach (array_slice($chain, $i === false ? count($chain) : $i + 1) as $s) {
+            if ($this->{$s . '_decision'} !== 'Skipped') {
+                return $s;
+            }
+        }
+
+        return null;
+    }
+
+    /** Everything recorded for one step. */
+    public function stepRecord(string $step): array
+    {
+        return [
+            'step'     => $step,
+            'decision' => $this->{$step . '_decision'},
+            'comments' => $this->{$step . '_comments'},
+            'name'     => $this->{$step . '_name'},
+            'position' => $this->{$step . '_position'},
+            'at'       => $this->{$step . '_acted_at'} ?? $this->{$step . '_signature_date'},
+        ];
+    }
+
+    /** The most recent step someone actually decided (Approved / Rejected). */
+    public function lastDecidedStep(): ?string
+    {
+        $last = null;
+        $latest = null;
+        foreach ($this->chain() as $step) {
+            if (in_array($this->{$step . '_decision'}, ['Approved', 'Rejected'], true)) {
+                $at = $this->{$step . '_acted_at'} ?? $this->{$step . '_signature_date'};
+                if (! $last || ($at && (! $latest || $at >= $latest))) {
+                    $last = $step;
+                    $latest = $at;
+                }
+            }
+        }
+
+        return $last;
+    }
+
+    /** The step whose decision finished the request (Approved or Rejected). */
+    public function finalStep(): ?string
+    {
+        if (! $this->isFinal()) {
+            return null;
+        }
+        $want = $this->status;
+        foreach (array_reverse($this->chain()) as $step) {
+            if ($this->{$step . '_decision'} === $want) {
+                return $step;
+            }
+        }
+
+        return filled($this->hr_decision) ? 'hr' : null; // older records
+    }
+
+    public function getFinalDeciderNameAttribute(): ?string
+    {
+        $s = $this->finalStep();
+
+        return $s ? $this->{$s . '_name'} : $this->hr_name;
+    }
+
+    public function getFinalCommentsAttribute(): ?string
+    {
+        $s = $this->finalStep();
+
+        return $s ? $this->{$s . '_comments'} : $this->hr_comments;
+    }
+
+    public function getFinalActedAtAttribute()
+    {
+        $s = $this->finalStep();
+
+        return $s ? ($this->{$s . '_acted_at'} ?? $this->{$s . '_signature_date'}) : $this->hr_acted_at;
+    }
+
+    /** "Supervisor, then HR, then Management" */
+    public function getChainLabelAttribute(): string
+    {
+        $names = array_map(fn ($s) => $s === 'director' ? 'Management' : self::STEPS[$s]['label'], array_filter($this->chain(), fn ($s) => $this->{$s . '_decision'} !== 'Skipped'));
+
+        return match (count($names)) {
+            0 => 'HR',
+            1 => reset($names),
+            default => implode(', ', array_slice($names, 0, -1)) . ' and then ' . end($names),
+        };
+    }
+
     public function isDeductible(): bool
     {
         return in_array($this->leave_type, config('leave.deductible_types', ['Annual']), true);
@@ -190,8 +365,9 @@ class LeaveRequest extends Model
     public function scopeStage(Builder $query, ?string $stage): Builder
     {
         return match ($stage) {
-            self::STAGE_SUPERVISOR => $query->where('status', 'Pending')->whereNull('supervisor_decision'),
-            self::STAGE_HR         => $query->where('status', 'Pending')->whereNotNull('supervisor_decision'),
+            self::STAGE_SUPERVISOR => $query->where('status', 'Pending')->where('current_step', 'supervisor'),
+            self::STAGE_HR         => $query->where('status', 'Pending')->where('current_step', 'hr'),
+            self::STAGE_DIRECTOR   => $query->where('status', 'Pending')->where('current_step', 'director'),
             self::STAGE_APPROVED   => $query->where('status', 'Approved'),
             self::STAGE_REJECTED   => $query->where('status', 'Rejected'),
             default                => $query,
@@ -245,6 +421,8 @@ class LeaveRequest extends Model
     {
         $fmt = fn ($d) => $d ? Carbon::parse($d) : null;
         $days = fn ($n) => rtrim(rtrim(number_format((float) $n, 1), '0'), '.');
+        $current = $this->currentStep();
+        $passedCurrent = false;
 
         // 1. Submitted
         $steps[] = [
@@ -257,63 +435,48 @@ class LeaveRequest extends Model
             'note'  => $days($this->total_days) . ' day(s) ' . $this->leave_type,
         ];
 
-        // 2. Supervisor review
-        if (filled($this->supervisor_decision)) {
-            $approved = $this->supervisor_decision === 'Approved';
+        // 2. Each approval step in the chain
+        foreach ($this->chain() as $step) {
+            $meta = self::STEPS[$step];
+            $r = $this->stepRecord($step);
+            $last = $this->isLastStep($step);
+
+            if ($r['decision'] === 'Approved') {
+                $state = 'done';
+                $note = $last ? 'Approved (final)' : 'Approved';
+            } elseif ($r['decision'] === 'Rejected') {
+                $state = 'declined';
+                $note = 'Rejected';
+            } elseif ($r['decision'] === 'Skipped') {
+                $state = 'skipped';
+                $note = $r['comments'] ?: 'Skipped';
+            } elseif ($this->isFinal()) {
+                $state = $this->status === 'Rejected' ? 'cancelled' : 'skipped';
+                $note = $this->status === 'Rejected' ? 'Not needed' : 'Decided at another step';
+            } elseif ($step === $current) {
+                $state = 'current';
+                $note = 'Waiting for approval';
+                $passedCurrent = true;
+            } else {
+                $state = 'upcoming';
+                $note = $passedCurrent ? 'Next' : 'Waiting';
+            }
+
             $steps[] = [
-                'key'   => 'supervisor',
-                'title' => 'Supervisor review',
-                'icon'  => 'bi-person-check',
-                'state' => $approved ? 'done' : 'declined',
-                'who'   => $this->supervisor_name,
-                'when'  => $fmt($this->supervisor_acted_at ?? $this->supervisor_signature_date),
-                'note'  => $approved ? 'Recommended for approval' : 'Not recommended',
-            ];
-        } elseif ($this->isFinal()) {
-            $steps[] = [
-                'key'   => 'supervisor',
-                'title' => 'Supervisor review',
-                'icon'  => 'bi-person-check',
-                'state' => 'skipped',
-                'who'   => $this->assigned_supervisor_name,
-                'when'  => null,
-                'note'  => 'HR decided directly',
-            ];
-        } else {
-            $steps[] = [
-                'key'   => 'supervisor',
-                'title' => 'Supervisor review',
-                'icon'  => 'bi-person-check',
-                'state' => 'current',
-                'who'   => $this->assigned_supervisor_name ?? 'Supervisor / Admin',
-                'when'  => null,
-                'note'  => 'Waiting for review',
+                'key'   => $step,
+                'title' => $meta['title'],
+                'icon'  => $meta['icon'],
+                'state' => $state,
+                'who'   => $r['name'] ?? match ($step) {
+                    'supervisor' => $this->assigned_supervisor_name ?? 'Supervisor',
+                    default      => $meta['who'],
+                },
+                'when'  => in_array($state, ['done', 'declined'], true) ? $fmt($r['at']) : null,
+                'note'  => $note,
             ];
         }
 
-        // 3. Final HR / Admin decision
-        $steps[] = match (true) {
-            $this->status === 'Approved' => [
-                'key' => 'hr', 'title' => 'HR final approval', 'icon' => 'bi-building-check',
-                'state' => 'done', 'who' => $this->hr_name,
-                'when' => $fmt($this->hr_acted_at ?? $this->hr_signature_date), 'note' => 'Approved',
-            ],
-            $this->status === 'Rejected' => [
-                'key' => 'hr', 'title' => 'HR final approval', 'icon' => 'bi-building-check',
-                'state' => 'declined', 'who' => $this->hr_name,
-                'when' => $fmt($this->hr_acted_at ?? $this->hr_signature_date), 'note' => 'Rejected',
-            ],
-            filled($this->supervisor_decision) => [
-                'key' => 'hr', 'title' => 'HR final approval', 'icon' => 'bi-building-check',
-                'state' => 'current', 'who' => 'HR / Admin', 'when' => null, 'note' => 'Waiting for final decision',
-            ],
-            default => [
-                'key' => 'hr', 'title' => 'HR final approval', 'icon' => 'bi-building-check',
-                'state' => 'upcoming', 'who' => 'HR / Admin', 'when' => null, 'note' => 'After supervisor review',
-            ],
-        };
-
-        // 4. Leave balance
+        // 3. Leave balance
         if ($this->status === 'Approved') {
             if (! $this->employee_id) {
                 $note = 'Not linked to an employee record';
@@ -325,7 +488,7 @@ class LeaveRequest extends Model
 
             $steps[] = [
                 'key' => 'balance', 'title' => 'Balance updated', 'icon' => 'bi-wallet2',
-                'state' => 'done', 'who' => null, 'when' => $fmt($this->hr_acted_at), 'note' => $note,
+                'state' => 'done', 'who' => null, 'when' => $fmt($this->final_acted_at), 'note' => $note,
             ];
         } else {
             $steps[] = [
@@ -360,10 +523,11 @@ class LeaveRequest extends Model
     /** 0–100, for compact progress bars. */
     public function getProgressAttribute(): int
     {
-        $done = collect($this->timeline())
+        $steps = $this->timeline();
+        $done = collect($steps)
             ->whereIn('state', ['done', 'declined', 'skipped', 'cancelled'])
             ->count();
 
-        return (int) round($done / 4 * 100);
+        return (int) round($done / max(1, count($steps)) * 100);
     }
 }

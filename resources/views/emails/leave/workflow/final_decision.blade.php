@@ -4,6 +4,9 @@
     $first    = explode(' ', trim($leave->employee_name))[0];
     $approved = $leave->status === 'Approved';
     $num      = fn ($n) => rtrim(rtrim(number_format((float) $n, 1), '0'), '.');
+    $finalStep = $leave->finalStep();
+    $byLabel  = $finalStep ? \App\Models\LeaveRequest::STEPS[$finalStep]['label'] : 'HR';
+    $byName   = $leave->final_decider_name ?? $byLabel;
 @endphp
 
 @section('title', 'Leave ' . strtolower($leave->status))
@@ -25,19 +28,19 @@
         <p style="margin:0 0 10px;">Hi {{ $first }},</p>
         @if($approved)
             <p style="margin:0;">
-                {{ $leave->hr_name }} has given final approval for your <strong>{{ $leave->leave_type }}</strong> leave from
+                {{ $byName }} ({{ $byLabel }}) has given final approval for your <strong>{{ $leave->leave_type }}</strong> leave from
                 <strong>{{ $leave->date_from->format('d M') }}</strong> to <strong>{{ $leave->date_to->format('d M Y') }}</strong>.
                 @if($leave->return_date) You're expected back on <strong>{{ $leave->return_date->format('l, d M Y') }}</strong>. @endif
             </p>
         @else
             <p style="margin:0;">
-                {{ $leave->hr_name }} has declined your {{ $leave->leave_type }} leave request. The reason is below.
+                {{ $byName }} ({{ $byLabel }}) has declined your {{ $leave->leave_type }} leave request. The reason is below.
                 Your leave balance has not changed. Please talk to your supervisor or HR if you'd like to discuss it or apply for different dates.
             </p>
         @endif
     @else
         <p style="margin:0;">
-            Final decision by <strong>{{ $leave->hr_name }}</strong>:
+            Final decision by <strong>{{ $byName }}</strong> ({{ $byLabel }}):
             <strong style="color:{{ $approved ? '#15803d' : '#b91c1c' }};">{{ $leave->status }}</strong>.
             @if($approved && $leave->employee_id && (float) $leave->balance_deducted > 0)
                 {{ $num($leave->balance_deducted) }} day(s) were deducted; {{ $first }} has {{ $num($leave->days_balance) }} day(s) remaining.
@@ -70,12 +73,12 @@
     </tr>
     @endif
 
-    @if($leave->hr_comments)
+    @if($leave->final_comments)
     <tr>
         <td style="padding:14px 28px 0;">
             <div style="border-left:4px solid {{ $approved ? '#16a34a' : '#dc2626' }}; background:#f8fafc; padding:12px 14px; border-radius:6px;">
-                <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:#64748b; margin-bottom:4px;">HR comments</div>
-                <div style="font-size:13px; color:#1f2937; line-height:1.6;">{!! nl2br(e($leave->hr_comments)) !!}</div>
+                <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:#64748b; margin-bottom:4px;">{{ $byLabel }}'s comments</div>
+                <div style="font-size:13px; color:#1f2937; line-height:1.6;">{!! nl2br(e($leave->final_comments)) !!}</div>
             </div>
         </td>
     </tr>

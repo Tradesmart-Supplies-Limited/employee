@@ -784,6 +784,98 @@ class AttendanceService
         return ['written' => $written, 'missing_out' => $flagged];
     }
 
+    // ------------------------------------------------------ auto clock-out
+
+    /** The latest end time of any active shift on that date (e.g. 22:00 for the night shift). */
+    public function lastShiftEnd(Carbon $date): ?string
+    {
+        $dayType = ShiftSchedule::dayType($date, $this->holidays($date, $date));
+        $ends = $this->schedule()->shifts()->where('is_active', true)
+            ->map(fn ($sh) => $sh->timesOrWeekday($dayType)[1] ?? null)
+            ->filter()
+            ->map(fn ($t) => self::parseTime($t))
+            ->filter();
+
+        $end = $ends->max() ?: self::parseTime($this->settings()->work_end ?: '17:00');
+
+        return $end ? substr($end, 0, 5) : null;
+    }
+
+    /** When the system clocks out the people still clocked in on $date. */
+    public function autoClockOutAt(Carbon $date): ?Carbon
+    {
+        $end = $this->lastShiftEnd($date);
+        if (! $end) {
+            return null;
+        }
+
+        return Carbon::parse($date->toDateString() . ' ' . $end, self::tz())
+            ->addMinutes(max(0, (int) ($this->settings()->auto_clockout_after_minutes ?? 60)));
+    }
+
+    /**
+     * Anyone who clocked in but never scanned out is clocked out
+     * automatically once the day's last shift has ended plus the delay
+     * (1 hour by default). They are clocked out at their own shift end
+     * (or the last shift end), marked "Auto clock-out" and still flagged as
+     * "did not scan out" so HR can see it. A real scan later that day
+     * replaces the automatic time.
+     *
+     * @return int how many records were closed
+     */
+    public function autoClockOut(?Carbon $now = null): int
+    {
+        $s = $this->settings();
+        if (! ($s->auto_clockout_enabled ?? true)) {
+            return 0;
+        }
+
+        $now ??= self::now();
+        $from = self::today()->subDays((int) config('attendance.catch_up_days', 7));
+        $open = AttendanceRecord::whereNotNull('clock_in')->whereNull('clock_out')
+            ->whereDate('date', '>=', $from->toDateString())
+            ->whereDate('date', '<=', $now->toDateString())
+            ->orderBy('date')->get();
+
+        $n = 0;
+        $cutoffs = [];
+        foreach ($open as $r) {
+            $d = $r->date instanceof \DateTimeInterface ? $r->date->format('Y-m-d') : (string) $r->date;
+            $date = Carbon::parse($d, self::tz());
+            $cutoffs[$d] ??= $this->autoClockOutAt($date);
+            if (! $cutoffs[$d] || $now->lt($cutoffs[$d])) {
+                continue;
+            }
+
+            $lastEnd = $this->lastShiftEnd($date);
+            $in = self::parseTime($r->clock_in);
+            // Their own shift's end; on a day they weren't scheduled, their shift (or the default shift) for that kind of day.
+            $own = $r->scheduled_end ? self::parseTime($r->scheduled_end) : null;
+            if (! $own) {
+                $shift = ($r->shift_id ? $this->schedule()->shifts()[$r->shift_id] ?? null : null) ?? $this->schedule()->defaultShift();
+                $end = $shift?->timesOrWeekday(ShiftSchedule::dayType($date, $this->holidays($date, $date)))[1] ?? null;
+                $own = $end ? self::parseTime($end) : null;
+            }
+            $out = match (true) {
+                $own && $own > $in => $own,
+                $lastEnd && $lastEnd . ':00' > $in => $lastEnd . ':00',
+                default => $in,
+            };
+
+            $r->clock_out = $out;
+            $r->source_out = 'auto';
+            $note = 'Clocked out automatically at ' . substr($out, 0, 5) . ' (no scan out).';
+            $r->notes = trim(($r->notes ? $r->notes . ' ' : '') . $note);
+            $this->evaluate($r);
+            $r->missing_out = true; // still show that nobody scanned out
+            $r->save();
+            $this->syncOvertime($r);
+            $n++;
+        }
+
+        return $n;
+    }
+
     /**
      * Close every finished day not yet closed (normally just yesterday) and
      * send each day's report. Called by the midnight schedule, the kiosk
@@ -792,6 +884,18 @@ class AttendanceService
     public function runIfDue(bool $force = false): array
     {
         $s = $this->refreshSettings();
+
+        // Clock out anyone still clocked in an hour after the last shift ended.
+        if (Cache::add('attendance-auto-out-running', true, 120)) {
+            try {
+                $this->autoClockOut();
+            } catch (\Throwable $e) {
+                report($e);
+            } finally {
+                Cache::forget('attendance-auto-out-running');
+            }
+        }
+
         $yesterday = self::today()->subDay();
         $from = $s->last_closed_date ? Carbon::parse($s->last_closed_date->toDateString(), self::tz())->addDay() : $yesterday->copy();
         $floor = self::today()->subDays((int) config('attendance.catch_up_days', 7));

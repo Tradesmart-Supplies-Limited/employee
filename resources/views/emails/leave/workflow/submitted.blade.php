@@ -1,6 +1,9 @@
 @extends('emails.leave.workflow.layout')
 
-@php $first = explode(' ', trim($leave->employee_name))[0]; @endphp
+@php
+    $first = explode(' ', trim($leave->employee_name))[0];
+    $days  = rtrim(rtrim(number_format((float) $leave->total_days, 1), '0'), '.');
+@endphp
 
 @section('title', 'Leave application submitted')
 
@@ -11,8 +14,8 @@
 @section('heading')
     @if($audience === 'employee')
         Your leave application has been received
-    @elseif($audience === 'supervisor')
-        {{ $leave->employee_name }} needs your review
+    @elseif($myTurn)
+        {{ $leave->employee_name }} needs your approval
     @else
         New leave application from {{ $leave->employee_name }}
     @endif
@@ -23,28 +26,29 @@
         <p style="margin:0 0 10px;">Hi {{ $first }},</p>
         <p style="margin:0;">
             Thanks. Your <strong>{{ $leave->leave_type }}</strong> leave request is in.
-            @if($leave->assigned_supervisor_name)
-                It goes to <strong>{{ $leave->assigned_supervisor_name }}</strong> for review first, then to HR for final approval.
-            @else
-                HR will review it and make the final decision.
+            It will be approved by <strong>{{ $leave->chain_label }}</strong>, in that order.
+            @if($next === 'supervisor' && $leave->assigned_supervisor_name)
+                It's with <strong>{{ $leave->assigned_supervisor_name }}</strong> first.
             @endif
             We'll email you at every step.
         </p>
-    @elseif($audience === 'supervisor')
+    @elseif($myTurn)
         <p style="margin:0 0 10px;">Hello,</p>
         <p style="margin:0;">
-            <strong>{{ $leave->employee_name }}</strong> reports to you and has applied for
-            <strong>{{ rtrim(rtrim(number_format((float) $leave->total_days, 1), '0'), '.') }} day(s)</strong> of {{ $leave->leave_type }} leave.
-            Please <strong>recommend approval or rejection</strong>. HR makes the final decision after your review.
+            <strong>{{ $leave->employee_name }}</strong> has applied for
+            <strong>{{ $days }} day(s)</strong> of {{ $leave->leave_type }} leave.
+            Please <strong>approve or reject</strong> it.
+            @if($leave->isLastStep($next))
+                Yours is the final decision.
+            @else
+                After you, it goes to {{ $stepWho($leave->nextStepAfter($next)) }}.
+            @endif
         </p>
     @else
         <p style="margin:0;">
-            A new leave application was submitted.
-            @if($leave->assigned_supervisor_name)
-                It is with <strong>{{ $leave->assigned_supervisor_name }}</strong> for supervisor review. You'll be notified when it's ready for your final decision, or you can act on it now.
-            @else
-                <strong>No supervisor is assigned to this employee</strong>, so it's waiting on HR / Admin directly.
-            @endif
+            A new leave application was submitted. Approval chain: <strong>{{ $leave->chain_label }}</strong>.
+            It is now with <strong>{{ $next === 'supervisor' ? ($leave->assigned_supervisor_name ?? 'the department manager') : $stepWho($next) }}</strong>.
+            You'll be told as it moves along.
         </p>
     @endif
 @endsection

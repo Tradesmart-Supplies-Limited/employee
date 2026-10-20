@@ -225,7 +225,7 @@
         ['Do you work in the HR team?', 'hr'],
         ['Do people report to you, so you approve their leave or plan their shifts?', 'manager']
     ];
-    var labels = { admin: 'Admin', director: 'Director', hr: 'HR', manager: 'Manager', employee: 'Employee' };
+    var labels = { admin: 'Admin', director: 'Management', hr: 'HR', manager: 'Manager', employee: 'Employee' };
     var qi = 0, result = null;
     var qEl = document.getElementById('quizQ'), acts = document.getElementById('quizActions'),
         res = document.getElementById('quizResult'), roleEl = document.getElementById('quizRole'),

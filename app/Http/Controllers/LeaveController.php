@@ -24,11 +24,40 @@ class LeaveController extends Controller
     public function __construct(private LeaveWorkflow $workflow, private LeaveDayCalculator $days) {}
 
     /**
-     * Public Leave Application Form
+     * Apply for leave.
+     *   Staff (managers, supervisors, HR) signed in with an employee record:
+     *   their own request, in the staff area, details filled in.
+     *   Everyone else: the public form.
      */
-    public function create()
+    public function create(Request $request)
     {
-        return view('dashboard.leave.apply');
+        $user = $request->user();
+        $portal = app(\App\Http\Controllers\Portal\LeaveController::class);
+
+        if ($user && $user->canUseAdmin()) {
+            $employee = $user->employee?->load(['supervisorEmployee', 'supervisorUser']);
+
+            return view('dashboard.leave.apply-staff', ($employee ? $portal->formData($employee) : ['employee' => null]) + [
+                'action'    => route('leave.store'),
+                'cancelUrl' => route('leave.index'),
+                'origin'    => 'staff',
+            ]);
+        }
+
+        return view('dashboard.leave.apply', [
+            'action'          => route('leave.store'),
+            'employee'        => null,
+            'types'           => \App\Http\Controllers\Portal\LeaveController::TYPES,
+            'deductibleTypes' => config('leave.deductible_types', ['Annual']),
+            'pendingDays'     => 0,
+            'allowNegative'   => true,
+            'holidays'        => $this->days->holidays(now()->year - 1, now()->year + 1),
+            'dayRules'        => LeaveDayCalculator::defaultOptions(),
+            'canChangeRules'  => false,
+            'approvalRoute'   => $this->workflow->previewRoute(null),
+            'cancelUrl'       => null,
+            'origin'          => null,
+        ]);
     }
 
     /**
@@ -36,6 +65,14 @@ class LeaveController extends Controller
      */
     public function store(Request $request)
     {
+        // Signed-in staff with an employee record apply for themselves:
+        // same rules as the portal (balance check, overlap check, day rules).
+        if ($request->user()?->employee && $request->user()->canUseAdmin()) {
+            $request->merge(['_origin' => 'staff']);
+
+            return app(\App\Http\Controllers\Portal\LeaveController::class)->store($request);
+        }
+
         $request->validate([
             'employee_name'          => 'required|string|max:255',
             'employee_number'        => 'nullable|string|max:255',
@@ -49,7 +86,7 @@ class LeaveController extends Controller
             'date_to'                => 'required|date|after_or_equal:date_from',
             'return_date'            => 'nullable|date',
 
-            'reason'                 => 'nullable|string',
+            'reason'                 => 'nullable|required_if:leave_type,Compassionate,Unpaid,Other,Study|string',
             'late_application_reason'=> 'nullable|string',
 
             'supporting_document'    => 'nullable|file|mimes:pdf,jpg,jpeg,png,doc,docx|max:5120',
@@ -130,6 +167,7 @@ class LeaveController extends Controller
             'all'                           => $base()->count(),
             LeaveRequest::STAGE_SUPERVISOR  => $base()->stage(LeaveRequest::STAGE_SUPERVISOR)->count(),
             LeaveRequest::STAGE_HR          => $base()->stage(LeaveRequest::STAGE_HR)->count(),
+            LeaveRequest::STAGE_DIRECTOR    => $base()->stage(LeaveRequest::STAGE_DIRECTOR)->count(),
             LeaveRequest::STAGE_APPROVED    => $base()->stage(LeaveRequest::STAGE_APPROVED)->count(),
             LeaveRequest::STAGE_REJECTED    => $base()->stage(LeaveRequest::STAGE_REJECTED)->count(),
         ];
@@ -150,6 +188,7 @@ class LeaveController extends Controller
         $after    = ($employee && $leave->isDeductible()) ? $balance - (float) $leave->total_days : $balance;
 
         return view('dashboard.leave.show', [
+            'actingStep'   => $this->workflow->actingStep($leave, request()->user()),
             'leave'        => $leave,
             'employee'     => $employee,
             'balance'      => $balance,
@@ -159,32 +198,43 @@ class LeaveController extends Controller
     }
 
     /**
-     * Stage 2 — supervisor recommendation (assigned admin supervisor, or any
-     * admin acting on the supervisor's behalf).
+     * One approval step: the supervisor, HR or the Director approves or
+     * rejects. Approval at the last step is final and deducts the balance;
+     * a rejection at any step ends the request. Who may decide which step
+     * is checked in LeaveWorkflow::canAct().
      */
+    public function decide(Request $request, LeaveRequest $leave)
+    {
+        $data = $request->validate([
+            'step'             => 'required|in:supervisor,hr,director',
+            'decision'         => 'required|in:Approved,Rejected',
+            'comments'         => 'nullable|required_if:decision,Rejected|string|max:5000',
+            'override_balance' => 'nullable|boolean',
+        ], [
+            'comments.required_if' => 'Please give a reason for the rejection.',
+        ]);
+
+        $this->authorizeLeave($leave);
+
+        return $this->record($request, $leave, $data['step'], $data['decision'], $data['comments'] ?? null);
+    }
+
+    /** Older form: the supervisor step. */
     public function updateSupervisor(Request $request, LeaveRequest $leave)
     {
         $data = $request->validate([
             'supervisor_decision' => 'required|in:Approved,Rejected',
             'supervisor_comments' => 'nullable|required_if:supervisor_decision,Rejected|string|max:5000',
         ], [
-            'supervisor_comments.required_if' => 'Please give a reason when recommending rejection.',
+            'supervisor_comments.required_if' => 'Please give a reason when rejecting.',
         ]);
 
         $this->authorizeLeave($leave);
 
-        try {
-            $this->workflow->supervisorDecision($leave, $request->user(), $data['supervisor_decision'], $data['supervisor_comments'] ?? null);
-        } catch (RuntimeException $e) {
-            return back()->with('error', $e->getMessage());
-        }
-
-        return back()->with('success', 'Supervisor decision recorded. HR and the employee have been notified.');
+        return $this->record($request, $leave, 'supervisor', $data['supervisor_decision'], $data['supervisor_comments'] ?? null);
     }
 
-    /**
-     * Stage 3 — FINAL approval (HR / Admin). Deducts the leave balance.
-     */
+    /** Approve at whichever step is yours (HR, Director, or on the supervisor's behalf). */
     public function approve(Request $request, LeaveRequest $leave)
     {
         $data = $request->validate([
@@ -192,18 +242,15 @@ class LeaveController extends Controller
             'override_balance' => 'nullable|boolean',
         ]);
 
-        try {
-            $this->workflow->approve($leave, $request->user(), $data['hr_comments'] ?? null, $request->boolean('override_balance'));
-        } catch (RuntimeException $e) {
-            return back()->with('error', $e->getMessage());
+        $step = $this->workflow->actingStep($leave, $request->user());
+        if (! $step) {
+            return back()->with('error', $leave->isFinal() ? 'A final decision has already been made on this request.' : 'It is not your turn to approve this request.');
         }
 
-        return back()->with('success', 'Leave approved. The balance has been updated and everyone has been notified.');
+        return $this->record($request, $leave, $step, 'Approved', $data['hr_comments'] ?? null);
     }
 
-    /**
-     * Stage 3 — FINAL rejection (HR / Admin).
-     */
+    /** Reject at whichever step is yours. */
     public function reject(Request $request, LeaveRequest $leave)
     {
         $data = $request->validate([
@@ -212,13 +259,29 @@ class LeaveController extends Controller
             'hr_comments.required' => 'Please give a reason for the rejection.',
         ]);
 
-        try {
-            $this->workflow->reject($leave, $request->user(), $data['hr_comments']);
-        } catch (RuntimeException $e) {
-            return back()->with('error', $e->getMessage());
+        $step = $this->workflow->actingStep($leave, $request->user());
+        if (! $step) {
+            return back()->with('error', $leave->isFinal() ? 'A final decision has already been made on this request.' : 'It is not your turn to decide this request.');
         }
 
-        return back()->with('success', 'Leave rejected. The employee and supervisor have been notified.');
+        return $this->record($request, $leave, $step, 'Rejected', $data['hr_comments']);
+    }
+
+    private function record(Request $request, LeaveRequest $leave, string $step, string $decision, ?string $comments)
+    {
+        try {
+            $leave = $this->workflow->decide($leave, $request->user(), $step, $decision, $comments, $request->boolean('override_balance'));
+        } catch (RuntimeException $e) {
+            return back()->withInput()->with('error', $e->getMessage());
+        }
+
+        $label = LeaveRequest::STEPS[$step]['title'];
+
+        return back()->with('success', match (true) {
+            $leave->status === 'Rejected' => "Leave rejected at {$label}. The employee and everyone involved have been notified.",
+            $leave->status === 'Approved' => 'Leave approved (final). The balance has been updated and everyone has been notified.',
+            default => "{$label} recorded. It has moved on to " . LeaveRequest::STEPS[$leave->currentStep()]['who'] . ' — they have been emailed.',
+        });
     }
 
     /**

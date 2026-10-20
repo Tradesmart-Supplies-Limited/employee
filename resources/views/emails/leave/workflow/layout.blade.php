@@ -41,7 +41,8 @@
                         'info'    => ['#e8f3ff', '#1d4ed8'],
                         'success' => ['#e9f9ef', '#15803d'],
                         'danger'  => ['#fdecec', '#b91c1c'],
-                    ][$leave->stage_color];
+                        'primary' => ['#eef2ff', '#4338ca'],
+                    ][$leave->stage_color] ?? ['#e8f3ff', '#1d4ed8'];
                 @endphp
                 <div style="background:{{ $bannerColors[0] }}; color:{{ $bannerColors[1] }}; padding:10px 28px; font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase;">
                     Current stage: {{ $leave->stage_label }}

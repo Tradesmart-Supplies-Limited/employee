@@ -12,7 +12,8 @@
     --lt-surface: var(--admin-surface, #fff);
     position: relative;
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
     gap: 0;
     padding: 6px 0 2px;
 }
@@ -75,7 +76,7 @@
 .lt-when { font-size: .7rem; color: var(--lt-muted); margin-top: 1px; }
 
 @media (max-width: 640px) {
-    .lt { grid-template-columns: 1fr; gap: 4px; }
+    .lt { grid-auto-flow: row; grid-template-columns: 1fr; gap: 4px; }
     .lt-step { display: grid; grid-template-columns: 46px 1fr; column-gap: 12px; text-align: left; padding: 0 0 14px; }
     .lt-step::before { top: auto; bottom: 100%; right: auto; left: 21px; width: 4px; height: 18px; }
     .lt-dot { margin: 0; grid-row: span 4; }

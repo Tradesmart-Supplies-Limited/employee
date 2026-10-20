@@ -197,86 +197,159 @@
 
 
     {{-- =====================================================
-         SECTION 2 — SUPERVISOR RECOMMENDATION
+         APPROVAL CHAIN — one section per step (Supervisor → HR → Management).
+         The last step's approval is final and updates the balance;
+         a rejection at any step ends the request.
     ====================================================== --}}
-    <div class="lv-section lv-section-shaded">
+    @php
+        $n = fn ($v) => $v === null ? '—' : rtrim(rtrim(number_format((float) $v, 1), '0'), '.');
+        $current = $leave->currentStep();
+        $me = auth()->user();
+    @endphp
+
+    <div class="lv-section">
         <div class="lv-section-heading">
-            Step 2 · Supervisor review
-            <span class="lv-heading-note">(recommendation — final decision is made by HR)</span>
+            Approval chain
+            <span class="lv-heading-note">({{ $leave->chain_label }} · a rejection at any step ends the request)</span>
         </div>
-
-        @if(filled($leave->supervisor_decision))
-            @php $rec = $leave->supervisor_decision === 'Approved'; @endphp
-            <div class="lv-decision {{ $rec ? 'lv-decision--ok' : 'lv-decision--no' }}">
-                <i class="bi {{ $rec ? 'bi-hand-thumbs-up-fill' : 'bi-hand-thumbs-down-fill' }}"></i>
-                <div>
-                    <div class="fw-semibold">{{ $rec ? 'Recommended for approval' : 'Not recommended' }}</div>
-                    <div class="small text-muted">
-                        {{ $leave->supervisor_name }}@if($leave->supervisor_position) · {{ $leave->supervisor_position }}@endif
-                        · {{ optional($leave->supervisor_acted_at ?? $leave->supervisor_signature_date)->format('d M Y, H:i') }}
-                    </div>
-                    @if($leave->supervisor_comments)
-                        <div class="mt-2 small">{!! nl2br(e($leave->supervisor_comments)) !!}</div>
-                    @endif
-                </div>
-            </div>
-        @elseif($leave->isFinal())
-            <div class="text-muted small"><i class="bi bi-skip-forward me-1"></i>Skipped. HR made the final decision directly.</div>
-        @else
-            @php $isMine = $leave->isAssignedSupervisor(auth()->user()); @endphp
-            @if(! $isMine)
-                <div class="alert alert-light border small py-2 mb-3">
-                    <i class="bi bi-info-circle me-1"></i>
-                    @if($leave->hasAssignedSupervisor())
-                        Waiting for <strong>{{ $leave->assigned_supervisor_name }}</strong>. You can record the decision on their behalf.
-                    @else
-                        No supervisor is assigned. You can record a supervisor decision, or go straight to the final decision below.
-                    @endif
-                </div>
-            @endif
-
-            <form method="POST" action="{{ route('leave.supervisor.update', $leave->id) }}" id="supervisorForm">
-                @csrf
-                @method('PATCH')
-
-                <div class="lv-approval-row">
-                    <label class="lv-choice lv-choice--ok">
-                        <input type="radio" name="supervisor_decision" value="Approved" @checked(old('supervisor_decision') === 'Approved') required>
-                        <span><i class="bi bi-hand-thumbs-up"></i> Recommend approval</span>
-                    </label>
-                    <label class="lv-choice lv-choice--no">
-                        <input type="radio" name="supervisor_decision" value="Rejected" @checked(old('supervisor_decision') === 'Rejected')>
-                        <span><i class="bi bi-hand-thumbs-down"></i> Recommend rejection</span>
-                    </label>
-                </div>
-
-                <div class="lv-field mt-3">
-                    <label class="lv-field-label" for="supervisor_comments">Comments <span class="lv-hint">(required when recommending rejection)</span></label>
-                    <textarea name="supervisor_comments" id="supervisor_comments" rows="3" class="lv-textarea">{{ old('supervisor_comments') }}</textarea>
-                </div>
-
-                <div class="mt-3 d-flex align-items-center gap-3 flex-wrap">
-                    <button type="submit" class="btn btn-sm btn-primary">
-                        <i class="bi bi-send-check me-1"></i> Submit supervisor decision
-                    </button>
-                    <small class="text-muted">Signed as <strong>{{ auth()->user()->name }}</strong>. Emails the employee, supervisor and HR.</small>
-                </div>
-            </form>
-        @endif
+        <div class="lv-chain">
+            <span class="lv-chain-pill is-done"><i class="bi bi-person"></i> Employee</span>
+            @foreach($leave->chain() as $step)
+                @php
+                    $d = $leave->{$step . '_decision'};
+                    $cls = match (true) {
+                        $d === 'Approved' => 'is-done',
+                        $d === 'Rejected' => 'is-no',
+                        $d === 'Skipped'  => 'is-skip',
+                        $step === $current => 'is-now',
+                        default => '',
+                    };
+                @endphp
+                <i class="bi bi-chevron-right lv-chain-sep" aria-hidden="true"></i>
+                <span class="lv-chain-pill {{ $cls }}"><i class="bi {{ \App\Models\LeaveRequest::STEPS[$step]['icon'] }}"></i> {{ \App\Models\LeaveRequest::STEPS[$step]['label'] }}</span>
+            @endforeach
+        </div>
     </div>
+
+    @foreach($leave->chain() as $i => $step)
+        @php
+            $meta   = \App\Models\LeaveRequest::STEPS[$step];
+            $r      = $leave->stepRecord($step);
+            $isLast = $leave->isLastStep($step);
+            $nextAfter = $leave->nextStepAfter($step);
+        @endphp
+        <div class="lv-section lv-section-shaded" id="step-{{ $step }}">
+            <div class="lv-section-heading">
+                Step {{ $i + 2 }} · {{ $meta['title'] }}
+                <span class="lv-heading-note">
+                    @if($isLast)(final decision — updates the leave balance)
+                    @else(then {{ \App\Models\LeaveRequest::STEPS[$nextAfter ?? last($leave->chain())]['who'] }})
+                    @endif
+                </span>
+            </div>
+
+            @if(in_array($r['decision'], ['Approved', 'Rejected'], true))
+                @php $ok = $r['decision'] === 'Approved'; @endphp
+                <div class="lv-decision {{ $ok ? 'lv-decision--ok' : 'lv-decision--no' }}">
+                    <i class="bi {{ $ok ? ($isLast ? 'bi-patch-check-fill' : 'bi-hand-thumbs-up-fill') : 'bi-x-octagon-fill' }}"></i>
+                    <div>
+                        <div class="fw-semibold">{{ $ok ? ($isLast ? 'Approved (final)' : 'Approved') : 'Rejected' }}</div>
+                        <div class="small text-muted">
+                            {{ $r['name'] }}@if($r['position']) · {{ $r['position'] }}@endif
+                            @if($r['at']) · {{ \Illuminate\Support\Carbon::parse($r['at'])->format('d M Y, H:i') }}@endif
+                        </div>
+                        @if($r['comments'])
+                            <div class="mt-2 small">{!! nl2br(e($r['comments'])) !!}</div>
+                        @endif
+                    </div>
+                </div>
+            @elseif($r['decision'] === 'Skipped')
+                <div class="text-muted small"><i class="bi bi-skip-forward me-1"></i>Skipped. {{ $r['comments'] }}</div>
+            @elseif($leave->isFinal())
+                <div class="text-muted small"><i class="bi bi-dash-circle me-1"></i>Not needed — the request was decided at another step.</div>
+            @elseif($step === $actingStep)
+                @if($step !== $current)
+                    <div class="alert alert-light border small py-2 mb-3">
+                        <i class="bi bi-info-circle me-1"></i>
+                        This is still with {{ \App\Models\LeaveRequest::STEPS[$current]['who'] }}. If you decide now, the earlier step(s) will be marked as skipped.
+                    </div>
+                @elseif($step === 'supervisor' && ! $leave->isAssignedSupervisor($me) && ! $me->isManager())
+                    <div class="alert alert-light border small py-2 mb-3">
+                        <i class="bi bi-info-circle me-1"></i>
+                        @if($leave->hasAssignedSupervisor())
+                            Waiting for <strong>{{ $leave->assigned_supervisor_name }}</strong>. You can record the decision on their behalf.
+                        @else
+                            No supervisor is assigned. You can record the supervisor step on behalf of the department.
+                        @endif
+                    </div>
+                @endif
+
+                <form method="POST" action="{{ route('leave.decide', $leave->id) }}" class="lv-step-form"
+                      data-confirm-approve="{{ $isLast ? 'Give final approval' . ($employee && $leave->isDeductible() ? ' and deduct ' . $n($leave->total_days) . ' day(s) from the balance' : '') . '?' : 'Approve and send to ' . \App\Mail\LeaveWorkflowMail::who($nextAfter) . '?' }}"
+                      data-confirm-reject="Reject this leave request? This ends the request.">
+                    @csrf
+                    <input type="hidden" name="step" value="{{ $step }}">
+
+                    <div class="lv-approval-row">
+                        <label class="lv-choice lv-choice--ok">
+                            <input type="radio" name="decision" value="Approved" @checked(old('decision') === 'Approved') required>
+                            <span><i class="bi bi-hand-thumbs-up"></i> {{ $isLast ? 'Approve (final)' : 'Approve' }}</span>
+                        </label>
+                        <label class="lv-choice lv-choice--no">
+                            <input type="radio" name="decision" value="Rejected" @checked(old('decision') === 'Rejected')>
+                            <span><i class="bi bi-hand-thumbs-down"></i> Reject</span>
+                        </label>
+                    </div>
+
+                    <div class="lv-field mt-3">
+                        <label class="lv-field-label" for="comments-{{ $step }}">Comments <span class="lv-hint">(required when rejecting)</span></label>
+                        <textarea name="comments" id="comments-{{ $step }}" rows="3" class="lv-textarea">{{ old('comments') }}</textarea>
+                    </div>
+
+                    @if($isLast && $insufficient)
+                        <label class="d-flex gap-2 align-items-start small text-danger mt-2">
+                            <input type="checkbox" name="override_balance" value="1" class="mt-1">
+                            <span>Approve anyway: balance will go to {{ $n($balanceAfter) }} days</span>
+                        </label>
+                    @endif
+
+                    <div class="mt-3 d-flex align-items-center gap-3 flex-wrap">
+                        <button type="submit" class="btn btn-sm btn-primary">
+                            <i class="bi bi-send-check me-1"></i> Record {{ $meta['title'] }}
+                        </button>
+                        <small class="text-muted">
+                            Signed as <strong>{{ $me->name }}</strong>.
+                            @if($isLast) Approving is final and updates the balance.
+                            @else Approving sends it to {{ \App\Mail\LeaveWorkflowMail::who($nextAfter) }}.
+                            @endif
+                            Everyone involved gets an email.
+                        </small>
+                    </div>
+                </form>
+            @elseif($step === $current)
+                <div class="alert alert-light border small py-2 mb-0">
+                    <i class="bi bi-hourglass-split me-1"></i>
+                    Waiting for {{ $step === 'supervisor' ? ($leave->assigned_supervisor_name ?? 'the department manager') : $meta['who'] }}.
+                    @if($me && $me->employee_id && (int) $me->employee_id === (int) $leave->employee_id)
+                        You can't approve your own leave.
+                    @endif
+                </div>
+            @else
+                <div class="text-muted small"><i class="bi bi-clock me-1"></i>Waiting for the earlier step(s).</div>
+            @endif
+        </div>
+    @endforeach
 
 
     {{-- =====================================================
-         SECTION 3 — HR FINAL DECISION + LEAVE BALANCE
+         LEAVE BALANCE
     ====================================================== --}}
-    @php $n = fn ($v) => $v === null ? '—' : rtrim(rtrim(number_format((float) $v, 1), '0'), '.'); @endphp
     <div class="lv-section lv-section-shaded">
         <div class="lv-section-heading">
-            Step 3 · HR final decision
+            Leave balance
             <span class="lv-heading-note">(Annual leave entitlement {{ $n($employee->annual_leave_entitlement ?? config('leave.annual_entitlement')) }} days)</span>
         </div>
 
-        {{-- Balance strip --}}
         @if($employee)
             <div class="lv-balance">
                 @if($leave->status === 'Approved')
@@ -293,6 +366,8 @@
             </div>
             @if(! $leave->isDeductible())
                 <div class="small text-muted mt-2"><i class="bi bi-info-circle me-1"></i>{{ $leave->leave_type }} leave is recorded but doesn't reduce the annual balance.</div>
+            @elseif(! $leave->isFinal())
+                <div class="small text-muted mt-2"><i class="bi bi-info-circle me-1"></i>The balance changes only when the last step ({{ \App\Models\LeaveRequest::STEPS[last($leave->chain())]['who'] }}) approves.</div>
             @endif
         @else
             <div class="alert alert-warning small py-2">
@@ -300,64 +375,23 @@
                 This request isn't linked to an employee record (submitted via the public form with an unknown employee number / email), so no balance will be updated.
             </div>
         @endif
-
-        @if($leave->isFinal())
-            @php $ok = $leave->status === 'Approved'; @endphp
-            <div class="lv-decision mt-3 {{ $ok ? 'lv-decision--ok' : 'lv-decision--no' }}">
-                <i class="bi {{ $ok ? 'bi-patch-check-fill' : 'bi-x-octagon-fill' }}"></i>
-                <div>
-                    <div class="fw-semibold">{{ $ok ? 'Approved' : 'Rejected' }}</div>
-                    <div class="small text-muted">
-                        {{ $leave->hr_name }}@if($leave->hr_position) · {{ $leave->hr_position }}@endif
-                        · {{ optional($leave->hr_acted_at ?? $leave->hr_signature_date)->format('d M Y, H:i') }}
-                    </div>
-                    @if($leave->hr_comments)
-                        <div class="mt-2 small">{!! nl2br(e($leave->hr_comments)) !!}</div>
-                    @endif
-                </div>
-            </div>
-        @elseif(! auth()->user()?->hasFullAccess())
-            <div class="alert alert-light border small py-2 mt-3 mb-0">
-                <i class="bi bi-hourglass-split me-1"></i>
-                Waiting for HR's final decision. {{ filled($leave->supervisor_decision) ? 'Your recommendation has been sent to HR.' : 'Record your recommendation above first.' }}
-            </div>
-        @else
-            @if($leave->awaitingSupervisor())
-                <div class="alert alert-light border small py-2 mt-3 mb-0">
-                    <i class="bi bi-hourglass-split me-1"></i>
-                    The supervisor hasn't reviewed this yet. You can still make the final decision now; the supervisor step will be marked as skipped.
-                </div>
-            @endif
-
-            <div class="row g-3 mt-1">
-                <div class="col-md-6">
-                    <form method="POST" action="{{ route('leave.approve', $leave->id) }}" class="lv-action lv-action--ok"
-                          onsubmit="return confirm('Give final approval{{ $employee && $leave->isDeductible() ? ' and deduct ' . $n($leave->total_days) . ' day(s) from the balance' : '' }}?');">
-                        @csrf
-                        <div class="fw-semibold mb-2"><i class="bi bi-check-circle me-1"></i> Final approval</div>
-                        <textarea name="hr_comments" rows="2" class="lv-textarea" placeholder="Optional note to the employee"></textarea>
-                        @if($insufficient)
-                            <label class="d-flex gap-2 align-items-start small text-danger mt-2">
-                                <input type="checkbox" name="override_balance" value="1" class="mt-1">
-                                <span>Approve anyway: balance will go to {{ $n($balanceAfter) }} days</span>
-                            </label>
-                        @endif
-                        <button class="btn btn-success btn-sm w-100 mt-2"><i class="bi bi-check2-all me-1"></i> Approve leave</button>
-                    </form>
-                </div>
-                <div class="col-md-6">
-                    <form method="POST" action="{{ route('leave.reject', $leave->id) }}" class="lv-action lv-action--no"
-                          onsubmit="return confirm('Reject this leave request?');">
-                        @csrf
-                        <div class="fw-semibold mb-2"><i class="bi bi-x-circle me-1"></i> Final rejection</div>
-                        <textarea name="hr_comments" rows="2" class="lv-textarea" placeholder="Reason (required)" required></textarea>
-                        <button class="btn btn-outline-danger btn-sm w-100 mt-2"><i class="bi bi-x-lg me-1"></i> Reject leave</button>
-                    </form>
-                </div>
-            </div>
-            <small class="text-muted d-block mt-2">Signed as <strong>{{ auth()->user()->name }}</strong>. The employee, supervisor and HR get an email.</small>
-        @endif
     </div>
+
+    @push('scripts')
+    <script>
+    document.querySelectorAll('.lv-step-form').forEach(function (f) {
+        var ta = f.querySelector('textarea[name="comments"]');
+        f.querySelectorAll('input[name="decision"]').forEach(function (r) {
+            r.addEventListener('change', function () { ta.required = r.value === 'Rejected' && r.checked; });
+        });
+        f.addEventListener('submit', function (e) {
+            var d = f.querySelector('input[name="decision"]:checked');
+            if (!d) return;
+            if (!confirm(d.value === 'Rejected' ? f.dataset.confirmReject : f.dataset.confirmApprove)) e.preventDefault();
+        });
+    });
+    </script>
+    @endpush
 
 
     {{-- FOOTER NOTE --}}
@@ -679,7 +713,18 @@
 }
 
 /* ---- Workflow additions ---- */
-.lv-decision { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border-radius: 8px; border: 1px solid #e5e7eb; background: #fff; }
+.lv-chain { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.lv-chain-sep { color: var(--admin-muted, #94a3b8); font-size: .75rem; }
+.lv-chain-pill { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px; font-size: .8rem; font-weight: 600;
+    background: var(--admin-surface-2, #f1f5f9); color: var(--admin-muted, #64748b); border: 1px solid var(--admin-border, #e2e8f0); }
+.lv-chain-pill.is-done { background: rgba(22,163,74,.12); color: #15803d; border-color: rgba(22,163,74,.35); }
+.lv-chain-pill.is-no   { background: rgba(220,38,38,.1); color: #b91c1c; border-color: rgba(220,38,38,.35); }
+.lv-chain-pill.is-skip { border-style: dashed; text-decoration: line-through; opacity: .75; }
+.lv-chain-pill.is-now  { background: rgba(var(--brand-rgb, 24,95,165), .12); color: var(--brand-text, #185FA5); border-color: rgba(var(--brand-rgb, 24,95,165), .45); }
+html[data-theme=dark] .lv-chain-pill.is-done { color: #4ade80; }
+html[data-theme=dark] .lv-chain-pill.is-no { color: #f87171; }
+.lv-decision { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border-radius: 8px; border: 1px solid #e5e7eb; background: #fff; color: #0f172a; }
+.lv-decision .text-muted { color: #64748b !important; }
 .lv-decision > i { font-size: 1.4rem; line-height: 1; }
 .lv-decision--ok { border-color: #bbf7d0; background: #f0fdf4; }
 .lv-decision--ok > i { color: #16a34a; }

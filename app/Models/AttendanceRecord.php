@@ -26,6 +26,7 @@ class AttendanceRecord extends Model
         'manual'    => ['label' => 'Manual',     'icon' => 'bi-pencil'],
         'biometric' => ['label' => 'Biometric',  'icon' => 'bi-fingerprint'],
         'system'    => ['label' => 'System',     'icon' => 'bi-gear'],
+        'auto'      => ['label' => 'Auto clock-out', 'icon' => 'bi-clock-history'],
     ];
 
     protected $fillable = [
@@ -65,6 +66,12 @@ class AttendanceRecord extends Model
     public function getOutTimeAttribute(): ?string
     {
         return $this->clock_out ? substr($this->clock_out, 0, 5) : null;
+    }
+
+    /** Clocked out by the system because nobody scanned out. */
+    public function getAutoClockedOutAttribute(): bool
+    {
+        return $this->source_out === 'auto';
     }
 
     public function getHoursAttribute(): string

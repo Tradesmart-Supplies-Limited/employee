@@ -78,14 +78,16 @@ class LeaveManagementController extends Controller
             ->get();
 
         return $this->csv("leave-requests-{$year}.csv",
-            ['Ref', 'Employee', 'EIN', 'Department', 'Type', 'From', 'To', 'Leave days', 'Calendar days', 'Return date', 'Stage', 'Status', 'Supervisor', 'Supervisor decision', 'Supervisor date', 'HR decision by', 'HR date', 'HR comments', 'Balance deducted', 'Balance after', 'Submitted'],
+            ['Ref', 'Employee', 'EIN', 'Department', 'Type', 'From', 'To', 'Leave days', 'Calendar days', 'Return date', 'Stage', 'Status', 'Approval chain', 'Supervisor', 'Supervisor decision', 'Supervisor date', 'HR decision', 'HR decision by', 'HR date', 'HR comments', 'Management decision', 'Management decision by', 'Management date', 'Management comments', 'Balance deducted', 'Balance after', 'Submitted'],
             $rows->map(fn ($l) => [
                 'LV-' . str_pad($l->id, 5, '0', STR_PAD_LEFT), $l->employee_name, $l->employee_number, $l->employee?->department,
                 $l->leave_type . ($l->other_leave_type ? " ({$l->other_leave_type})" : ''),
                 $l->date_from->format('Y-m-d'), $l->date_to->format('Y-m-d'), $l->total_days, $l->calendar_days,
                 optional($l->return_date)->format('Y-m-d'), $l->stage_label, $l->status,
+                implode(' > ', array_map(fn ($s) => LeaveRequest::STEPS[$s]['label'], $l->chain())),
                 $l->assigned_supervisor_name, $l->supervisor_decision, optional($l->supervisor_acted_at)->format('Y-m-d H:i'),
-                $l->hr_name, optional($l->hr_acted_at)->format('Y-m-d H:i'), $l->hr_comments,
+                $l->hr_decision, $l->hr_name, optional($l->hr_acted_at)->format('Y-m-d H:i'), $l->hr_comments,
+                $l->director_decision, $l->director_name, optional($l->director_acted_at)->format('Y-m-d H:i'), $l->director_comments,
                 $l->balance_deducted, $l->days_balance, $l->created_at->format('Y-m-d H:i'),
             ])
         );

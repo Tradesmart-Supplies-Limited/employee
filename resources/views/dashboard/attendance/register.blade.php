@@ -61,7 +61,7 @@
                         <td>
                             <input type="time" name="entries[{{ $id }}][out]" value="{{ $rec?->out_time }}" class="form-control form-control-sm" data-role="out">
                             <input type="hidden" name="entries[{{ $id }}][orig_out]" value="{{ $rec?->out_time }}">
-                            @if($rec?->missing_out)<div class="small text-danger">never scanned out</div>@endif
+                            @if($rec?->auto_clocked_out)<div class="small text-warning-emphasis"><i class="bi bi-clock-history"></i> auto clocked out · no scan</div>@elseif($rec?->missing_out)<div class="small text-danger">never scanned out</div>@endif
                         </td>
                         <td>
                             <select name="entries[{{ $id }}][status]" class="form-select form-select-sm" data-role="status">

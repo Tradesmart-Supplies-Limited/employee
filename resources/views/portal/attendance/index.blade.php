@@ -97,7 +97,7 @@
                     <div class="d"><b>{{ $d->format('d') }}</b><small>{{ $d->format('D') }}</small></div>
                     <span class="badge rounded-pill" style="background:{{ $m['bg'] }};color:{{ $m['color'] }}"><i class="bi {{ $m['icon'] }}"></i> {{ $m['label'] }}</span>
                     <div class="flex-grow-1 small text-muted text-truncate">
-                        @if($r?->clock_in) In <strong class="text-body">{{ $r->in_time }}</strong>@if($r->clock_out) · Out <strong class="text-body">{{ $r->out_time }}</strong>@elseif($r->missing_out) · <span class="text-danger">no clock-out</span>@endif @endif
+                        @if($r?->clock_in) In <strong class="text-body">{{ $r->in_time }}</strong>@if($r->clock_out) · Out <strong class="text-body">{{ $r->out_time }}</strong>@if($r->auto_clocked_out) <span class="badge text-bg-warning" title="You didn't scan out, so the system clocked you out">auto</span>@endif @elseif($r->missing_out) · <span class="text-danger">no clock-out</span>@endif @endif
                         @if($r?->minutes_late) · <span style="color:#b45309">{{ $r->minutes_late }} min late</span>@endif
                         @if($c->note) · {{ $c->note }}@endif
                     </div>

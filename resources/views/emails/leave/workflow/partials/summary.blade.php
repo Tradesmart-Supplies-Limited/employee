@@ -16,7 +16,10 @@
     @if($leave->return_date)
     <tr><td style="{{ $label }}">Returning on</td><td style="{{ $value }}">{{ $leave->return_date->format('D d M Y') }}</td></tr>
     @endif
-    <tr><td style="{{ $label }}">Supervisor</td><td style="{{ $value }}">{{ $leave->assigned_supervisor_name ?? 'Not assigned — HR / Admin will review' }}</td></tr>
+    <tr><td style="{{ $label }}">Approval chain</td><td style="{{ $value }}">{{ $leave->chain_label }}</td></tr>
+    @if($leave->inChain('supervisor') && $leave->supervisor_decision !== 'Skipped')
+    <tr><td style="{{ $label }}">Supervisor</td><td style="{{ $value }}">{{ $leave->assigned_supervisor_name ?? 'Department manager' }}</td></tr>
+    @endif
     @if($leave->reason)
     <tr><td style="{{ $label }}">Reason</td><td style="{{ $row }} color:#0f172a;">{!! nl2br(e($leave->reason)) !!}</td></tr>
     @endif

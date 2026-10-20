@@ -28,6 +28,7 @@
 .st-shifts td, .st-shifts th { padding-left: .4rem; padding-right: .4rem; }
 .st-shifts .form-control-color { width: 34px; padding: .15rem; flex-shrink: 0; }
 @media (min-width: 992px) { .st-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); } .st-grid .st-method { border-right: 1px solid var(--admin-border, #eef2f7); } }
+.st-auto { padding: .75rem .9rem; border-radius: 10px; background: var(--admin-surface-soft, #f8fafc); border: 1px solid var(--admin-border, #e2e8f0); }
 </style>
 
 <div class="row g-3">
@@ -136,6 +137,23 @@
                         <label class="form-label small fw-semibold">Ignore repeat scans within</label>
                         <div class="input-group"><input type="number" name="scan_cooldown_minutes" min="0" max="120" value="{{ old('scan_cooldown_minutes', $s->scan_cooldown_minutes) }}" class="form-control"><span class="input-group-text">min</span></div>
                         <div class="form-text">stops a double scan clocking someone out</div>
+                    </div>
+                    <div class="col-12">
+                        <div class="st-auto">
+                            <div class="form-check form-switch mb-1">
+                                <input class="form-check-input" type="checkbox" role="switch" name="auto_clockout_enabled" value="1" id="autoOut" @checked(old('auto_clockout_enabled', $s->auto_clockout_enabled ?? true))>
+                                <label class="form-check-label small fw-semibold" for="autoOut"><i class="bi bi-clock-history"></i> Clock people out automatically if they forget to scan out</label>
+                            </div>
+                            <div class="d-flex align-items-center gap-2 flex-wrap small">
+                                <span>Run</span>
+                                <div class="input-group input-group-sm" style="width:130px"><input type="number" name="auto_clockout_after_minutes" min="0" max="720" step="15" value="{{ old('auto_clockout_after_minutes', $s->auto_clockout_after_minutes ?? 60) }}" class="form-control" aria-label="Minutes after the last shift ends"><span class="input-group-text">min</span></div>
+                                <span>after the day's last shift ends
+                                    @php $autoAt = app(\App\Services\AttendanceService::class)->autoClockOutAt(\App\Services\AttendanceService::today()); @endphp
+                                    @if($autoAt)<span class="at-muted">(today: {{ $autoAt->format('H:i') }})</span>@endif
+                                </span>
+                            </div>
+                            <div class="form-text">They are clocked out at their shift's end time, marked <strong>Auto clock-out</strong>, and still listed as "did not scan out" in the register and daily report so HR can check. A real scan later the same day replaces the automatic time.</div>
+                        </div>
                     </div>
                     <div class="col-12">
                         <label class="form-label small fw-semibold d-block">Working days <span class="fw-normal at-muted">(for everyone not on a rota)</span></label>

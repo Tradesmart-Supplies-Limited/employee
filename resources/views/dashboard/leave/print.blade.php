@@ -563,9 +563,9 @@
             </div>
 
             <div class="lv-field mt-3">
-                <label class="lv-field-label" for="supervisor_comments">Reason(s) for rejection</label>
+                <label class="lv-field-label" for="supervisor_comments">Comments / reason(s) for rejection</label>
                 <textarea name="supervisor_comments" id="supervisor_comments" rows="1"
-                    class="lv-textarea">{{ old('supervisor_decision', $leave->supervisor_decision) }} - {{ old('supervisor_comments', $leave->supervisor_comments) }}</textarea>
+                    class="lv-textarea">{{ old('supervisor_comments', $leave->supervisor_comments) }}</textarea>
             </div>
 
             <div class="lv-row-2 mt-3">
@@ -667,6 +667,61 @@
         </div>
 
     </form>{{-- end HR form --}}
+
+
+    {{-- =====================================================
+         SECTION 4 — DIRECTOR (final approval, when in the chain)
+    ====================================================== --}}
+    @if($leave->inChain('director'))
+    <div class="lv-section lv-section-shaded">
+        <div class="lv-section-heading">
+            To be completed by Management
+            <span class="lv-heading-note">(final approval)</span>
+        </div>
+
+        @if($leave->director_decision === 'Skipped')
+            <div class="lv-field"><div class="lv-field-label">Skipped — {{ $leave->director_comments }}</div></div>
+        @else
+            <div class="lv-approval-row">
+                <label class="lv-approval-option">
+                    <input type="radio" class="lv-radio" disabled {{ $leave->director_decision === 'Approved' ? 'checked' : '' }}>
+                    <span>Approved</span>
+                </label>
+                <label class="lv-approval-option">
+                    <input type="radio" class="lv-radio" disabled {{ $leave->director_decision === 'Rejected' ? 'checked' : '' }}>
+                    <span>Rejected</span>
+                </label>
+            </div>
+
+            <div class="lv-field mt-3">
+                <div class="lv-field-label">Comments</div>
+                <div class="lv-textarea" style="min-height:2.2em">{{ $leave->director_comments }}</div>
+            </div>
+
+            <div class="lv-row-2 mt-3">
+                <div class="lv-field">
+                    <div class="lv-field-label">Name</div>
+                    <input type="text" class="lv-input" value="{{ $leave->director_name }}" readonly>
+                </div>
+                <div class="lv-field">
+                    <div class="lv-field-label">Position</div>
+                    <input type="text" class="lv-input" value="{{ $leave->director_position }}" readonly>
+                </div>
+            </div>
+
+            <div class="lv-sig-row mt-3">
+                <div class="lv-field">
+                    <div class="lv-field-label">Signature</div>
+                    <div class="lv-sig-line"></div>
+                </div>
+                <div class="lv-field">
+                    <div class="lv-field-label">Date</div>
+                    <div class="lv-sig-line">{{ optional($leave->director_signature_date)->format('d M Y') }}</div>
+                </div>
+            </div>
+        @endif
+    </div>
+    @endif
 
 
     {{-- FOOTER NOTE --}}

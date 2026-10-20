@@ -26,7 +26,7 @@ class EnsureEmployeePortal
         if (! $user->canUsePortal()) {
             return $user->canUseAdmin()
                 ? redirect()->route('dashboard')->with('error', $user->isDirector()
-                    ? 'Directors use the admin area only.'
+                    ? 'Management use the admin area only.'
                     : 'Your login isn\'t linked to an employee record, so there is no self-service portal for it. Ask HR to link it.')
                 : $this->signOut($request, 'Your account has no access role yet. Please contact HR.');
         }

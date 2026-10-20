@@ -57,23 +57,27 @@
     <div class="col-lg-5">
         @if($leave->awaitingSupervisor())
             <div class="card shadow-sm border-0" style="border-top:3px solid var(--brand, #185FA5) !important;">
-                <div class="card-header bg-transparent"><strong>Your recommendation</strong></div>
+                <div class="card-header bg-transparent"><strong>Your approval</strong> <small class="text-muted">· step 1 of {{ count($leave->chain()) }}</small></div>
                 <form method="POST" action="{{ route('portal.team-leave.decide', $leave) }}" class="card-body">
                     @csrf
                     <div class="d-grid gap-2 mb-3">
                         <input type="radio" class="btn-check" name="supervisor_decision" id="decApprove" value="Approved" @checked(old('supervisor_decision') === 'Approved') required>
                         <label class="btn btn-outline-success text-start" for="decApprove">
-                            <i class="bi bi-hand-thumbs-up me-1"></i> Recommend approval
+                            <i class="bi bi-hand-thumbs-up me-1"></i> Approve
                         </label>
                         <input type="radio" class="btn-check" name="supervisor_decision" id="decReject" value="Rejected" @checked(old('supervisor_decision') === 'Rejected')>
                         <label class="btn btn-outline-danger text-start" for="decReject">
-                            <i class="bi bi-hand-thumbs-down me-1"></i> Recommend rejection
+                            <i class="bi bi-hand-thumbs-down me-1"></i> Reject
                         </label>
                     </div>
                     <label class="form-label small text-muted">Comments <span id="reqHint">(optional)</span></label>
                     <textarea name="supervisor_comments" id="supComments" rows="3" class="form-control mb-3">{{ old('supervisor_comments') }}</textarea>
-                    <button class="btn btn-primary w-100"><i class="bi bi-send-check me-1"></i> Submit to HR</button>
-                    <small class="text-muted d-block mt-2">HR makes the final decision. {{ $leave->employee_name }} and HR will be emailed.</small>
+                    <button class="btn btn-primary w-100"><i class="bi bi-send-check me-1"></i> Record my decision</button>
+                    <small class="text-muted d-block mt-2">
+                        Approval chain: {{ $leave->chain_label }}.
+                        @if($n2 = $leave->nextStepAfter('supervisor')) If you approve, it goes to {{ \App\Models\LeaveRequest::STEPS[$n2]['who'] }} next. @else Your approval is final. @endif
+                        Rejecting ends the request.
+                    </small>
                 </form>
             </div>
 
@@ -91,21 +95,22 @@
                 <div class="card-body">
                     @if($leave->supervisor_decision)
                         <div class="fw-semibold {{ $leave->supervisor_decision === 'Approved' ? 'text-success' : 'text-danger' }}">
-                            You {{ $leave->supervisor_decision === 'Approved' ? 'recommended approval' : 'recommended rejection' }}
+                            You {{ $leave->supervisor_decision === 'Approved' ? 'approved' : 'rejected' }} this request
                         </div>
                         <small class="text-muted">{{ optional($leave->supervisor_acted_at)->format('d M Y, H:i') }}</small>
                         @if($leave->supervisor_comments)
                             <div class="small mt-2 p-2 bg-light rounded">{!! nl2br(e($leave->supervisor_comments)) !!}</div>
                         @endif
                     @else
-                        <div class="text-muted">HR decided this request directly.</div>
+                        <div class="text-muted">{{ $leave->supervisor_comments ?: 'Decided without the supervisor step.' }}</div>
                     @endif
                     <hr>
-                    <small class="text-muted d-block">HR final decision</small>
+                    <small class="text-muted d-block">Final decision</small>
                     @if($leave->isFinal())
-                        <strong class="{{ $leave->status === 'Approved' ? 'text-success' : 'text-danger' }}">{{ $leave->status }}</strong> by {{ $leave->hr_name }}
+                        <strong class="{{ $leave->status === 'Approved' ? 'text-success' : 'text-danger' }}">{{ $leave->status }}</strong>
+                        @if($leave->final_decider_name) by {{ $leave->final_decider_name }} @endif
                     @else
-                        <span class="text-warning"><i class="bi bi-hourglass-split"></i> Waiting for HR</span>
+                        <span class="text-warning"><i class="bi bi-hourglass-split"></i> {{ $leave->stage_label }}</span>
                     @endif
                 </div>
             </div>

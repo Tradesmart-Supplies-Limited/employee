@@ -75,6 +75,14 @@
 
         <span class="nav-group-label nav-text">Leave</span>
 
+        @if(auth()->user()?->employee_id)
+        <a class="nav-link {{ request()->routeIs('leave.apply') ? 'active' : '' }}"
+           href="{{ route('leave.apply') }}">
+            <i class="bi bi-calendar-plus nav-icon"></i>
+            <span class="nav-text">Apply for Leave</span>
+        </a>
+        @endif
+
         <a class="nav-link {{ request()->routeIs('leave.index', 'leave.show') ? 'active' : '' }}"
            href="{{ route('leave.index') }}">
             <i class="bi bi-calendar-check nav-icon"></i>
@@ -100,17 +108,18 @@
             <span class="nav-text">Record Leave</span>
         </a>
 
+        <a class="nav-link {{ request()->routeIs('leave.manage.chain') ? 'active' : '' }}"
+           href="{{ route('leave.manage.chain') }}">
+            <i class="bi bi-diagram-3 nav-icon"></i>
+            <span class="nav-text">Approval Chain</span>
+        </a>
+
         <a class="nav-link {{ request()->routeIs('leave.manage.holidays') ? 'active' : '' }}"
            href="{{ route('leave.manage.holidays') }}">
             <i class="bi bi-flag nav-icon"></i>
             <span class="nav-text">Public Holidays</span>
         </a>
 
-        <a class="nav-link {{ request()->routeIs('leave.apply') ? 'active' : '' }}"
-           href="{{ route('leave.apply') }}">
-            <i class="bi bi-calendar-plus nav-icon"></i>
-            <span class="nav-text">Apply for Leave</span>
-        </a>
         @endif
 
         <!-- <span class="nav-group-label nav-text">Payroll</span>

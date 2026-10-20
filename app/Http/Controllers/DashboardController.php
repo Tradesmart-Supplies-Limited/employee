@@ -44,15 +44,27 @@ class DashboardController extends Controller
         $exitedThisYear = $employees->filter(fn ($e) => strtolower((string) $e->employment_status) === 'exited' && $e->updated_at && $e->updated_at->year === $today->year)->count();
 
         /* ---------------- leave ---------------- */
+        $decidedAt = 'COALESCE(director_acted_at, hr_acted_at, supervisor_acted_at, updated_at)';
         $leavePipeline = [
             'awaiting_supervisor' => LeaveRequest::stage(LeaveRequest::STAGE_SUPERVISOR)->count(),
             'awaiting_hr'         => LeaveRequest::stage(LeaveRequest::STAGE_HR)->count(),
-            'approved_month'      => LeaveRequest::where('status', 'Approved')->whereMonth('hr_acted_at', $today->month)->whereYear('hr_acted_at', $today->year)->count(),
-            'rejected_month'      => LeaveRequest::where('status', 'Rejected')->whereMonth('hr_acted_at', $today->month)->whereYear('hr_acted_at', $today->year)->count(),
+            'awaiting_director'   => LeaveRequest::stage(LeaveRequest::STAGE_DIRECTOR)->count(),
+            'approved_month'      => LeaveRequest::where('status', 'Approved')->whereRaw("{$decidedAt} >= ?", [$today->copy()->startOfMonth()])->count(),
+            'rejected_month'      => LeaveRequest::where('status', 'Rejected')->whereRaw("{$decidedAt} >= ?", [$today->copy()->startOfMonth()])->count(),
             'assigned_to_me'      => LeaveRequest::stage(LeaveRequest::STAGE_SUPERVISOR)->where('supervisor_user_id', $user?->id)->count(),
         ];
+        // Requests waiting at the step this user decides (HR step for HR, Management step for Management; Admin both).
+        $myLeaveSteps = array_values(array_filter([
+            $user?->hasRole('hr', 'admin') ? 'hr' : null,
+            $user?->hasRole('director', 'admin') ? 'director' : null,
+        ]));
+        $leavePipeline['my_turn'] = $myLeaveSteps
+            ? LeaveRequest::where('status', 'Pending')->whereIn('current_step', $myLeaveSteps)
+                ->when($user?->employee_id, fn ($q) => $q->where(fn ($w) => $w->whereNull('employee_id')->orWhere('employee_id', '!=', $user->employee_id)))
+                ->count()
+            : 0;
         $leaveInProgress = LeaveRequest::with(['supervisorEmployee', 'supervisorUser', 'employee'])
-            ->where('status', 'Pending')->orderByRaw('supervisor_decision IS NULL')->oldest()->limit(5)->get();
+            ->where('status', 'Pending')->oldest()->limit(5)->get();
         $onLeaveNow = LeaveRequest::with('employee')->where('status', 'Approved')
             ->whereDate('date_from', '<=', $today->toDateString())->whereDate('date_to', '>=', $today->toDateString())
             ->orderBy('date_to')->get();
@@ -93,7 +105,8 @@ class DashboardController extends Controller
         $offline = $kiosks->reject->is_online->count();
         $workHours = $now->hour >= 6 && $now->hour < 18 && ($attendance['working'] ?? false);
 
-        $add($leavePipeline['awaiting_hr'], 'warning', 'bi-calendar-check', 'leave request(s) need your final decision', route('leave.index'), 'Decide');
+        $myStage = $myLeaveSteps === ['director'] ? LeaveRequest::STAGE_DIRECTOR : ($myLeaveSteps === ['hr'] ? LeaveRequest::STAGE_HR : null);
+        $add($leavePipeline['my_turn'], 'warning', 'bi-calendar-check', 'leave request(s) waiting for your approval' . ($myLeaveSteps === ['director'] ? ' (Management)' : ''), route('leave.index', array_filter(['stage' => $myStage])), 'Approve');
         $add($leavePipeline['assigned_to_me'], 'primary', 'bi-person-check', 'leave request(s) from your direct reports', route('leave.index'), 'Review');
         $add($pendingProfile, 'primary', 'bi-person-lines-fill', 'employee detail change(s) waiting for approval', route('profile-changes.index'), 'Review');
         $add($pendingOvertime, 'primary', 'bi-alarm', 'overtime request(s) to approve', \Illuminate\Support\Facades\Route::has('overtime.index') ? route('overtime.index') : null, 'Open');
@@ -192,7 +205,7 @@ class DashboardController extends Controller
                 'exited_year' => $exitedThisYear,
                 'departments' => $active->pluck('department')->filter()->unique()->count(),
                 'on_leave'    => $onLeaveNow->count(),
-                'approvals'   => $leavePipeline['awaiting_hr'] + $pendingProfile + $pendingOvertime,
+                'approvals'   => $leavePipeline['my_turn'] + $pendingProfile + $pendingOvertime,
                 'contracts'   => $ending + $expired,
             ],
             'attendance'      => $attendance,
@@ -202,7 +215,7 @@ class DashboardController extends Controller
             'leaveInProgress' => $leaveInProgress,
             'onLeaveNow'      => $onLeaveNow,
             'attention'       => $attention,
-            'counts'          => ['profile' => $pendingProfile, 'overtime' => $pendingOvertime, 'leave_hr' => $leavePipeline['awaiting_hr']],
+            'counts'          => ['profile' => $pendingProfile, 'overtime' => $pendingOvertime, 'leave_hr' => $leavePipeline['my_turn']],
             'upcoming'        => $upcoming,
             'byDept'          => $byDept,
             'workforce'       => $workforce,
@@ -266,8 +279,10 @@ class DashboardController extends Controller
             ->sortBy(fn ($r) => ['absent' => 0, 'late' => 1, 'not_in' => 2][$r->status])->values();
 
         $leave = fn () => \App\Support\DeptScope::viaEmployee(LeaveRequest::query(), $user);
-        $toReview = $leave()->with('employee')->where('status', 'Pending')->whereNull('supervisor_decision')->oldest()->limit(8)->get();
-        $withHr = $leave()->where('status', 'Pending')->whereNotNull('supervisor_decision')->count();
+        $toReview = $leave()->with('employee')->stage(LeaveRequest::STAGE_SUPERVISOR)
+            ->where(fn ($w) => $w->whereNull('employee_id')->orWhere('employee_id', '!=', (int) $user->employee_id))
+            ->oldest()->limit(8)->get();
+        $withHr = $leave()->where('status', 'Pending')->whereIn('current_step', ['hr', 'director'])->count();
         $away = $leave()->with('employee')->where('status', 'Approved')
             ->whereDate('date_from', '<=', $today->toDateString())->whereDate('date_to', '>=', $today->toDateString())->orderBy('date_to')->get();
         $upcoming = $leave()->with('employee')->whereIn('status', ['Approved', 'Pending'])

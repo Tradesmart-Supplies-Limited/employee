@@ -8,7 +8,7 @@
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
     <div>
         <h4 class="mb-1"><i class="bi bi-people me-1"></i> Team Approvals</h4>
-        <small class="text-muted">Leave requests from people who report to you. Your recommendation goes to HR for the final decision.</small>
+        <small class="text-muted">Leave requests from people who report to you. You are the first approval step; once you approve, the request moves on to the next approver (HR, then Management).</small>
     </div>
 </div>
 
@@ -61,13 +61,13 @@
                                 <td class="fw-semibold">{{ $l->employee_name }}</td>
                                 <td class="small">{{ $l->leave_type }}<br><span class="text-muted">{{ $l->date_from->format('d M') }} – {{ $l->date_to->format('d M') }}</span></td>
                                 <td class="small">
-                                    @if($l->supervisor_decision)
+                                    @if(in_array($l->supervisor_decision, ['Approved', 'Rejected'], true))
                                         <span class="{{ $l->supervisor_decision === 'Approved' ? 'text-success' : 'text-danger' }}">
                                             <i class="bi {{ $l->supervisor_decision === 'Approved' ? 'bi-hand-thumbs-up' : 'bi-hand-thumbs-down' }}"></i>
-                                            {{ $l->supervisor_decision === 'Approved' ? 'Recommended' : 'Not recommended' }}
+                                            {{ $l->supervisor_decision === 'Approved' ? 'Approved' : 'Rejected' }}
                                         </span>
                                     @else
-                                        <span class="text-muted">HR decided directly</span>
+                                        <span class="text-muted">Step skipped</span>
                                     @endif
                                 </td>
                                 <td>@include('leave.partials.mini-tracker', ['leave' => $l])</td>

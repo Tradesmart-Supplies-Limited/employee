@@ -13,7 +13,7 @@
     $money = fn ($v) => 'K ' . number_format((float) $v, 0);
     $kmoney = fn ($v) => (float) $v >= 1e6 ? 'K ' . rtrim(rtrim(number_format($v / 1e6, 2), '0'), '.') . 'm' : ((float) $v >= 1e4 ? 'K ' . number_format($v / 1e3, 0) . 'k' : 'K ' . number_format((float) $v, 0));
     $actions = [
-        ['Add employee', 'bi-person-plus', route('employees.create'), '#185FA5', null],
+        ['Add employee', 'bi-person-plus', route('employees.create'), 'var(--brand-text, #185FA5)', null],
         ['Approve leave', 'bi-calendar-check', route('leave.index'), '#7c3aed', $counts['leave_hr']],
         ['Detail changes', 'bi-person-lines-fill', route('profile-changes.index'), '#0891b2', $counts['profile']],
         ['Attendance', 'bi-qr-code-scan', route('attendance.index'), '#16a34a', null],
@@ -26,13 +26,13 @@
         ['Contract reminders', 'bi-bell', route('settings.contract-reminders.index'), '#dc2626', null],
         ['Export staff list', 'bi-download', route('employees.export'), '#64748b', null],
     ];
-    $sevColor = ['danger' => '#dc2626', 'warning' => '#d97706', 'primary' => '#185FA5', 'secondary' => '#64748b'];
+    $sevColor = ['danger' => '#dc2626', 'warning' => '#d97706', 'primary' => 'var(--brand-text, #185FA5)', 'secondary' => '#64748b'];
 @endphp
 
 <style>
 /* Greeting card: the gradient follows the time of day (same rule as the greeting).
    All stops are dark enough for white text (≥ 4.5:1). */
-.db-hero { --g1: #0b3b6f; --g2: #185FA5; --g3: #0f766e; --glow1: rgba(242,151,58,.42); --glow2: rgba(45,212,191,.22); --accent: #F7B267;
+.db-hero { --g1: #0b3b6f; --g2: var(--brand-text, #185FA5); --g3: #0f766e; --glow1: rgba(242,151,58,.42); --glow2: rgba(45,212,191,.22); --accent: #F7B267;
     position: relative; overflow: hidden; isolation: isolate; border-radius: 22px; padding: 1.5rem 1.6rem; color: #fff;
     background:
         radial-gradient(620px 320px at 100% 0%, var(--glow1), transparent 62%),
@@ -40,7 +40,7 @@
         linear-gradient(125deg, var(--g1) 0%, var(--g2) 52%, var(--g3) 100%);
     box-shadow: 0 1px 0 rgba(255,255,255,.12) inset, 0 20px 44px -18px color-mix(in srgb, var(--g1) 75%, transparent);
     transition: background .8s ease; }
-.db-hero.is-morning   { --g1: #0b3b6f; --g2: #185FA5; --g3: #0f766e; --glow1: rgba(242,151,58,.55); --glow2: rgba(45,212,191,.22); --accent: #F7B267; }
+.db-hero.is-morning   { --g1: #0b3b6f; --g2: var(--brand-text, #185FA5); --g3: #0f766e; --glow1: rgba(242,151,58,.55); --glow2: rgba(45,212,191,.22); --accent: #F7B267; }
 .db-hero.is-afternoon { --g1: #0c4a7d; --g2: #1666b0; --g3: #0e7490; --glow1: rgba(56,189,248,.38); --glow2: rgba(16,185,129,.24); --accent: #7DD3FC; }
 .db-hero.is-evening   { --g1: #1e1b4b; --g2: #312e81; --g3: #0b3b6f; --glow1: rgba(167,139,250,.40); --glow2: rgba(242,151,58,.20); --accent: #C4B5FD; }
 .db-hero::before { /* fine diagonal sheen for depth, never behind the text */
@@ -85,10 +85,10 @@
 .db-mini { display: grid; grid-template-columns: repeat(2, 1fr); gap: .45rem; flex: 1; }
 .db-mini div { background: var(--admin-surface-soft, #f8fafc); border-radius: 10px; padding: .4rem .6rem; font-size: .76rem; }
 .db-mini b { display: block; font-size: 1.05rem; }
-.db-stage { display: grid; grid-template-columns: repeat(4, 1fr); gap: .45rem; margin-bottom: .8rem; }
+.db-stage { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .45rem; margin-bottom: .8rem; }
 .db-stage a { text-align: center; text-decoration: none; color: inherit; border-radius: 10px; padding: .5rem .3rem; background: var(--admin-surface-soft, #f8fafc); border-top: 3px solid var(--c); }
 .db-stage b { display: block; font-size: 1.25rem; color: var(--c); }
-.db-stage small { font-size: .64rem; font-weight: 700; text-transform: uppercase; color: var(--admin-muted, #64748b); letter-spacing: .03em; }
+.db-stage small { font-size: .64rem; font-weight: 700; text-transform: uppercase; color: var(--admin-muted, #64748b); letter-spacing: .02em; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .db-att-item { display: flex; gap: .75rem; align-items: center; padding: .7rem 1.1rem; border-bottom: 1px solid var(--admin-border, #eef2f7); }
 .db-att-item:last-child { border-bottom: 0; }
 .db-att-item .ic { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: var(--c); background: color-mix(in srgb, var(--c) 12%, transparent); flex-shrink: 0; }
@@ -161,7 +161,7 @@
 {{-- ============ KPIs ============ --}}
 <div class="row g-2 g-md-3 mb-3">
     @foreach([
-        ['Active staff', $stats['active'], '#185FA5', 'bi-people', ($stats['new_month'] ? '+' . $stats['new_month'] . ' this month · ' : '') . $stats['departments'] . ' departments', route('employees.index')],
+        ['Active staff', $stats['active'], 'var(--brand-text, #185FA5)', 'bi-people', ($stats['new_month'] ? '+' . $stats['new_month'] . ' this month · ' : '') . $stats['departments'] . ' departments', route('employees.index')],
         ['In today', $a && $a['expected'] ? $a['attended'] . '/' . $a['expected'] : '—', '#16a34a', 'bi-qr-code-scan', $rate !== null ? $rate . '% attendance' : (($a['holiday'] ?? null) ? 'public holiday' : 'not a working day'), route('attendance.index')],
         ['On leave today', $stats['on_leave'], '#7c3aed', 'bi-airplane', $leavePipeline['approved_month'] . ' approved this month', route('leave.manage.index')],
         ['Approvals waiting', $stats['approvals'], $stats['approvals'] ? '#d97706' : '#64748b', 'bi-inbox', $counts['leave_hr'] . ' leave · ' . $counts['profile'] . ' details · ' . $counts['overtime'] . ' overtime', route('leave.index')],
@@ -261,8 +261,9 @@
             <div class="hr-card-h"><h6><i class="bi bi-calendar-check"></i> Leave workflow</h6><a href="{{ route('leave.manage.index') }}" class="small">Manage <i class="bi bi-arrow-right"></i></a></div>
             <div class="hr-card-b pb-2">
                 <div class="db-stage">
-                    <a href="{{ route('leave.index') }}" style="--c:#d97706"><b>{{ $leavePipeline['awaiting_supervisor'] }}</b><small>Supervisor</small></a>
-                    <a href="{{ route('leave.index') }}" style="--c:#0891b2"><b>{{ $leavePipeline['awaiting_hr'] }}</b><small>HR</small></a>
+                    <a href="{{ route('leave.index', ['stage' => 'awaiting_supervisor']) }}" style="--c:#d97706"><b>{{ $leavePipeline['awaiting_supervisor'] }}</b><small>Supervisor</small></a>
+                    <a href="{{ route('leave.index', ['stage' => 'awaiting_hr']) }}" style="--c:#0891b2"><b>{{ $leavePipeline['awaiting_hr'] }}</b><small>HR</small></a>
+                    <a href="{{ route('leave.index', ['stage' => 'awaiting_director']) }}" style="--c:#6366f1"><b>{{ $leavePipeline['awaiting_director'] }}</b><small>Director</small></a>
                     <a href="{{ route('leave.manage.index') }}" style="--c:#16a34a"><b>{{ $leavePipeline['approved_month'] }}</b><small>Approved</small></a>
                     <a href="{{ route('leave.manage.index') }}" style="--c:#dc2626"><b>{{ $leavePipeline['rejected_month'] }}</b><small>Rejected</small></a>
                 </div>
@@ -270,7 +271,8 @@
                 @forelse($leaveInProgress as $l)
                     <a href="{{ route('leave.show', $l) }}" class="d-flex justify-content-between align-items-center gap-2 py-2 border-bottom text-decoration-none" style="color:inherit">
                         <span class="small" style="min-width:0"><span class="fw-semibold d-block text-truncate">{{ $l->employee_name }}</span><span class="hr-muted">{{ $l->leave_type }} · {{ $l->date_from?->format('d M') }}–{{ $l->date_to?->format('d M') }} · {{ $l->total_days }}d</span></span>
-                        <span class="hr-chip" style="{{ $l->supervisor_decision ? '--bg:#e0f2fe;--c:#075985' : '--bg:#fef3c7;--c:#92400e' }}">{{ $l->supervisor_decision ? 'With HR' : 'Supervisor' }}</span>
+                        @php $chip = ['supervisor' => ['#fef3c7', '#92400e', 'Supervisor'], 'hr' => ['#e0f2fe', '#075985', 'With HR'], 'director' => ['#e0e7ff', '#3730a3', 'Director']][$l->currentStep()] ?? ['#e0f2fe', '#075985', 'Pending']; @endphp
+                        <span class="hr-chip" style="--bg:{{ $chip[0] }};--c:{{ $chip[1] }}">{{ $chip[2] }}</span>
                     </a>
                 @empty
                     <div class="small hr-muted py-2">No leave requests waiting.</div>

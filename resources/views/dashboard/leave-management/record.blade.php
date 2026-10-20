@@ -59,13 +59,13 @@
             <div class="form-check mb-2">
                 <input class="form-check-input" type="radio" name="outcome" id="oApprove" value="approve" @checked(old('outcome', 'approve') === 'approve')>
                 <label class="form-check-label" for="oApprove">
-                    <strong>Approve now</strong> <span class="text-muted">— final HR approval straight away, the balance is deducted and the employee and supervisor get the approval email.</span>
+                    <strong>Approve now</strong> <span class="text-muted">— final approval straight away (the other approval steps are marked as skipped), the balance is deducted and everyone gets the approval email.</span>
                 </label>
             </div>
             <div class="form-check mb-3">
                 <input class="form-check-input" type="radio" name="outcome" id="oFlow" value="workflow" @checked(old('outcome') === 'workflow')>
                 <label class="form-check-label" for="oFlow">
-                    <strong>Send through approval</strong> <span class="text-muted">— goes to the supervisor, then HR, exactly like a portal request.</span>
+                    <strong>Send through approval</strong> <span class="text-muted">— goes through the approval chain ({{ collect(\App\Models\LeaveApprovalSetting::current()->steps())->map(fn ($s) => \App\Models\LeaveRequest::STEPS[$s]['label'])->implode(' → ') }}), exactly like a portal request.</span>
                 </label>
             </div>
             <div id="approveExtras">

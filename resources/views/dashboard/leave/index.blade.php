@@ -42,6 +42,7 @@
             'all'                                        => ['All', '#64748b'],
             \App\Models\LeaveRequest::STAGE_SUPERVISOR   => ['Awaiting supervisor', '#f59e0b'],
             \App\Models\LeaveRequest::STAGE_HR           => ['Awaiting HR', '#0ea5e9'],
+            \App\Models\LeaveRequest::STAGE_DIRECTOR     => ['Awaiting Management', '#6366f1'],
             \App\Models\LeaveRequest::STAGE_APPROVED     => ['Approved', '#16a34a'],
             \App\Models\LeaveRequest::STAGE_REJECTED     => ['Rejected', '#dc2626'],
         ];
@@ -107,10 +108,10 @@
                     {{-- SUPERVISOR --}}
                     <td class="small">
                         {{ $leave->assigned_supervisor_name ?? '—' }}
-                        @if($leave->supervisor_decision)
+                        @if(in_array($leave->supervisor_decision, ['Approved', 'Rejected'], true))
                             <div class="{{ $leave->supervisor_decision === 'Approved' ? 'text-success' : 'text-danger' }}">
                                 <i class="bi {{ $leave->supervisor_decision === 'Approved' ? 'bi-hand-thumbs-up' : 'bi-hand-thumbs-down' }}"></i>
-                                {{ $leave->supervisor_decision === 'Approved' ? 'Recommended' : 'Not recommended' }}
+                                {{ $leave->supervisor_decision }}
                             </div>
                         @endif
                     </td>

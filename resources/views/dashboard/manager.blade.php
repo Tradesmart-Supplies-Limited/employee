@@ -51,7 +51,7 @@
         ['Team', $team, 'var(--brand-text, #0f766e)', 'bi-people', 'active staff', route('attendance.summary')],
         ['In today', $t['expected'] ? $t['attended'] . '/' . $t['expected'] : '—', '#16a34a', 'bi-qr-code-scan', $t['rate'] !== null ? $t['rate'] . '% attendance' : 'not a working day', route('attendance.index')],
         ['Late / absent', $t['late'] + $t['absent'], ($t['late'] + $t['absent']) ? '#d97706' : '#64748b', 'bi-alarm', $t['late'] . ' late · ' . $t['absent'] . ' absent', route('attendance.register')],
-        ['To review', $toReview->count(), $toReview->count() ? '#dc2626' : '#64748b', 'bi-inbox', $withHr . ' waiting for HR', route('leave.index', ['stage' => 'awaiting_supervisor'])],
+        ['To review', $toReview->count(), $toReview->count() ? '#dc2626' : '#64748b', 'bi-inbox', $withHr . ' with HR / Management', route('leave.index', ['stage' => 'awaiting_supervisor'])],
     ] as [$l, $v, $c, $ic, $s, $url])
         <div class="col-6 col-xl-3">
             <a href="{{ $url }}" class="hr-card hr-stat" style="--c:{{ $c }}">
@@ -66,7 +66,7 @@
 <div class="row g-3 mb-3">
     <div class="col-xl-7">
         <div class="hr-card h-100">
-            <div class="hr-card-h"><h6><i class="bi bi-inbox"></i> Leave waiting for your recommendation</h6><a href="{{ route('leave.index') }}" class="small">All requests <i class="bi bi-arrow-right"></i></a></div>
+            <div class="hr-card-h"><h6><i class="bi bi-inbox"></i> Leave waiting for your approval</h6><a href="{{ route('leave.index') }}" class="small">All requests <i class="bi bi-arrow-right"></i></a></div>
             @forelse($toReview as $l)
                 <a href="{{ route('leave.show', $l) }}" class="mg-row text-decoration-none" style="color:inherit">
                     <span class="mg-av">{{ $l->employee?->initials ?? strtoupper(substr($l->employee_name, 0, 2)) }}</span>

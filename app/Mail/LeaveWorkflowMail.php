@@ -8,8 +8,9 @@ use Illuminate\Mail\Mailable;
 /**
  * Every leave workflow email.
  *
- * $event    : submitted | supervisor_decision | final_decision
- * $audience : employee  | supervisor          | hr
+ * $event    : submitted | step_decision | final_decision
+ *            (older queued "supervisor_decision" jobs are read as step_decision)
+ * $audience : employee  | supervisor | hr | director
  *
  * Templates: resources/views/emails/leave/workflow/{event}.blade.php
  */
@@ -23,8 +24,22 @@ class LeaveWorkflowMail extends Mailable
 
     public function build()
     {
+        if ($this->event === 'supervisor_decision') {
+            $this->event = 'step_decision';
+        }
+
+        $decided = $this->leave->lastDecidedStep();
+        $next = $this->leave->currentStep();
+
         return $this->subject($this->subjectLine())
             ->view('emails.leave.workflow.' . $this->event, [
+                'decided'     => $decided,
+                'decidedBy'   => $decided ? $this->leave->{$decided . '_name'} : null,
+                'decision'    => $decided ? $this->leave->{$decided . '_decision'} : null,
+                'decisionNote'=> $decided ? $this->leave->{$decided . '_comments'} : null,
+                'next'        => $next,
+                'myTurn'      => $next !== null && $next === $this->audience,
+                'stepWho'     => fn (?string $s) => self::who($s),
                 'leave'       => $this->leave,
                 'audience'    => $this->audience,
                 'steps'       => $this->leave->timeline(),
@@ -35,22 +50,37 @@ class LeaveWorkflowMail extends Mailable
             ]);
     }
 
+    /** "your supervisor", "HR", "the Director" */
+    public static function who(?string $step): string
+    {
+        return match ($step) {
+            'supervisor' => 'the supervisor',
+            'hr'         => 'HR',
+            'director'   => 'Management',
+            default      => 'HR',
+        };
+    }
+
     private function subjectLine(): string
     {
         $l    = $this->leave;
         $who  = $l->employee_name;
         $what = "{$l->leave_type} leave, {$l->date_from->format('d M')} – {$l->date_to->format('d M Y')}";
+        $next = $l->currentStep();
+        $myTurn = $next !== null && $next === $this->audience;
+        $decided = $l->lastDecidedStep();
 
         return match ($this->event) {
-            'submitted' => match ($this->audience) {
-                'employee'   => "Leave application received — {$what}",
-                'supervisor' => "Action required: {$who}'s leave application",
-                default      => "New leave application: {$who} ({$what})",
+            'submitted' => match (true) {
+                $this->audience === 'employee' => "Leave application received — {$what}",
+                $myTurn                        => "Action required: {$who}'s leave application",
+                default                        => "New leave application: {$who} ({$what})",
             },
-            'supervisor_decision' => match ($this->audience) {
-                'employee'   => "Supervisor review complete — {$what}",
-                'supervisor' => "Recorded: you " . ($l->supervisor_decision === 'Approved' ? 'recommended' : 'did not recommend') . " {$who}'s leave",
-                default      => "Awaiting final approval: {$who}'s leave",
+            'step_decision' => match (true) {
+                $this->audience === 'employee' => ucfirst(self::who($decided)) . " approved your leave — now with " . self::who($next),
+                $myTurn                        => "Action required: approve {$who}'s leave ({$what})",
+                $this->audience === $decided   => "Recorded: you approved {$who}'s leave",
+                default                        => "{$who}'s leave is now with " . self::who($next),
             },
             default => match ($this->audience) {
                 'employee' => "Your leave has been " . strtolower($l->status) . " — {$what}",
@@ -67,8 +97,10 @@ class LeaveWorkflowMail extends Mailable
             'employee' => $l->employee?->user ? route('portal.leave.show', $l) : null,
             'supervisor' => match (true) {
                 (bool) $l->supervisorUser               => route('leave.show', $l),
+                (bool) $l->supervisorEmployee?->user?->canUseAdmin() => route('leave.show', $l),
                 (bool) $l->supervisorEmployee?->user    => route('portal.team-leave.show', $l),
-                default                                 => null,
+                $l->hasAssignedSupervisor()             => null, // supervisor has no login yet
+                default                                 => route('leave.show', $l), // department manager
             },
             default => route('leave.show', $l),
         };
@@ -76,10 +108,10 @@ class LeaveWorkflowMail extends Mailable
 
     private function actionLabel(): string
     {
-        $needsAction = ($this->event === 'submitted' && $this->audience === 'supervisor')
-            || ($this->event === 'supervisor_decision' && $this->audience === 'hr')
-            || ($this->event === 'submitted' && $this->audience === 'hr');
+        $next = $this->leave->currentStep();
 
-        return $needsAction ? 'Review application' : 'View application';
+        return $this->event !== 'final_decision' && $next !== null && $next === $this->audience
+            ? 'Review and approve'
+            : 'View application';
     }
 }

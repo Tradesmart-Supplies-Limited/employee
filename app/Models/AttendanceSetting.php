@@ -11,6 +11,7 @@ class AttendanceSetting extends Model
         'count_holidays_off', 'report_enabled', 'report_include_hr', 'report_recipients', 'report_attach_csv',
         'last_closed_date', 'last_report_at',
         'rota_enabled', 'rota_departments', 'overtime_auto', 'comp_off_required',
+        'auto_clockout_enabled', 'auto_clockout_after_minutes',
     ];
 
     protected $casts = [
@@ -26,6 +27,8 @@ class AttendanceSetting extends Model
         'rota_departments'   => 'array',
         'overtime_auto'      => 'boolean',
         'comp_off_required'  => 'boolean',
+        'auto_clockout_enabled' => 'boolean',
+        'auto_clockout_after_minutes' => 'integer',
     ];
 
     /** Does this department plan its week with a rota? */

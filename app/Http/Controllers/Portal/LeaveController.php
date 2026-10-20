@@ -52,19 +52,29 @@ class LeaveController extends Controller
     public function create(Request $request)
     {
         $employee = $request->user()->employee->load(['supervisorEmployee', 'supervisorUser']);
-        $types    = self::TYPES;
 
-        return view('portal.leave.create', [
+        return view('portal.leave.create', $this->formData($employee) + [
+            'action'    => route('portal.leave.store'),
+            'cancelUrl' => route('portal.leave.index'),
+            'origin'    => null,
+        ]);
+    }
+
+    /** Everything the application form needs for one employee (also used by the staff area). */
+    public function formData(\App\Models\Employee $employee): array
+    {
+        return [
             'employee'        => $employee,
-            'types'           => $types,
+            'types'           => self::TYPES,
             'deductibleTypes' => config('leave.deductible_types', ['Annual']),
             'pendingDays'     => $employee->leavePendingDays(),
             'allowNegative'   => (bool) config('leave.allow_negative_balance'),
-            // For the live day counter: holidays this year → next year
+            // For the live day counter: holidays last year → next year
             'holidays'        => $this->days->holidays(now()->year - 1, now()->year + 1),
             'dayRules'        => LeaveDayCalculator::defaultOptions(),
             'canChangeRules'  => (bool) config('leave.employee_can_change_day_rules', true),
-        ]);
+            'approvalRoute'   => $this->workflow->previewRoute($employee),
+        ];
     }
 
     public function store(Request $request)
@@ -79,9 +89,12 @@ class LeaveController extends Controller
             'other_leave_type'        => 'nullable|required_if:leave_type,Other|string|max:255',
             'date_from'               => 'required|date',
             'date_to'                 => 'required|date|after_or_equal:date_from',
-            'reason'                  => 'nullable|string|max:5000',
+            'reason'                  => 'nullable|required_if:leave_type,Compassionate,Unpaid,Other,Study|string|max:5000',
             'late_application_reason' => [Rule::requiredIf($isLate), 'nullable', 'string', 'max:5000'],
             'supporting_document'     => 'nullable|file|mimes:pdf,jpg,jpeg,png,doc,docx|max:5120',
+        ], [
+            'reason.required_if'               => 'Please give a reason for :value leave.',
+            'late_application_reason.required' => 'Your leave starts before today, so please explain why it is being applied for late.',
         ]);
 
         $from = Carbon::parse($data['date_from']);
@@ -161,6 +174,13 @@ class LeaveController extends Controller
 
         // Assigns the supervisor and emails the employee, supervisor and HR.
         $this->workflow->submit($leave);
+
+        // Applied from the staff area (managers / supervisors / HR): stay there.
+        if ($request->input('_origin') === 'staff' && $request->user()->canUseAdmin()) {
+            return redirect()
+                ->route('leave.show', $leave)
+                ->with('success', 'Your leave request has been submitted. You will be emailed at every step.');
+        }
 
         return redirect()
             ->route('portal.leave.show', $leave)

@@ -286,9 +286,11 @@ Route::post('/leave/apply', [LeaveController::class, 'store'])
 | HR Dashboard — leave workflow (staff only: employee portal logins are
 | redirected away so they can never approve their own leave)
 |--------------------------------------------------------------------------
-| PATCH /leave/{leave}/supervisor → stage 2: supervisor recommendation
-| POST  /leave/{leave}/approve    → stage 3: FINAL approval + balance deduction
-| POST  /leave/{leave}/reject     → stage 3: FINAL rejection
+| POST  /leave/{leave}/decide     → one approval step (supervisor → HR → Director);
+|                                   approval at the last step is final + deducts the balance
+| PATCH /leave/{leave}/supervisor → older form of the supervisor step
+| POST  /leave/{leave}/approve    → approve / reject at the signed-in user's step
+| POST  /leave/{leave}/reject
 */
 
 Route::middleware(['auth', 'staff', 'password.change'])->group(function () {
@@ -299,6 +301,9 @@ Route::middleware(['auth', 'staff', 'password.change'])->group(function () {
         Route::get('/leave/{leave}', [LeaveController::class, 'show'])->name('leave.show');
         Route::get('/leave/{leave}/print', [LeaveController::class, 'print'])->name('leave.print');
     });
+    // Who may decide which step is checked by LeaveWorkflow::canAct()
+    Route::post('/leave/{leave}/decide', [LeaveController::class, 'decide'])
+        ->middleware('perm:leave.view')->name('leave.decide');
     Route::patch('/leave/{leave}/supervisor', [LeaveController::class, 'updateSupervisor'])
         ->middleware('perm:leave.supervise')->name('leave.supervisor.update');
 
@@ -314,6 +319,12 @@ Route::middleware(['auth', 'staff', 'password.change'])->group(function () {
     | Leave Management: reports, planner, balances, holidays
     | (Managers: their department's balances and planner only)
     */
+    // Approval chain: HR / Director can view it, only the Admin can change it (checked in the controller)
+    Route::middleware('perm:full')->group(function () {
+        Route::get('/leave-management/approval-chain', [\App\Http\Controllers\LeaveApprovalChainController::class, 'edit'])->name('leave.manage.chain');
+        Route::put('/leave-management/approval-chain', [\App\Http\Controllers\LeaveApprovalChainController::class, 'update'])->name('leave.manage.chain.update');
+    });
+
     Route::prefix('leave-management')->name('leave.manage.')->controller(LeaveManagementController::class)->group(function () {
         Route::middleware('perm:leave.reports')->group(function () {
             Route::get('/', 'index')->name('index');

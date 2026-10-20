@@ -38,7 +38,8 @@
                 @if($leave->other_leave_type)
                     <div class="col-sm-4"><small class="text-muted d-block">Other type</small>{{ $leave->other_leave_type }}</div>
                 @endif
-                <div class="col-sm-4"><small class="text-muted d-block">Supervisor</small>{{ $leave->assigned_supervisor_name ?? 'HR / Admin' }}</div>
+                <div class="col-sm-4"><small class="text-muted d-block">Supervisor</small>{{ $leave->assigned_supervisor_name ?? 'Department manager' }}</div>
+                <div class="col-sm-8"><small class="text-muted d-block">Approval chain</small>{{ $leave->chain_label }}</div>
                 <div class="col-12"><small class="text-muted d-block">Reason</small>{!! nl2br(e($leave->reason ?: '—')) !!}</div>
                 @if($leave->late_application_reason)
                     <div class="col-12"><small class="text-muted d-block">Late application reason</small>{!! nl2br(e($leave->late_application_reason)) !!}</div>
@@ -55,38 +56,9 @@
 
     <div class="col-lg-4">
         <div class="card shadow-sm border-0 mb-3">
-            <div class="card-header bg-transparent"><strong>Decisions</strong></div>
+            <div class="card-header bg-transparent"><strong>Approvals</strong></div>
             <ul class="list-group list-group-flush">
-                <li class="list-group-item">
-                    <small class="text-muted d-block">Supervisor</small>
-                    @if($leave->supervisor_decision)
-                        <span class="{{ $leave->supervisor_decision === 'Approved' ? 'text-success' : 'text-danger' }} fw-semibold">
-                            <i class="bi {{ $leave->supervisor_decision === 'Approved' ? 'bi-hand-thumbs-up' : 'bi-hand-thumbs-down' }}"></i>
-                            {{ $leave->supervisor_decision === 'Approved' ? 'Recommended' : 'Not recommended' }}
-                        </span>
-                        <div class="small text-muted">{{ $leave->supervisor_name }}</div>
-                        @if($leave->supervisor_comments)
-                            <div class="small mt-1 p-2 bg-light rounded">{!! nl2br(e($leave->supervisor_comments)) !!}</div>
-                        @endif
-                    @elseif($leave->isFinal())
-                        <span class="text-muted">Skipped</span>
-                    @else
-                        <span class="text-warning fw-semibold"><i class="bi bi-hourglass-split"></i> Waiting</span>
-                        <div class="small text-muted">{{ $leave->assigned_supervisor_name ?? 'HR / Admin' }}</div>
-                    @endif
-                </li>
-                <li class="list-group-item">
-                    <small class="text-muted d-block">HR final decision</small>
-                    @if($leave->isFinal())
-                        <span class="{{ $leave->status === 'Approved' ? 'text-success' : 'text-danger' }} fw-semibold">{{ $leave->status }}</span>
-                        <div class="small text-muted">{{ $leave->hr_name }} · {{ optional($leave->hr_acted_at ?? $leave->hr_signature_date)->format('d M Y') }}</div>
-                        @if($leave->hr_comments)
-                            <div class="small mt-1 p-2 bg-light rounded">{!! nl2br(e($leave->hr_comments)) !!}</div>
-                        @endif
-                    @else
-                        <span class="text-muted"><i class="bi bi-clock"></i> {{ $leave->supervisor_decision ? 'Waiting for HR' : 'After supervisor review' }}</span>
-                    @endif
-                </li>
+                @include('leave.partials.decision-list', ['leave' => $leave])
                 <li class="list-group-item">
                     <small class="text-muted d-block">Leave balance</small>
                     @if($leave->status === 'Approved' && (float) $leave->balance_deducted > 0)

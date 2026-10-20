@@ -145,7 +145,7 @@ a.lm-kpi:hover { border-color: var(--c); }
         <div class="lm-kpi" style="--c:var(--brand-text, #185FA5)"><div class="l">Employees</div><div class="v">{{ $k['headcount'] }}</div><div class="s">{{ $n($k['entitlement']) }} days entitled</div></div>
         <div class="lm-kpi" style="--c:#16a34a"><div class="l">Days taken</div><div class="v">{{ $n($k['taken']) }}</div><div class="s">{{ $k['utilization'] }}% of entitlement used</div></div>
         <div class="lm-kpi" style="--c:#0ea5e9"><div class="l">Days remaining</div><div class="v">{{ $n($k['balance_total']) }}</div><div class="s">avg {{ $n($k['avg_balance']) }} per person</div></div>
-        <a class="lm-kpi" style="--c:#f59e0b" href="{{ route('leave.index', ['stage' => 'awaiting_supervisor']) }}"><div class="l">Pending requests</div><div class="v">{{ $k['pending'] }}</div><div class="s">{{ $k['awaiting_supervisor'] }} supervisor · {{ $k['awaiting_hr'] }} HR</div></a>
+        <a class="lm-kpi" style="--c:#f59e0b" href="{{ route('leave.index', ['stage' => 'awaiting_supervisor']) }}"><div class="l">Pending requests</div><div class="v">{{ $k['pending'] }}</div><div class="s">{{ $k['awaiting_supervisor'] }} supervisor · {{ $k['awaiting_hr'] }} HR · {{ $k['awaiting_director'] ?? 0 }} Management</div></a>
         <a class="lm-kpi" style="--c:#16a34a" href="{{ route('leave.index', ['stage' => 'approved']) }}"><div class="l">Approved</div><div class="v">{{ $k['approved'] }}</div><div class="s">{{ $n($k['taken_all']) }} days, all types</div></a>
         <a class="lm-kpi" style="--c:#dc2626" href="{{ route('leave.index', ['stage' => 'rejected']) }}"><div class="l">Rejected</div><div class="v">{{ $k['rejected'] }}</div><div class="s">approval rate {{ $k['approval_rate'] === null ? '—' : $k['approval_rate'] . '%' }}</div></a>
         <div class="lm-kpi" style="--c:#7c3aed"><div class="l">Avg decision time</div><div class="v">{{ $k['avg_turnaround_h'] === null ? '—' : ($k['avg_turnaround_h'] >= 48 ? $n($k['avg_turnaround_h'] / 24) . 'd' : $n($k['avg_turnaround_h']) . 'h') }}</div><div class="s">submit → HR decision</div></div>
@@ -262,7 +262,7 @@ a.lm-kpi:hover { border-color: var(--c); }
     {{-- ===== PENDING QUEUE ===== --}}
     @if($r->pendingQueue->isNotEmpty())
         <div class="lm-card mb-3">
-            <h2><i class="bi bi-hourglass-split"></i> Waiting for a decision <span class="sub">HR-ready first, then oldest</span></h2>
+            <h2><i class="bi bi-hourglass-split"></i> Waiting for a decision <span class="sub">furthest along the approval chain first, then oldest</span></h2>
             <div class="table-responsive">
                 <table class="table table-sm lm-table align-middle mb-0">
                     <thead><tr><th>Employee</th><th>Leave</th><th>Dates</th><th>Waiting</th><th>Supervisor</th><th style="min-width:170px">Stage</th><th></th></tr></thead>

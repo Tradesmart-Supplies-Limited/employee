@@ -1,4 +1,4 @@
-{{-- Email-safe 4-step tracker (tables + inline styles only) --}}
+{{-- Email-safe approval-chain tracker (tables + inline styles only) --}}
 @php
     $palette = [
         'done'      => ['bg' => '#16a34a', 'fg' => '#ffffff', 'mark' => '&#10003;', 'text' => '#15803d'],
@@ -13,7 +13,7 @@
     <tr>
         @foreach($steps as $i => $step)
             @php $p = $palette[$step['state']]; @endphp
-            <td width="25%" align="center" valign="top" style="padding:16px 4px 14px;">
+            <td width="{{ floor(100 / max(1, count($steps))) }}%" align="center" valign="top" style="padding:16px 4px 14px;">
                 <table role="presentation" cellpadding="0" cellspacing="0" align="center">
                     <tr>
                         <td width="34" height="34" align="center" valign="middle"
@@ -22,7 +22,7 @@
                         </td>
                     </tr>
                 </table>
-                <div style="font-size:12px; font-weight:700; color:#0f172a; margin-top:8px;">{{ $step['title'] }}</div>
+                <div style="font-size:12px; font-weight:700; color:#0f172a; margin-top:8px;">{{ str_replace(' approval', '', $step['title']) }}</div>
                 <div style="font-size:11px; color:{{ $p['text'] }}; margin-top:2px; font-weight:600;">{{ $step['note'] }}</div>
                 @if($step['who'])
                     <div style="font-size:11px; color:#64748b; margin-top:2px;">{{ $step['who'] }}</div>

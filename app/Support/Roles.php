@@ -36,7 +36,7 @@ final class Roles
      * What a manager may do in the admin area (always limited to their department).
      *   dashboard        – team dashboard
      *   leave.view       – see the department's leave requests
-     *   leave.supervise  – record the supervisor recommendation (not the final HR decision)
+     *   leave.supervise  – approve / reject at the supervisor step of the approval chain
      *   leave.reports    – department leave balances and planner
      *   attendance.view  – department attendance, register, monthly summary
      *   attendance.edit  – correct the department's times in the register
@@ -52,7 +52,7 @@ final class Roles
         return match (self::normalize($role)) {
             self::ADMIN    => 'Admin',
             self::HR       => 'HR',
-            self::DIRECTOR => 'Director',
+            self::DIRECTOR => 'Management',
             self::MANAGER  => 'Manager',
             self::EMPLOYEE => 'Employee',
             default        => 'No role',
@@ -65,7 +65,7 @@ final class Roles
         return [
             self::ADMIN    => ['label' => 'Admin',    'color' => '#b91c1c', 'icon' => 'bi-shield-lock',  'desc' => 'Everything, including user roles and system settings.'],
             self::HR       => ['label' => 'HR',       'color' => '#185FA5', 'icon' => 'bi-person-badge', 'desc' => 'Everything. Can switch to their own self-service portal.'],
-            self::DIRECTOR => ['label' => 'Director', 'color' => '#7c3aed', 'icon' => 'bi-briefcase',    'desc' => 'Everything in the admin area. Not counted as an employee in attendance, rotas or leave reports. No portal.'],
+            self::DIRECTOR => ['label' => 'Management', 'color' => '#7c3aed', 'icon' => 'bi-briefcase',    'desc' => 'Everything in the admin area. Not counted as an employee in attendance, rotas or leave reports. No portal.'],
             self::MANAGER  => ['label' => 'Manager',  'color' => '#0f766e', 'icon' => 'bi-diagram-3',    'desc' => 'Their department only: leave (supervisor step), attendance and shift rota. Can switch to their own portal.'],
             self::EMPLOYEE => ['label' => 'Employee', 'color' => '#475569', 'icon' => 'bi-person',       'desc' => 'Self-service portal only.'],
         ];
@@ -78,7 +78,7 @@ final class Roles
         $r = match ($r) {
             'administrator', 'super admin', 'superadmin', 'super-admin', 'system admin' => self::ADMIN,
             'human resources', 'human resource', 'hr manager', 'hr officer'            => self::HR,
-            'md', 'managing director', 'ceo', 'executive'                               => self::DIRECTOR,
+            'md', 'managing director', 'ceo', 'executive', 'management'                              => self::DIRECTOR,
             'supervisor', 'head of department', 'hod', 'line manager'                   => self::MANAGER,
             'staff', 'user'                                                             => self::EMPLOYEE,
             default                                                                     => $r,
@@ -104,7 +104,7 @@ final class Roles
             ],
             self::MANAGER => [
                 'who'   => 'Team leads and heads of department.',
-                'can'   => ['Recommend your team\'s leave before HR decides', 'See who is in, late or absent in your department', 'Plan and publish the weekly shift rota', 'Switch to your own portal for your leave and payslips'],
+                'can'   => ['Approve your team\'s leave (first step, before HR and Management)', 'See who is in, late or absent in your department', 'Plan and publish the weekly shift rota', 'Switch to your own portal for your leave and payslips'],
                 'lands' => 'Your department dashboard',
                 'tip'   => 'You only see your own department. If your team looks wrong, ask HR to check your employee record.',
             ],
@@ -115,10 +115,10 @@ final class Roles
                 'tip'   => 'Use your work email. HR logins are created under Users & Roles.',
             ],
             self::DIRECTOR => [
-                'who'   => 'Company directors.',
+                'who'   => 'Company management.',
                 'can'   => ['See everything HR sees, across the company', 'Review leave, attendance and staff reports', 'Give final approval on leave and overtime when needed', 'Stay out of attendance and leave reports yourself'],
                 'lands' => 'The HR dashboard',
-                'tip'   => 'Directors don\'t have a self-service portal and aren\'t asked to scan in.',
+                'tip'   => 'Management don\'t have a self-service portal and aren\'t asked to scan in.',
             ],
             self::ADMIN => [
                 'who'   => 'Whoever looks after the system.',

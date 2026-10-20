@@ -83,7 +83,7 @@
             @if($errors->any())<div class="alert alert-danger py-2 small">{{ $errors->first() }}</div>@endif
             <div class="row g-2">
                 <div class="col-md-6">
-                    <label class="form-label small fw-semibold">Employee record <span class="text-muted fw-normal">(optional for Admin / Director)</span></label>
+                    <label class="form-label small fw-semibold">Employee record <span class="text-muted fw-normal">(optional for Admin / Management)</span></label>
                     <select name="employee_id" class="form-select form-select-sm" id="nuEmp">
                         <option value="">— Not an employee / no record —</option>
                         @foreach($employees as $e)

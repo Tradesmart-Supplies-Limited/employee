@@ -98,7 +98,7 @@
                 </div>
             @endforeach
             @if(! $isToday && $t['missing_out'])
-                <div class="col-12"><div class="alert alert-info py-2 small mb-0"><i class="bi bi-exclamation-circle"></i> {{ $t['missing_out'] }} {{ $t['missing_out'] === 1 ? 'person' : 'people' }} clocked in but never scanned out, so their hours are missing. <a href="{{ route('attendance.register', ['date' => $date->toDateString()]) }}">Fix in the register</a>.</div></div>
+                <div class="col-12"><div class="alert alert-info py-2 small mb-0"><i class="bi bi-exclamation-circle"></i> {{ $t['missing_out'] }} {{ $t['missing_out'] === 1 ? 'person' : 'people' }} clocked in but never scanned out{{ ($settings->auto_clockout_enabled ?? false) ? ' (the system clocked them out at shift end)' : ', so their hours are missing' }}. <a href="{{ route('attendance.register', ['date' => $date->toDateString()]) }}">Fix in the register</a>.</div></div>
             @endif
         </div>
     </div>
@@ -200,7 +200,7 @@
                                     @if($rec?->source_in && $rec->clock_in)<i class="bi {{ AR::SOURCES[$rec->source_in]['icon'] ?? '' }} at-muted small" title="{{ AR::SOURCES[$rec->source_in]['label'] ?? '' }}"></i>@endif
                                 </td>
                                 <td>
-                                    @if($rec?->clock_out){{ $rec->out_time }} @if($rec->left_early)<i class="bi bi-box-arrow-left text-warning small" title="Left before {{ $rec->scheduled_end ?? $settings->work_end }}"></i>@endif
+                                    @if($rec?->clock_out){{ $rec->out_time }} @if($rec->auto_clocked_out)<span class="badge text-bg-warning" title="No scan out: clocked out automatically">auto</span>@endif @if($rec->left_early)<i class="bi bi-box-arrow-left text-warning small" title="Left before {{ $rec->scheduled_end ?? $settings->work_end }}"></i>@endif
                                     @elseif($rec?->missing_out)<span class="small text-danger">no scan out</span>
                                     @elseif($rec?->clock_in)<span class="small text-success">at work</span>
                                     @else — @endif

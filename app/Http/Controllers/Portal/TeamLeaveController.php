@@ -10,7 +10,8 @@ use RuntimeException;
 
 /**
  * Portal: leave requests from the people who report to the logged-in employee.
- * The supervisor recommends; HR / Admin makes the final decision.
+ * The supervisor is the first step of the approval chain
+ * (Supervisor → HR → Director). Rejecting here ends the request.
  */
 class TeamLeaveController extends Controller
 {
@@ -54,18 +55,22 @@ class TeamLeaveController extends Controller
             'supervisor_decision' => 'required|in:Approved,Rejected',
             'supervisor_comments' => 'nullable|required_if:supervisor_decision,Rejected|string|max:5000',
         ], [
-            'supervisor_comments.required_if' => 'Please give a reason when recommending rejection.',
+            'supervisor_comments.required_if' => 'Please give a reason when rejecting.',
         ]);
 
         try {
-            $this->workflow->supervisorDecision($leave, $request->user(), $data['supervisor_decision'], $data['supervisor_comments'] ?? null);
+            $leave = $this->workflow->supervisorDecision($leave, $request->user(), $data['supervisor_decision'], $data['supervisor_comments'] ?? null);
         } catch (RuntimeException $e) {
             return back()->with('error', $e->getMessage());
         }
 
         return redirect()
             ->route('portal.team-leave.index')
-            ->with('success', 'Your decision has been recorded and sent to HR for final approval.');
+            ->with('success', match ($leave->status) {
+                'Rejected' => 'You rejected the request. The employee and HR have been notified.',
+                'Approved' => 'Approved. As the last step in the chain, your approval is final and the balance has been updated.',
+                default    => 'Approved. It has moved on to ' . LeaveRequest::STEPS[$leave->currentStep()]['who'] . ' for the next approval.',
+            });
     }
 
     private function authorizeSupervisor(Request $request, LeaveRequest $leave): void

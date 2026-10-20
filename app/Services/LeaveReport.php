@@ -116,7 +116,7 @@ class LeaveReport
         // ---------- KPIs ----------
         $req = $this->requests;
         $decided = $req->whereIn('status', ['Approved', 'Rejected']);
-        $turnaround = $decided->filter(fn ($l) => $l->hr_acted_at)->map(fn ($l) => $l->created_at->diffInHours($l->hr_acted_at));
+        $turnaround = $decided->filter(fn ($l) => $l->final_acted_at)->map(fn ($l) => $l->created_at->diffInHours(\Illuminate\Support\Carbon::parse($l->final_acted_at)));
         $supTurn = $req->filter(fn ($l) => $l->supervisor_acted_at)->map(fn ($l) => $l->created_at->diffInHours($l->supervisor_acted_at));
         $allRows = $employees->count();
 
@@ -134,6 +134,7 @@ class LeaveReport
             'rejected'          => $req->where('status', 'Rejected')->count(),
             'awaiting_supervisor' => $req->filter(fn ($l) => $l->stage === LeaveRequest::STAGE_SUPERVISOR)->count(),
             'awaiting_hr'       => $req->filter(fn ($l) => $l->stage === LeaveRequest::STAGE_HR)->count(),
+            'awaiting_director' => $req->filter(fn ($l) => $l->stage === LeaveRequest::STAGE_DIRECTOR)->count(),
             'approval_rate'     => $decided->count() ? round($req->where('status', 'Approved')->count() / $decided->count() * 100) : null,
             'avg_turnaround_h'  => $turnaround->count() ? round($turnaround->avg(), 1) : null,
             'avg_supervisor_h'  => $supTurn->count() ? round($supTurn->avg(), 1) : null,
@@ -187,7 +188,7 @@ class LeaveReport
             ->orderBy('date_from')->get();
         $this->pendingQueue = (clone $base)->where('status', 'Pending')
             ->with(['supervisorEmployee', 'supervisorUser'])
-            ->orderByRaw('supervisor_decision IS NULL')->oldest()->get();
+            ->orderByRaw("CASE current_step WHEN 'director' THEN 0 WHEN 'hr' THEN 1 ELSE 2 END")->oldest()->get();
     }
 
     /** Distinct departments / branches for the filter dropdowns. */

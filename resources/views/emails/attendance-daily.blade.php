@@ -11,7 +11,7 @@
     $lists = [
         ['Absent', $r['absent'], '#dc2626', 'No scan and no approved leave.'],
         ['Late arrivals', $r['late'], '#d97706', null],
-        ['Did not clock out', $r['missing_out'], '#0891b2', 'Clocked in but never scanned out. Hours could not be counted.'],
+        ['Did not clock out', $r['missing_out'], '#0891b2', 'Clocked in but never scanned out. ' . (\App\Models\AttendanceSetting::current()->auto_clockout_enabled ? 'The system clocked them out at shift end; please check.' : 'Hours could not be counted.')],
         ['Left before closing time', $r['early'], '#64748b', null],
         ['On leave', $r['on_leave'], '#7c3aed', null],
     ];
