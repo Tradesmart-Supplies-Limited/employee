@@ -166,8 +166,14 @@ Route::middleware(['auth', 'staff', 'password.change'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::view('/profile', 'dashboard.profile')->name('profile.index');
 
+    // Announcements: Admin / HR / Management, and Managers (their own posts only — see the controller)
+    Route::middleware('perm:announcements')->group(function () {
+        Route::get('announcements/{announcement}/attachment', [AnnouncementController::class, 'attachment'])->name('announcements.attachment');
+        Route::resource('announcements', AnnouncementController::class);
+    });
+
     // ------------------------------------------------------------------
-    // Admin / HR / Director only
+    // Admin / HR / Management only
     // ------------------------------------------------------------------
     Route::middleware('perm:full')->group(function () {
 
@@ -208,9 +214,6 @@ Route::middleware(['auth', 'staff', 'password.change'])->group(function () {
         Route::get('/departments', [DepartmentController::class, 'index'])->name('departments.index');
         Route::get('/departments/{slug}', [DepartmentController::class, 'show'])->where('slug', '[a-z0-9\-]+')->name('departments.show');
 
-        // Announcements (shown in the employee portal; optional email)
-        Route::get('announcements/{announcement}/attachment', [AnnouncementController::class, 'attachment'])->name('announcements.attachment');
-        Route::resource('announcements', AnnouncementController::class);
 
         Route::get('/payroll/runs/all', [DashboardController::class, 'payroll'])->name('payroll.index');
         Route::get('/reports', [DashboardController::class, 'reports'])->name('reports.index');

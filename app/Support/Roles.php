@@ -41,10 +41,12 @@ final class Roles
      *   attendance.view  – department attendance, register, monthly summary
      *   attendance.edit  – correct the department's times in the register
      *   rota.manage      – plan and publish the department's shift rota
+     *   announcements    – post announcements to everyone, departments or chosen people
+     *                      (and edit / delete their own)
      */
     public const MANAGER_PERMISSIONS = [
         'dashboard', 'leave.view', 'leave.supervise', 'leave.reports',
-        'attendance.view', 'attendance.edit', 'rota.manage',
+        'attendance.view', 'attendance.edit', 'rota.manage', 'announcements',
     ];
 
     public static function label(?string $role): string
@@ -104,7 +106,7 @@ final class Roles
             ],
             self::MANAGER => [
                 'who'   => 'Team leads and heads of department.',
-                'can'   => ['Approve your team\'s leave (first step, before HR and Management)', 'See who is in, late or absent in your department', 'Plan and publish the weekly shift rota', 'Switch to your own portal for your leave and payslips'],
+                'can'   => ['Approve your team\'s leave (first step, before HR and Management)', 'See who is in, late or absent in your department', 'Plan and publish the weekly shift rota', 'Post announcements to the company or chosen people', 'Switch to your own portal for your leave and payslips'],
                 'lands' => 'Your department dashboard',
                 'tip'   => 'You only see your own department. If your team looks wrong, ask HR to check your employee record.',
             ],

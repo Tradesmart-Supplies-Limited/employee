@@ -59,6 +59,14 @@
 
         @endif
 
+        @if(! $full && $me?->hasPermission('announcements'))
+        <a class="nav-link {{ request()->routeIs('announcements.*') ? 'active' : '' }}"
+           href="{{ route('announcements.index') }}">
+            <i class="bi bi-megaphone nav-icon"></i>
+            <span class="nav-text">Announcements</span>
+        </a>
+        @endif
+
         <a class="nav-link {{ request()->routeIs('attendance.*') && ($full || ! request()->routeIs('attendance.rota.*')) ? 'active' : '' }}"
            href="{{ route('attendance.index') }}">
             <i class="bi bi-clock-history nav-icon"></i>

@@ -2,10 +2,21 @@
 @section('title', $a->exists ? 'Edit announcement' : 'New announcement')
 
 @section('content')
+<style>
+.an-aud .btn { font-size: .82rem; padding-left: .4rem; padding-right: .4rem; }
+.an-people { max-height: 320px; overflow: auto; border: 1px solid var(--admin-border, #e2e8f0); border-radius: 10px; }
+.an-person { display: flex; gap: 10px; align-items: center; padding: 8px 10px; border-bottom: 1px solid var(--admin-border, #e2e8f0); cursor: pointer; margin: 0; }
+.an-person:last-child { border-bottom: 0; }
+.an-person:hover { background: var(--admin-surface-soft, #f8fafc); }
+.an-person .form-check-input { margin: 0; flex-shrink: 0; }
+</style>
 @php
     use App\Models\Announcement as A;
     $selected = old('departments', $a->departments ?? []);
-    $audience = old('audience', empty($a->departments) ? 'all' : 'departments');
+    $pickedPeople = array_map('intval', old('employees', $a->employee_ids ?? []));
+    $audience = old('audience', ! empty($a->employee_ids) ? 'people' : (empty($a->departments) ? 'all' : 'departments'));
+    $isManager = auth()->user()?->isManager();
+    $myDepts = $isManager ? (auth()->user()->managedDepartments() ?? []) : [];
 @endphp
 
 <div class="mb-3">
@@ -55,19 +66,45 @@
     <div class="col-xl-5">
         <div class="hr-card hr-card-b mb-3">
             <label class="form-label fw-semibold">Who should see it?</label>
-            <div class="btn-group w-100 mb-2" role="group">
+            <div class="btn-group w-100 mb-2 an-aud" role="group" aria-label="Audience">
                 <input type="radio" class="btn-check" name="audience" value="all" id="auAll" @checked($audience === 'all')>
                 <label class="btn btn-outline-primary" for="auAll"><i class="bi bi-globe2"></i> Everyone</label>
                 <input type="radio" class="btn-check" name="audience" value="departments" id="auDep" @checked($audience === 'departments')>
                 <label class="btn btn-outline-primary" for="auDep"><i class="bi bi-diagram-3"></i> Departments</label>
+                <input type="radio" class="btn-check" name="audience" value="people" id="auPeople" @checked($audience === 'people')>
+                <label class="btn btn-outline-primary" for="auPeople"><i class="bi bi-person-check"></i> People</label>
             </div>
+            <div class="small hr-muted mb-2" id="auAllNote" @if($audience !== 'all') hidden @endif><i class="bi bi-info-circle"></i> Every active employee ({{ $people->count() }}) sees it in their portal.</div>
+
             <div id="depBox" class="{{ $audience === 'departments' ? '' : 'd-none' }}">
                 @forelse($names as $n)
-                    <div class="form-check"><input class="form-check-input" type="checkbox" name="departments[]" value="{{ $n }}" id="d{{ $loop->index }}" @checked(in_array($n, $selected, true))><label class="form-check-label" for="d{{ $loop->index }}">{{ $n }}</label></div>
+                    <div class="form-check"><input class="form-check-input" type="checkbox" name="departments[]" value="{{ $n }}" id="d{{ $loop->index }}" @checked(in_array($n, $selected, true))><label class="form-check-label" for="d{{ $loop->index }}">{{ $n }}@if(in_array($n, $myDepts, true)) <span class="hr-chip">your team</span>@endif <span class="hr-muted small">· {{ $people->where('department', $n)->count() }}</span></label></div>
                 @empty
                     <div class="small hr-muted">No departments on employee records yet.</div>
                 @endforelse
                 @error('departments')<div class="text-danger small">{{ $message }}</div>@enderror
+            </div>
+
+            <div id="peopleBox" class="{{ $audience === 'people' ? '' : 'd-none' }}">
+                <div class="d-flex gap-2 mb-2">
+                    <input type="search" class="form-control form-control-sm" id="peopleSearch" placeholder="Search by name, number or department" aria-label="Search people">
+                    @if($myDepts)
+                        <button type="button" class="btn btn-sm btn-outline-secondary text-nowrap" id="pickMyTeam" data-depts='@json($myDepts)'>My team</button>
+                    @endif
+                    <button type="button" class="btn btn-sm btn-light border text-nowrap" id="pickNone">Clear</button>
+                </div>
+                <div class="small mb-1"><strong id="peopleCount">{{ count($pickedPeople) }}</strong> selected</div>
+                <div class="an-people">
+                    @forelse($people as $p)
+                        <label class="an-person" data-search="{{ strtolower($p->first_name . ' ' . $p->last_name . ' ' . $p->employee_id . ' ' . $p->department) }}" data-dept="{{ $p->department }}">
+                            <input class="form-check-input" type="checkbox" name="employees[]" value="{{ $p->id }}" @checked(in_array($p->id, $pickedPeople, true))>
+                            <span class="flex-grow-1" style="min-width:0"><span class="d-block fw-semibold text-truncate">{{ $p->first_name }} {{ $p->last_name }}</span><span class="small hr-muted">{{ $p->department ?: 'No department' }}{{ $p->position ? ' · ' . $p->position : '' }}</span></span>
+                        </label>
+                    @empty
+                        <div class="small hr-muted p-2">No active employees.</div>
+                    @endforelse
+                </div>
+                @error('employees')<div class="text-danger small">{{ $message }}</div>@enderror
             </div>
         </div>
 
@@ -121,7 +158,25 @@
         $('pIc').style.setProperty('--c', c.color); $('pIc').innerHTML = '<i class="bi ' + c.icon + '"></i>';
     };
     ['fTitle', 'fBody', 'fCat'].forEach(id => $(id).addEventListener('input', upd)); upd();
-    document.querySelectorAll('[name=audience]').forEach(r => r.addEventListener('change', () => $('depBox').classList.toggle('d-none', !$('auDep').checked)));
+    const aud = () => {
+        $('depBox').classList.toggle('d-none', !$('auDep').checked);
+        $('peopleBox').classList.toggle('d-none', !$('auPeople').checked);
+        $('auAllNote').hidden = !$('auAll').checked;
+    };
+    document.querySelectorAll('[name=audience]').forEach(r => r.addEventListener('change', aud));
+    const boxes = () => [...document.querySelectorAll('input[name="employees[]"]')];
+    const count = () => { $('peopleCount').textContent = boxes().filter(b => b.checked).length; };
+    document.querySelector('.an-people')?.addEventListener('change', count);
+    $('peopleSearch')?.addEventListener('input', e => {
+        const q = e.target.value.trim().toLowerCase();
+        document.querySelectorAll('.an-person').forEach(l => { l.hidden = q && !l.dataset.search.includes(q); });
+    });
+    $('pickNone')?.addEventListener('click', () => { boxes().forEach(b => b.checked = false); count(); });
+    $('pickMyTeam')?.addEventListener('click', e => {
+        const d = JSON.parse(e.currentTarget.dataset.depts);
+        document.querySelectorAll('.an-person').forEach(l => { if (d.includes(l.dataset.dept)) l.querySelector('input').checked = true; });
+        count();
+    });
 })();
 </script>
 @endpush

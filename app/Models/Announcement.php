@@ -27,12 +27,13 @@ class Announcement extends Model
     ];
 
     protected $fillable = [
-        'title', 'body', 'category', 'priority', 'departments', 'pinned', 'publish_at', 'expires_at',
+        'title', 'body', 'category', 'priority', 'departments', 'employee_ids', 'pinned', 'publish_at', 'expires_at',
         'send_email', 'emailed_at', 'emailed_count', 'attachment_path', 'attachment_name', 'created_by',
     ];
 
     protected $casts = [
         'departments' => 'array',
+        'employee_ids' => 'array',
         'pinned'      => 'boolean',
         'send_email'  => 'boolean',
         'publish_at'  => 'datetime',
@@ -66,9 +67,17 @@ class Announcement extends Model
             ->values();
     }
 
+    /** Everyone, or the chosen departments and / or people. */
+    public function isForEveryone(): bool
+    {
+        return empty($this->departments) && empty($this->employee_ids);
+    }
+
     public function isFor(Employee $e): bool
     {
-        return empty($this->departments) || in_array((string) $e->department, $this->departments, true);
+        return $this->isForEveryone()
+            || in_array((string) $e->department, $this->departments ?? [], true)
+            || in_array((int) $e->id, array_map('intval', $this->employee_ids ?? []), true);
     }
 
     public function getIsLiveAttribute(): bool
@@ -93,7 +102,23 @@ class Announcement extends Model
 
     public function getAudienceLabelAttribute(): string
     {
-        return empty($this->departments) ? 'Everyone' : implode(', ', $this->departments);
+        if ($this->isForEveryone()) {
+            return 'Everyone';
+        }
+        $parts = $this->departments ?? [];
+        if ($n = count($this->employee_ids ?? [])) {
+            $parts[] = $n === 1
+                ? (Employee::find($this->employee_ids[0])?->full_name ?? '1 person')
+                : $n . ' people';
+        }
+
+        return implode(', ', $parts);
+    }
+
+    /** Admin, HR and Management manage every announcement; others only their own. */
+    public function canBeManagedBy(?User $user): bool
+    {
+        return $user && ($user->hasFullAccess() || (int) $this->created_by === (int) $user->id);
     }
 
     public function getPostedAtAttribute()
@@ -127,8 +152,13 @@ class Announcement extends Model
     /** Employees this is meant for (active only). */
     public function audience()
     {
+        $depts = $this->departments ?? [];
+        $ids = array_map('intval', $this->employee_ids ?? []);
+
         return Employee::whereRaw('LOWER(employment_status) = ?', ['active'])
-            ->when(! empty($this->departments), fn ($q) => $q->whereIn('department', $this->departments))
+            ->when(! $this->isForEveryone(), fn ($q) => $q->where(fn ($w) => $w
+                ->when($depts, fn ($x) => $x->orWhereIn('department', $depts))
+                ->when($ids, fn ($x) => $x->orWhereIn('id', $ids))))
             ->get();
     }
 }

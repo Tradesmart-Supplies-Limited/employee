@@ -10,6 +10,13 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
+/**
+ * Announcements (shown in the employee portal; optional email).
+ *
+ * Admin, HR and Management manage every announcement. Managers can post to the
+ * whole company, chosen departments or chosen people, and edit or delete only
+ * the ones they posted.
+ */
 class AnnouncementController extends Controller
 {
     public function __construct(private Announcements $svc) {}
@@ -21,7 +28,7 @@ class AnnouncementController extends Controller
             ->orderByDesc('pinned')->latest()->get()
             ->filter(fn ($a) => ! $state || $a->state === $state)->values();
 
-        return view('dashboard.announcements.index', ['list' => $list, 'state' => $state]);
+        return view('dashboard.announcements.index', ['list' => $list, 'state' => $state, 'me' => $request->user()]);
     }
 
     public function create(Request $request)
@@ -31,7 +38,7 @@ class AnnouncementController extends Controller
             $a->departments = [$d];
         }
 
-        return view('dashboard.announcements.form', ['a' => $a, 'names' => DepartmentStats::names()]);
+        return view('dashboard.announcements.form', ['a' => $a] + $this->formLists());
     }
 
     public function store(Request $request)
@@ -58,21 +65,25 @@ class AnnouncementController extends Controller
         ]);
     }
 
-    public function edit(Announcement $announcement)
+    public function edit(Request $request, Announcement $announcement)
     {
-        return view('dashboard.announcements.form', ['a' => $announcement, 'names' => DepartmentStats::names()]);
+        $this->authorizeOwner($request, $announcement);
+
+        return view('dashboard.announcements.form', ['a' => $announcement] + $this->formLists());
     }
 
     public function update(Request $request, Announcement $announcement)
     {
+        $this->authorizeOwner($request, $announcement);
         $this->save($request, $announcement);
         $this->svc->emailDue();
 
         return redirect()->route('announcements.show', $announcement)->with('success', 'Announcement updated.');
     }
 
-    public function destroy(Announcement $announcement)
+    public function destroy(Request $request, Announcement $announcement)
     {
+        $this->authorizeOwner($request, $announcement);
         if ($announcement->attachment_path) {
             Storage::disk('local')->delete($announcement->attachment_path);
         }
@@ -88,6 +99,22 @@ class AnnouncementController extends Controller
         return Storage::disk('local')->download($announcement->attachment_path, $announcement->attachment_name);
     }
 
+    /** Departments and active people to choose from. */
+    private function formLists(): array
+    {
+        return [
+            'names'  => DepartmentStats::names(),
+            'people' => \App\Models\Employee::whereRaw('LOWER(employment_status) = ?', ['active'])
+                ->orderBy('first_name')->orderBy('last_name')
+                ->get(['id', 'first_name', 'last_name', 'employee_id', 'department', 'position']),
+        ];
+    }
+
+    private function authorizeOwner(Request $request, Announcement $a): void
+    {
+        abort_unless($a->canBeManagedBy($request->user()), 403, 'You can only change announcements you posted.');
+    }
+
     private function save(Request $request, Announcement $a): void
     {
         $names = DepartmentStats::names();
@@ -96,14 +123,17 @@ class AnnouncementController extends Controller
             'body'          => ['required', 'string', 'max:10000'],
             'category'      => ['required', 'in:' . implode(',', array_keys(Announcement::CATEGORIES))],
             'priority'      => ['required', 'in:' . implode(',', array_keys(Announcement::PRIORITIES))],
-            'audience'      => ['required', 'in:all,departments'],
+            'audience'      => ['required', 'in:all,departments,people'],
             'departments'   => ['required_if:audience,departments', 'array'],
             'departments.*' => ['string', \Illuminate\Validation\Rule::in($names)],
+            'employees'     => ['required_if:audience,people', 'array'],
+            'employees.*'   => ['integer', 'exists:employees,id'],
             'publish_at'    => ['nullable', 'date'],
             'expires_at'    => ['nullable', 'date', 'after:now'],
             'attachment'    => ['nullable', 'file', 'max:10240', 'mimes:pdf,jpg,jpeg,png,webp,doc,docx,xls,xlsx,ppt,pptx'],
         ], [
             'departments.required_if' => 'Pick at least one department, or send it to everyone.',
+            'employees.required_if'   => 'Pick at least one person, or send it to everyone.',
             'expires_at.after'        => 'The "show until" date must be in the future.',
         ]);
 
@@ -114,6 +144,7 @@ class AnnouncementController extends Controller
             'category'    => $data['category'],
             'priority'    => $data['priority'],
             'departments' => $data['audience'] === 'departments' ? array_values(array_unique($data['departments'] ?? [])) : null,
+            'employee_ids' => $data['audience'] === 'people' ? array_values(array_unique(array_map('intval', $data['employees'] ?? []))) : null,
             'pinned'      => $request->boolean('pinned'),
             'publish_at'  => ! empty($data['publish_at']) ? Carbon::parse($data['publish_at'], $tz)->utc() : null,
             'expires_at'  => ! empty($data['expires_at']) ? Carbon::parse($data['expires_at'], $tz)->utc() : null,

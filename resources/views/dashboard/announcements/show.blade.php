@@ -23,7 +23,7 @@
                 </div>
                 <h1 class="h4 fw-bold">{{ $a->title }}</h1>
                 <div class="small hr-muted mb-3">
-                    {{ $a->author?->name ?? 'HR' }} · {{ $a->state === 'scheduled' ? 'goes live' : 'posted' }} {{ ($a->local('publish_at') ?? $a->local('created_at'))->format('D d M Y, H:i') }}
+                    {{ $a->author?->name ?? 'HR' }}@if($a->author) <span class="hr-chip">{{ $a->author->roleLabel() }}</span>@endif · {{ $a->state === 'scheduled' ? 'goes live' : 'posted' }} {{ ($a->local('publish_at') ?? $a->local('created_at'))->format('D d M Y, H:i') }}
                     @if($a->expires_at) · shown until {{ $a->local('expires_at')->format('d M Y H:i') }}@endif
                 </div>
                 <div class="an-body">{!! $a->body_html !!}</div>
@@ -33,10 +33,12 @@
             </div>
             <div class="hr-card-h border-top border-bottom-0">
                 <span class="small hr-muted"><i class="bi bi-people"></i> {{ $a->audience_label }}{{ $a->emailed_at ? ' · emailed to ' . $a->emailed_count . ' on ' . $a->local('emailed_at')->format('d M H:i') : ($a->send_email ? ' · email when it goes live' : '') }}</span>
+                @if($a->canBeManagedBy(auth()->user()))
                 <div class="d-flex gap-2">
                     <a href="{{ route('announcements.edit', $a) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i> Edit</a>
-                    <form method="POST" action="{{ route('announcements.destroy', $a) }}" onsubmit="return confirm('Delete this announcement? Employees will no longer see it.')">@csrf @method('DELETE')<button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button></form>
+                    <form method="POST" action="{{ route('announcements.destroy', $a) }}" onsubmit="return confirm('Delete this announcement? Employees will no longer see it.')">@csrf @method('DELETE')<button class="btn btn-sm btn-outline-danger" aria-label="Delete"><i class="bi bi-trash"></i></button></form>
                 </div>
+                @endif
             </div>
         </div>
     </div>

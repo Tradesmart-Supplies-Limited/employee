@@ -87,6 +87,7 @@
             <div class="mg-links">
                 <a href="{{ route('attendance.register') }}" style="--c:var(--brand-text, #185FA5)"><i class="bi bi-pencil-square lead"></i> Daily register <span class="ms-auto small hr-muted">correct times</span></a>
                 @if($user->hasPermission('rota.manage'))<a href="{{ route('attendance.rota.index') }}" style="--c:#7c3aed"><i class="bi bi-calendar-week lead"></i> Shift rota <span class="ms-auto small hr-muted">plan &amp; publish</span></a>@endif
+                @if($user->hasPermission('announcements'))<a href="{{ route('announcements.create') }}" style="--c:#db2777"><i class="bi bi-megaphone lead"></i> Post announcement <span class="ms-auto small hr-muted">company, team or people</span></a>@endif
                 <a href="{{ route('leave.manage.planner') }}" style="--c:#0f766e"><i class="bi bi-calendar3-range lead"></i> Leave planner</a>
                 <a href="{{ route('attendance.summary') }}" style="--c:#d97706"><i class="bi bi-calendar3 lead"></i> Monthly attendance</a>
                 @if($user->canUsePortal())<a href="{{ route('portal.dashboard') }}" style="--c:#475569"><i class="bi bi-person-badge lead"></i> My self-service portal <span class="ms-auto small hr-muted">my leave, payslips…</span></a>@endif
