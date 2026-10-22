@@ -36,6 +36,7 @@ use App\Http\Controllers\Auth\SetupController;
 Route::prefix('kiosk/{token}')->name('kiosk.')->where(['token' => '[A-Za-z0-9]{20,64}'])->middleware('throttle:180,1')->group(function () {
     Route::get('/', [KioskController::class, 'show'])->name('show');
     Route::post('scan', [KioskController::class, 'scan'])->name('scan');
+    Route::post('photo', [KioskController::class, 'photo'])->name('photo');
     Route::get('ping', [KioskController::class, 'ping'])->name('ping');
 });
 

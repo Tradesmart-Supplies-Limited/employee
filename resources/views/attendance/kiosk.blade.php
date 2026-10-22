@@ -37,19 +37,29 @@ html, body { margin: 0; height: 100%; background: radial-gradient(1200px 700px a
 .k-help { color: var(--muted); font-size: .8rem; }
 .k-main { position: relative; display: flex; flex-direction: column; min-height: 0; }
 .k-cam { position: relative; flex: 1; border-radius: 26px; overflow: hidden; background: #020617; border: 1px solid var(--line); min-height: 0; }
-#reader { width: 100%; height: 100%; }
-#reader video { width: 100% !important; height: 100% !important; object-fit: cover; transform: scaleX(-1); }
+#reader { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+/* Keep the camera's own shape: stretching it distorts what the scanner reads. */
+#reader video { width: auto !important; height: auto !important; max-width: 100%; max-height: 100%; display: block; transform: scaleX(-1); }
 #reader.rear video { transform: none; }
 #reader img[alt="Info icon"], #reader__dashboard, #qr-shaded-region > div { display: none !important; }
 #qr-shaded-region { border-color: rgba(2,6,23,.35) !important; }
 .k-frame { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; }
-.k-frame .box { width: min(58%, 58vh); aspect-ratio: 1; position: relative; }
+.k-frame .box { width: var(--scan, min(58%, 58vh)); aspect-ratio: 1; position: relative; }
 .k-frame .box i { position: absolute; width: 22%; height: 22%; border: 6px solid #fff; border-radius: 6px; opacity: .9; }
 .k-frame .box i:nth-child(1) { top: 0; left: 0; border-right: 0; border-bottom: 0; border-top-left-radius: 22px; }
 .k-frame .box i:nth-child(2) { top: 0; right: 0; border-left: 0; border-bottom: 0; border-top-right-radius: 22px; }
 .k-frame .box i:nth-child(3) { bottom: 0; left: 0; border-right: 0; border-top: 0; border-bottom-left-radius: 22px; }
 .k-frame .box i:nth-child(4) { bottom: 0; right: 0; border-left: 0; border-top: 0; border-bottom-right-radius: 22px; }
 .k-frame .laser { position: absolute; left: 6%; right: 6%; height: 3px; background: linear-gradient(90deg, transparent, #60a5fa, transparent); box-shadow: 0 0 18px #60a5fa; animation: laser 2.2s ease-in-out infinite; }
+.k-frame .box i { transition: border-color .15s, transform .15s; }
+.k-cam.is-locked .k-frame .box i { border-color: #22c55e; transform: scale(1.06); opacity: 1; }
+.k-cam.is-locked .k-frame .laser { display: none; }
+.k-cam.is-locked #reader video { filter: brightness(.85); }
+.k-lock { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) scale(.8); display: flex; align-items: center; gap: 10px; padding: 12px 22px; border-radius: 999px; background: rgba(22,163,74,.95); color: #fff; font-size: clamp(1.1rem, 2.6vw, 1.6rem); font-weight: 800; opacity: 0; transition: opacity .12s, transform .12s; pointer-events: none; z-index: 4; box-shadow: 0 12px 40px rgba(0,0,0,.45); }
+.k-cam.is-locked .k-lock { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+.k-lock .spin { width: 1.1em; height: 1.1em; border: 3px solid rgba(255,255,255,.35); border-top-color: #fff; border-radius: 50%; animation: kspin .7s linear infinite; }
+@keyframes kspin { to { transform: rotate(360deg); } }
+.k-caminfo { position: absolute; left: 14px; top: 14px; font-size: .72rem; color: rgba(248,250,252,.55); background: rgba(2,6,23,.45); padding: 3px 8px; border-radius: 8px; z-index: 5; }
 .k-hint { position: absolute; left: 0; right: 0; bottom: 0; padding: 18px 20px 20px; text-align: center; background: linear-gradient(transparent, rgba(2,6,23,.85)); font-size: clamp(1.1rem, 2.4vw, 1.6rem); font-weight: 700; }
 .k-hint small { display: block; font-size: .62em; color: var(--muted); font-weight: 500; margin-top: 2px; }
 .k-tools { position: absolute; top: 14px; right: 14px; display: flex; gap: 8px; z-index: 5; }
@@ -123,6 +133,8 @@ html, body { margin: 0; height: 100%; background: radial-gradient(1200px 700px a
         <div class="k-cam">
             <div id="reader"></div>
             <div class="k-frame" id="frame"><div class="box"><i></i><i></i><i></i><i></i><div class="laser"></div></div></div>
+            <div class="k-lock" id="lock"><span class="spin"></span> Got it, one moment…</div>
+            <div class="k-caminfo" id="camInfo"></div>
             <div class="k-tools">
                 <button class="k-btn" id="btnSwitch" title="Switch camera" style="display:none"><i class="bi bi-arrow-repeat"></i></button>
                 <button class="k-btn" id="btnFull" title="Full screen"><i class="bi bi-arrows-fullscreen"></i></button>
@@ -133,7 +145,7 @@ html, body { margin: 0; height: 100%; background: radial-gradient(1200px 700px a
                 <div class="k-help" style="font-size:1rem">Point the scanner at your QR code.</div>
                 <div class="warn" id="camWarn"></div>
             </div>
-            <div class="k-hint" id="hint">Show your QR code to the camera<small>Hold it steady inside the frame, about 20 cm away</small></div>
+            <div class="k-hint" id="hint">Show your QR code and hold still<small>Inside the frame, about 25 cm from the screen · turn your phone brightness up</small></div>
         </div>
     </div>
 </div>
@@ -160,6 +172,7 @@ html, body { margin: 0; height: 100%; background: radial-gradient(1200px 700px a
 (function () {
     const CFG = {
         scan: @json(route('kiosk.scan', $token)),
+        photoUrl: @json(route('kiosk.photo', $token)),
         ping: @json(route('kiosk.ping', $token)),
         photo: @json((bool) $kiosk->capture_photo),
         now: @json($now->format('Y-m-d\TH:i:s')),
@@ -229,9 +242,9 @@ html, body { margin: 0; height: 100%; background: radial-gradient(1200px 700px a
         $('result').classList.add('show');
         beep(kind);
         clearTimeout(hideT);
-        hideT = setTimeout(() => { $('result').classList.remove('show'); busy = false; }, kind === 'error' ? 4200 : 3600);
+        hideT = setTimeout(() => { $('result').classList.remove('show'); unlock(); }, kind === 'error' ? 4200 : 3600);
     }
-    $('result').addEventListener('click', () => { $('result').classList.remove('show'); busy = false; });
+    $('result').addEventListener('click', () => { $('result').classList.remove('show'); unlock(); });
 
     function renderRecent(list) {
         if (!list || !list.length) { $('recent').innerHTML = '<div class="k-help">No scans yet today.</div>'; return; }
@@ -251,22 +264,45 @@ html, body { margin: 0; height: 100%; background: radial-gradient(1200px 700px a
         try { return c.toDataURL('image/jpeg', .6); } catch (e) { return null; }
     }
 
-    async function submit(code) {
+    // The moment a code is read: freeze the picture, green frame, short click,
+    // so people stop moving their phone. Unlocked when the result card closes.
+    function lock() {
+        document.querySelector('.k-cam').classList.add('is-locked');
+        try { if (qr && qr.getState && qr.getState() === 2) qr.pause(true); } catch (e) {}
+        // Hide the library's own grey "Scanner paused" strip: our green badge says it better.
+        document.querySelectorAll('#reader div').forEach(d => { if (d.innerText === 'Scanner paused') d.style.visibility = 'hidden'; });
+        if (audio) { try { const o = audio.createOscillator(), g = audio.createGain(); o.frequency.value = 1760; g.gain.setValueAtTime(.18, audio.currentTime); g.gain.exponentialRampToValueAtTime(.0001, audio.currentTime + .06); o.connect(g).connect(audio.destination); o.start(); o.stop(audio.currentTime + .07); } catch (e) {} }
+        try { navigator.vibrate && navigator.vibrate(40); } catch (e) {}
+    }
+    function unlock() {
+        busy = false;
+        document.querySelector('.k-cam').classList.remove('is-locked');
+        try { if (qr && qr.getState && qr.getState() === 3) qr.resume(); } catch (e) {}
+    }
+
+    async function submit(code, fromCamera) {
         code = (code || '').trim();
         const t = Date.now();
         if (!code || busy) return;
         if (code === lastCode && t - lastAt < 6000) return;
         busy = true; lastCode = code; lastAt = t;
-        const photo = snapshot();
+        const photo = snapshot();          // the frame the code was read from
+        if (fromCamera) lock();
         try {
-            const res = await fetch(CFG.scan, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }, body: JSON.stringify({ code, photo }) });
+            const res = await fetch(CFG.scan, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }, body: JSON.stringify({ code }) });
             const r = await res.json().catch(() => ({}));
             if (res.status === 403) { $('disabled').style.display = 'flex'; return; }
             if (!res.ok && !r.title) { r.kind = 'error'; r.title = 'Something went wrong'; r.message = 'Please scan again. If it keeps failing, tell HR.'; }
+            document.querySelector('.k-cam').classList.remove('is-locked');
             show(r);
             if (r.recent) renderRecent(r.recent);
+            // Photo goes after the result is on screen, so slow Wi-Fi never holds anyone up.
+            if (photo && r.scan_id) {
+                fetch(CFG.photoUrl, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }, body: JSON.stringify({ scan_id: r.scan_id, photo }) }).catch(() => {});
+            }
             ping();
         } catch (e) {
+            document.querySelector('.k-cam').classList.remove('is-locked');
             show({ kind: 'error', title: 'No connection', message: 'The tablet cannot reach the HR system. Check the Wi-Fi, then scan again.' });
             netState(false);
         }
@@ -288,6 +324,7 @@ html, body { margin: 0; height: 100%; background: radial-gradient(1200px 700px a
     }
 
     let cams = [], camIdx = 0, qr = null;
+    const BarcodeDetectorOk = 'BarcodeDetector' in window;
     async function startCamera() {
         if (!window.isSecureContext) {
             noCamera('<strong><i class="bi bi-shield-exclamation"></i> Camera blocked by the browser.</strong> Tablets only allow the camera on <strong>https://</strong> addresses (or http://localhost). Open this kiosk link over HTTPS, or in Chrome on the tablet go to <code>chrome://flags/#unsafely-treat-insecure-origin-as-secure</code>, add <code>' + location.origin + '</code> and restart Chrome. A USB/Bluetooth QR scanner works right now without this.');
@@ -304,13 +341,40 @@ html, body { margin: 0; height: 100%; background: radial-gradient(1200px 700px a
             }
             const cam = cams.length ? { deviceId: { exact: cams[camIdx].id } } : { facingMode: 'user' };
             $('reader').classList.toggle('rear', cams.length > 0 && /back|rear|environment/i.test(cams[camIdx].label));
-            await qr.start(cam, { fps: 12, qrbox: (w, h) => { const s = Math.floor(Math.min(w, h) * .62); return { width: s, height: s }; }, disableFlip: false },
-                text => submit(text), () => {});
+            // Ask for a sharp HD picture (many tablets default to 640×480, which makes small codes slow to read).
+            const hd = Object.assign({}, cam, { width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } });
+            const opts = {
+                fps: 15,
+                qrbox: (w, h) => { const s = Math.floor(Math.min(w, h) * .8); return { width: s, height: s }; },
+                disableFlip: true,          // the camera picture isn't mirrored: one pass per frame is enough
+            };
+            const onCode = text => submit(text, true);
+            try {
+                await qr.start(cams.length ? cams[camIdx].id : { facingMode: 'user' }, Object.assign({ videoConstraints: hd }, opts), onCode, () => {});
+            } catch (err) {
+                if (/Permission|NotAllowed/.test(String(err))) throw err;
+                // Some older tablets refuse the HD request: fall back to the camera's own default.
+                await qr.start(cams.length ? cams[camIdx].id : { facingMode: 'user' }, opts, onCode, () => {});
+            }
+            // Keep refocusing and adjusting exposure, where the tablet allows it.
+            try { await qr.applyVideoConstraints(Object.assign({}, hd, { advanced: [{ focusMode: 'continuous' }, { exposureMode: 'continuous' }, { whiteBalanceMode: 'continuous' }] })); } catch (e) {}
+            fitFrame();
+            try { const st = qr.getRunningTrackSettings(); if (st && st.width) $('camInfo').textContent = 'Camera ' + st.width + '×' + st.height + (BarcodeDetectorOk ? ' · fast reader' : ''); } catch (e) {}
             video = null;
         } catch (e) {
             noCamera('<strong>Could not open the camera.</strong> ' + (String(e).includes('Permission') || String(e).includes('NotAllowed') ? 'Allow camera access for this site in the browser settings, then reload.' : 'No camera found or it is used by another app.') + ' A USB/Bluetooth QR scanner still works.');
         }
     }
+    // Draw the guide exactly over the area that is scanned (80% of the picture's short side).
+    function fitFrame() {
+        const v = document.querySelector('#reader video');
+        if (!v) return;
+        const r = v.getBoundingClientRect();
+        if (r.width) document.querySelector('.k-frame .box').style.setProperty('--scan', Math.floor(Math.min(r.width, r.height) * .8) + 'px');
+    }
+    window.addEventListener('resize', () => setTimeout(fitFrame, 200));
+    document.querySelector('#reader').addEventListener('loadedmetadata', fitFrame, true);
+
     $('btnSwitch').addEventListener('click', async e => {
         e.stopPropagation();
         if (!qr || cams.length < 2) return;

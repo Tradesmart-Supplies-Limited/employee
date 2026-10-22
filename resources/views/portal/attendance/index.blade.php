@@ -115,6 +115,7 @@
     <div class="fw-bold fs-4">{{ $employee->full_name }}</div>
     <div class="code" id="qrBig"></div>
     <div class="text-muted">{{ $employee->employee_id }} · tap to close</div>
+    <div class="small text-muted mt-2"><i class="bi bi-brightness-high"></i> Turn your screen brightness up and hold still about 25 cm from the tablet.</div>
 </div>
 @endsection
 
@@ -123,7 +124,7 @@
 <script>
 (function () {
     const payload = @json($payload);
-    const svg = () => { const q = qrcode(0, 'M'); q.addData(payload); q.make(); return q.createSvgTag({ cellSize: 6, margin: 2, scalable: true }); };
+    const svg = () => { const q = qrcode(0, 'M'); q.addData(payload); q.make(); return q.createSvgTag({ cellSize: 6, margin: 4, scalable: true }); };
     document.getElementById('qrSmall').innerHTML = svg();
     document.getElementById('qrBig').innerHTML = svg();
     const full = document.getElementById('full');
