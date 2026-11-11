@@ -127,7 +127,7 @@
                 <h2><i class="bi bi-clock-history"></i> Recent change requests</h2>
                 @foreach($requests->where('status', '!=', 'pending') as $r)
                     <div class="border-top pt-2 mt-2 small">
-                        <span class="badge {{ ['approved' => 'bg-success', 'rejected' => 'bg-danger', 'cancelled' => 'bg-secondary'][$r->status] ?? 'bg-secondary' }}">{{ ucfirst($r->status) }}</span>
+                        <span class="badge {{ ['approved' => 'bg-success', 'rejected' => 'bg-danger', 'cancelled' => 'bg-secondary'][$r->status] ?? 'bg-secondary' }}">{{ $r->status === 'rejected' ? 'Reverted' : ($r->status === 'cancelled' ? 'Withdrawn' : ucfirst($r->status)) }}</span>
                         {{ collect(array_keys($r->changes))->map(fn ($f) => F::label($f))->implode(', ') }}
                         <div class="text-muted">{{ optional($r->reviewed_at ?? $r->updated_at)->format('d M Y') }}{{ $r->review_note ? ' · “' . $r->review_note . '”' : '' }}</div>
                     </div>

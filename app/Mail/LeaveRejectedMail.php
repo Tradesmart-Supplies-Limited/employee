@@ -16,7 +16,7 @@ class LeaveRejectedMail extends Mailable
 
     public function build()
     {
-        return $this->subject('Leave Application Rejected')
+        return $this->subject('An update on your leave application')
             ->view('emails.leave.rejected');
     }
 }

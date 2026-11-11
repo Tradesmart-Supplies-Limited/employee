@@ -111,7 +111,7 @@
                         @if(in_array($leave->supervisor_decision, ['Approved', 'Rejected'], true))
                             <div class="{{ $leave->supervisor_decision === 'Approved' ? 'text-success' : 'text-danger' }}">
                                 <i class="bi {{ $leave->supervisor_decision === 'Approved' ? 'bi-hand-thumbs-up' : 'bi-hand-thumbs-down' }}"></i>
-                                {{ $leave->supervisor_decision }}
+                                {{ \App\Models\LeaveRequest::decisionLabel($leave->supervisor_decision) }}
                             </div>
                         @endif
                     </td>

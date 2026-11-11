@@ -194,6 +194,13 @@
         </a>
         @endif
 
+        @if($me?->isDirector())
+        <a class="nav-link" href="{{ route('mgmt.dashboard') }}" title="Your profile and your own clock-in / clock-out">
+            <i class="bi bi-person-workspace nav-icon"></i>
+            <span class="nav-text">My Management Portal</span>
+        </a>
+        @endif
+
         <a class="nav-link {{ request()->routeIs('profile.*') ? 'active' : '' }}"
            href="{{ route('profile.index') }}">
             <i class="bi bi-person nav-icon"></i>
@@ -213,12 +220,16 @@
             );
         @endphp
 
+        @if(auth()->user()?->photo_url)
+            @include('management.partials.avatar', ['user' => auth()->user(), 'size' => 36])
+        @else
         <div class="avatar-img avatar-sm rounded-circle d-flex align-items-center justify-content-center fw-semibold"
              style="width:36px;height:36px;
              background:linear-gradient(135deg,#0d6efd,#4f8cff);
              color:#fff;font-size:12px;">
             {{ $initials }}
         </div>
+        @endif
 
         <span class="sidebar-footer-text">
             <strong>{{ Auth::user()->name ?? 'Guest' }}</strong>

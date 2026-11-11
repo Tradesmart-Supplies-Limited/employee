@@ -14,6 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'staff'           => \App\Http\Middleware\EnsureStaff::class,
             'portal'          => \App\Http\Middleware\EnsureEmployeePortal::class,
+            'management'      => \App\Http\Middleware\EnsureManagementPortal::class,
             'password.change' => \App\Http\Middleware\ForcePasswordChange::class,
             'perm'            => \App\Http\Middleware\EnsurePermission::class,
         ]);

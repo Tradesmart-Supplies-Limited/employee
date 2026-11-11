@@ -12,7 +12,7 @@ use Illuminate\Queue\SerializesModels;
  * HR side of the portal "update my details" workflow.
  *
  * $event: submitted  (employee changed details: some applied now, some waiting for approval)
- *         decided    (another HR user approved / rejected a request — keeps the team in the loop)
+ *         decided    (another HR user approved / reverted a request — keeps the team in the loop)
  *         withdrawn  (employee cancelled their pending request)
  * $applied / $pending: [field => ['old' => ..., 'new' => ...]] — sensitive values are masked in the view.
  */
@@ -34,7 +34,7 @@ class ProfileChangeHrMail extends Mailable
     {
         $name = $this->employee->full_name;
         $subject = match ($this->event) {
-            'decided'   => 'Detail change ' . ($this->change?->status === 'approved' ? 'approved' : 'rejected') . ": {$name}" . ($this->actor ? " (by {$this->actor})" : ''),
+            'decided'   => 'Detail change ' . ($this->change?->status === 'approved' ? 'approved' : 'reverted') . ": {$name}" . ($this->actor ? " (by {$this->actor})" : ''),
             'withdrawn' => "Detail change withdrawn: {$name}",
             default     => $this->pending ? "Approval needed: {$name} requested a change to their details" : "{$name} updated their details in the portal",
         };

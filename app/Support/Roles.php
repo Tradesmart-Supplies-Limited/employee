@@ -36,7 +36,7 @@ final class Roles
      * What a manager may do in the admin area (always limited to their department).
      *   dashboard        – team dashboard
      *   leave.view       – see the department's leave requests
-     *   leave.supervise  – approve / reject at the supervisor step of the approval chain
+     *   leave.supervise  – approve / revert at the supervisor step of the approval chain
      *   leave.reports    – department leave balances and planner
      *   attendance.view  – department attendance, register, monthly summary
      *   attendance.edit  – correct the department's times in the register
@@ -67,7 +67,7 @@ final class Roles
         return [
             self::ADMIN    => ['label' => 'Admin',    'color' => '#b91c1c', 'icon' => 'bi-shield-lock',  'desc' => 'Everything, including user roles and system settings.'],
             self::HR       => ['label' => 'HR',       'color' => '#185FA5', 'icon' => 'bi-person-badge', 'desc' => 'Everything. Can switch to their own self-service portal.'],
-            self::DIRECTOR => ['label' => 'Management', 'color' => '#7c3aed', 'icon' => 'bi-briefcase',    'desc' => 'Everything in the admin area. Not counted as an employee in attendance, rotas or leave reports. No portal.'],
+            self::DIRECTOR => ['label' => 'Management', 'color' => '#7c3aed', 'icon' => 'bi-briefcase',    'desc' => 'Everything in the admin area. Not counted as an employee in attendance, rotas or leave reports. Has its own Management portal: profile, photo and personal clock-in / clock-out.'],
             self::MANAGER  => ['label' => 'Manager',  'color' => '#0f766e', 'icon' => 'bi-diagram-3',    'desc' => 'Their department only: leave (supervisor step), attendance and shift rota. Can switch to their own portal.'],
             self::EMPLOYEE => ['label' => 'Employee', 'color' => '#475569', 'icon' => 'bi-person',       'desc' => 'Self-service portal only.'],
         ];

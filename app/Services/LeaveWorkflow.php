@@ -19,9 +19,14 @@ use RuntimeException;
  * settings later never strands requests that are already on their way.
  *
  *   submit()   → assigns the supervisor, works out the chain, emails the first approver
- *   decide()   → one step approves or rejects. Approve moves to the next step;
+ *   decide()   → one step approves or reverts. Approve moves to the next step;
  *                approval at the LAST step is final and deducts the balance.
- *                A rejection at any step ends the request.
+ *                A revert at any step ends the request…
+ *   override() → …unless a higher approver overrides that revert and approves.
+ *   comment()  → anyone in the chain (and the applicant) can add a comment at any time.
+ *
+ * (Stored decision values stay Approved / Rejected / Skipped; screens and
+ *  emails say "Reverted".)
  *
  * Every change sends the workflow emails through LeaveNotifier.
  */
@@ -109,7 +114,17 @@ class LeaveWorkflow
         }
 
         // Nobody approves their own leave.
-        if ($user->employee_id && $leave->employee_id && (int) $user->employee_id === (int) $leave->employee_id) {
+        if ($this->isApplicant($leave, $user)) {
+            return false;
+        }
+
+        return $this->entitled($leave, $user, $step);
+    }
+
+    /** Does $user hold the $step role for this request (whatever its state)? */
+    public function entitled(LeaveRequest $leave, ?User $user, string $step): bool
+    {
+        if (! $user) {
             return false;
         }
 
@@ -121,6 +136,163 @@ class LeaveWorkflow
             'director' => $user->hasRole('director', 'admin'),
             default    => false,
         };
+    }
+
+    public function isApplicant(LeaveRequest $leave, ?User $user): bool
+    {
+        return $user && $user->employee_id && $leave->employee_id && (int) $user->employee_id === (int) $leave->employee_id;
+    }
+
+    // ------------------------------------------------------------ comments
+
+    /** The applicant and everyone who holds a step in the chain may comment. */
+    public function canComment(LeaveRequest $leave, ?User $user): bool
+    {
+        if (! $user) {
+            return false;
+        }
+        if ($this->isApplicant($leave, $user)) {
+            return true;
+        }
+        foreach ($leave->chain() as $step) {
+            if ($leave->{$step . '_decision'} !== 'Skipped' && $this->entitled($leave, $user, $step)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /** How the author appears in the thread: Applicant, Supervisor, HR, Management. */
+    public function roleIn(LeaveRequest $leave, User $user): string
+    {
+        if ($this->isApplicant($leave, $user)) {
+            return 'Applicant';
+        }
+        foreach (array_reverse($leave->chain()) as $step) {
+            if ($this->entitled($leave, $user, $step) && ($step !== 'supervisor' || ! $user->hasFullAccess() || $leave->isAssignedSupervisor($user))) {
+                return LeaveRequest::STEPS[$step]['label'];
+            }
+        }
+
+        return $user->roleLabel();
+    }
+
+    public function comment(LeaveRequest $leave, User $user, string $body, string $kind = 'comment'): \App\Models\LeaveComment
+    {
+        $body = trim($body);
+        if ($body === '') {
+            throw new RuntimeException('Please write a comment before sending.');
+        }
+        if ($kind === 'comment' && ! $this->canComment($leave, $user)) {
+            throw new RuntimeException('Only the applicant and the people in this request\'s approval chain can comment on it.');
+        }
+
+        $c = $leave->comments()->create([
+            'user_id'     => $user->id,
+            'author_name' => $user->name,
+            'author_role' => $this->roleIn($leave, $user),
+            'kind'        => $kind,
+            'body'        => $body,
+        ]);
+
+        if ($kind === 'comment') {
+            LeaveNotifier::comment($leave->fresh(), $c);
+        }
+
+        return $c;
+    }
+
+    // ------------------------------------------------------------ override
+
+    /**
+     * After a revert, an approver further up the chain may override it.
+     * Returns the step they would approve at, or null.
+     */
+    public function overrideStep(LeaveRequest $leave, ?User $user): ?string
+    {
+        if (! $user || $leave->status !== 'Rejected' || $this->isApplicant($leave, $user)) {
+            return null;
+        }
+        $reverted = $leave->finalStep();
+        $chain = $leave->chain();
+        $i = array_search($reverted, $chain, true);
+        if ($i === false) {
+            return null;
+        }
+        foreach (array_slice($chain, $i + 1) as $step) {
+            if ($leave->{$step . '_decision'} === 'Skipped') {
+                continue;
+            }
+            if ($this->entitled($leave, $user, $step)) {
+                return $step;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * A higher approver overrides a revert: their own step is recorded as
+     * approved, and the request carries on (or is finally approved if theirs
+     * is the last step). The revert stays on record, marked as overridden.
+     */
+    public function override(LeaveRequest $leave, User $actor, string $reason, bool $overrideBalance = false): LeaveRequest
+    {
+        $step = $this->overrideStep($leave, $actor);
+        if (! $step) {
+            throw new RuntimeException('Only an approver higher up the chain than the person who reverted it can override this decision.');
+        }
+        if (blank($reason)) {
+            throw new RuntimeException('Please add a short note explaining the override, so everyone understands the change.');
+        }
+
+        $reverted = $leave->finalStep();
+        $chain = $leave->chain();
+        $fill = [
+            'overridden_step'    => $reverted,
+            'overridden_by'      => $actor->id,
+            'overridden_by_name' => $actor->name,
+            'overridden_at'      => now(),
+        ];
+        // Steps between the revert and the overrider were never asked: mark them skipped.
+        $between = array_slice($chain, array_search($reverted, $chain, true) + 1, max(0, array_search($step, $chain, true) - array_search($reverted, $chain, true) - 1));
+        foreach ($between as $s) {
+            if (blank($leave->{$s . '_decision'})) {
+                $fill[$s . '_decision'] = 'Skipped';
+                $fill[$s . '_comments'] = 'Not needed: ' . $actor->name . ' overrode the revert at the ' . LeaveRequest::STEPS[$step]['label'] . ' step';
+            }
+        }
+        $record = $fill + $this->stamp($leave, $actor, $step, 'Approved', $reason);
+
+        $note = 'Overrode the ' . LeaveRequest::STEPS[$reverted]['label'] . ' revert and approved at the '
+            . LeaveRequest::STEPS[$step]['label'] . " step.\n\n" . trim($reason);
+
+        $leave->forceFill(array_filter($record, fn ($k) => str_ends_with($k, '_decision'), ARRAY_FILTER_USE_KEY));
+        $next = $leave->nextStepAfter($step);
+
+        if ($next) {
+            $leave->update($record + ['status' => 'Pending', 'current_step' => $next]);
+            $this->comment($leave, $actor, $note, 'override');
+            LeaveNotifier::send($leave->fresh(), LeaveNotifier::STEP_DECISION);
+
+            return $leave->refresh();
+        }
+
+        // Last step: final approval (balance check + deduction). Re-open first so
+        // the final approval can run; put it back if the approval can't go ahead.
+        LeaveRequest::whereKey($leave->id)->update(['status' => 'Pending']);
+        try {
+            $leave = $this->finalizeApproval($leave->refresh(), $actor, $record, $overrideBalance, notify: false);
+        } catch (\Throwable $e) {
+            LeaveRequest::whereKey($leave->id)->update(['status' => 'Rejected', 'current_step' => null]);
+            $leave->refresh();
+            throw $e;
+        }
+        $this->comment($leave, $actor, $note, 'override');
+        LeaveNotifier::send($leave->fresh(), LeaveNotifier::FINAL_DECISION);
+
+        return $leave->refresh();
     }
 
     /**
@@ -156,24 +328,24 @@ class LeaveWorkflow
     public function decide(LeaveRequest $leave, User $actor, string $step, string $decision, ?string $comments = null, bool $overrideBalance = false): LeaveRequest
     {
         if (! in_array($decision, ['Approved', 'Rejected'], true)) {
-            throw new RuntimeException('Choose Approve or Reject.');
+            throw new RuntimeException('Please choose Approve or Revert.');
         }
         if ($leave->isFinal()) {
-            throw new RuntimeException('A final decision has already been made on this request.');
+            throw new RuntimeException('A final decision has already been recorded on this request, so no further action is needed.');
         }
         if (! $leave->inChain($step)) {
-            throw new RuntimeException('That approval step is not part of this request\'s chain.');
+            throw new RuntimeException('That approval step isn\'t part of this request\'s approval chain.');
         }
         if (filled($leave->{$step . '_decision'})) {
-            throw new RuntimeException(LeaveRequest::STEPS[$step]['title'] . ' has already been recorded.');
+            throw new RuntimeException(LeaveRequest::STEPS[$step]['title'] . ' has already been recorded. Thank you.');
         }
         if (! $this->canAct($leave, $actor, $step)) {
             throw new RuntimeException($leave->employee_id && (int) $actor->employee_id === (int) $leave->employee_id
-                ? 'You can\'t approve or reject your own leave.'
-                : 'You are not allowed to record the ' . strtolower(LeaveRequest::STEPS[$step]['title']) . ' on this request.');
+                ? 'For fairness, your own leave is approved by someone else.'
+                : 'Sorry, the ' . strtolower(LeaveRequest::STEPS[$step]['title']) . ' on this request is recorded by someone else.');
         }
         if ($decision === 'Rejected' && blank($comments)) {
-            throw new RuntimeException('Please give a reason for the rejection.');
+            throw new RuntimeException('Kindly add a short reason, so the applicant understands why it was reverted.');
         }
 
         $chain = $leave->chain();
@@ -190,7 +362,7 @@ class LeaveWorkflow
 
         $record = $skipped + $this->stamp($leave, $actor, $step, $decision, $comments);
 
-        // Rejected anywhere → the request ends.
+        // Reverted anywhere → the request ends (a higher approver may override it).
         if ($decision === 'Rejected') {
             $leave->update($record + ['status' => 'Rejected', 'current_step' => null]);
             LeaveNotifier::send($leave->fresh(), LeaveNotifier::FINAL_DECISION);
@@ -217,7 +389,7 @@ class LeaveWorkflow
     public function supervisorDecision(LeaveRequest $leave, User $actor, string $decision, ?string $comments): LeaveRequest
     {
         if (! $leave->inChain('supervisor') || $leave->supervisor_decision === 'Skipped') {
-            throw new RuntimeException('This request has no supervisor step.');
+            throw new RuntimeException('This request doesn\'t have a supervisor step, so no action is needed here.');
         }
 
         return $this->decide($leave, $actor, 'supervisor', $decision, $comments);
@@ -231,7 +403,7 @@ class LeaveWorkflow
     public function approve(LeaveRequest $leave, User $actor, ?string $comments = null, bool $overrideBalance = false): LeaveRequest
     {
         if ($leave->isFinal()) {
-            throw new RuntimeException('A final decision has already been made on this request.');
+            throw new RuntimeException('A final decision has already been recorded on this request, so no further action is needed.');
         }
 
         $chain = $leave->chain();
@@ -252,11 +424,11 @@ class LeaveWorkflow
         return $this->finalizeApproval($leave, $actor, $record, $overrideBalance);
     }
 
-    /** Reject at whichever step the actor holds (or the current one). */
+    /** Revert at whichever step the actor holds (or the current one). */
     public function reject(LeaveRequest $leave, User $actor, string $comments): LeaveRequest
     {
         if ($leave->isFinal()) {
-            throw new RuntimeException('A final decision has already been made on this request.');
+            throw new RuntimeException('A final decision has already been recorded on this request, so no further action is needed.');
         }
 
         $step = $this->actingStep($leave, $actor) ?? $leave->currentStep();
@@ -265,13 +437,13 @@ class LeaveWorkflow
     }
 
     /** Final approval + balance deduction, in one transaction. */
-    private function finalizeApproval(LeaveRequest $leave, User $actor, array $record, bool $overrideBalance): LeaveRequest
+    private function finalizeApproval(LeaveRequest $leave, User $actor, array $record, bool $overrideBalance, bool $notify = true): LeaveRequest
     {
         DB::transaction(function () use ($leave, $actor, $record, $overrideBalance) {
             $locked = LeaveRequest::whereKey($leave->id)->lockForUpdate()->firstOrFail();
 
             if ($locked->isFinal()) {
-                throw new RuntimeException('A final decision has already been made on this request.');
+                throw new RuntimeException('A final decision has already been recorded on this request, so no further action is needed.');
             }
 
             $employee = $locked->employee_id
@@ -291,7 +463,7 @@ class LeaveWorkflow
 
                     if ($after < 0 && ! config('leave.allow_negative_balance') && ! $overrideBalance) {
                         throw new RuntimeException(sprintf(
-                            '%s has only %s day(s) left but requested %s. Tick "Approve anyway" to override.',
+                            '%s has %s day(s) available, and this request is for %s. If you would still like to approve it, please tick "Approve anyway".',
                             $employee->full_name, $this->num($before), $this->num($deducted)
                         ));
                     }
@@ -317,7 +489,9 @@ class LeaveWorkflow
         });
 
         $leave->refresh();
-        LeaveNotifier::send($leave, LeaveNotifier::FINAL_DECISION);
+        if ($notify) {
+            LeaveNotifier::send($leave, LeaveNotifier::FINAL_DECISION);
+        }
 
         return $leave;
     }

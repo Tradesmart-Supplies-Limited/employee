@@ -9,7 +9,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 /**
  * The self-service portal: Employee, HR, Manager (and Admin) logins that are
- * linked to an Active employee record. Directors have no portal.
+ * linked to an Active employee record. Management has its own portal (/management).
  * Alias: "portal"
  */
 class EnsureEmployeePortal
@@ -24,10 +24,13 @@ class EnsureEmployeePortal
 
         // Directors, and staff with no employee record, use the admin area only.
         if (! $user->canUsePortal()) {
+            if ($user->isDirector()) {
+                // Management has its own self-service portal.
+                return redirect()->route('mgmt.dashboard');
+            }
+
             return $user->canUseAdmin()
-                ? redirect()->route('dashboard')->with('error', $user->isDirector()
-                    ? 'Management use the admin area only.'
-                    : 'Your login isn\'t linked to an employee record, so there is no self-service portal for it. Ask HR to link it.')
+                ? redirect()->route('dashboard')->with('error', 'Your login isn\'t linked to an employee record yet, so there\'s no self-service portal for it. Please ask HR to link it.')
                 : $this->signOut($request, 'Your account has no access role yet. Please contact HR.');
         }
 

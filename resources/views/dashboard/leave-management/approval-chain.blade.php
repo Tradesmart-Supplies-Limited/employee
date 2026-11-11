@@ -16,7 +16,7 @@
     <div>
         <a href="{{ route('leave.manage.index') }}" class="small text-decoration-none"><i class="bi bi-arrow-left"></i> Leave reports</a>
         <h1 class="h4 fw-bold mb-0 mt-1"><i class="bi bi-diagram-3"></i> Leave Approval Chain</h1>
-        <div class="small text-muted">Who approves a leave request, and in what order. The last step that is switched on gives the final approval and updates the leave balance. A rejection at any step ends the request.</div>
+        <div class="small text-muted">Who approves a leave request, and in what order. The last step that is switched on gives the final approval and updates the leave balance. A revert at any step ends the request, unless a higher approver overrides it.</div>
     </div>
 </div>
 
@@ -99,7 +99,7 @@
                     <ul class="ps-3 mb-0 ac-rules">
                         <li>Each approver is emailed when it is their turn; the employee and HR are emailed at every step.</li>
                         <li>Approving passes the request to the next step. The <strong>last</strong> approval is final and deducts the balance.</li>
-                        <li>Rejecting at <strong>any</strong> step ends the request (a reason is required).</li>
+                        <li>Reverting at <strong>any</strong> step ends the request (a short reason is kindly required). An approver higher up the chain can override a revert, and everyone in the chain can comment.</li>
                         <li>Nobody can approve their own leave.</li>
                         <li>If a step has nobody to act (no supervisor or no Management login), it is skipped automatically.</li>
                         <li>Changes apply to <strong>new</strong> requests. Requests already on their way keep their chain.</li>

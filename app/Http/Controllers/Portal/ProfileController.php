@@ -149,7 +149,7 @@ class ProfileController extends Controller
         $change->update(['status' => 'cancelled']);
         $this->tellHr(new ProfileChangeHrMail($change->employee, 'withdrawn', [], $change->changes, $change));
 
-        return back()->with('success', 'Your change request was withdrawn.');
+        return back()->with('success', 'Your change request has been withdrawn.');
     }
 
     /** One email per HR address (no one sees the others' addresses). */

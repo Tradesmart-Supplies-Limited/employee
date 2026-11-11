@@ -38,6 +38,6 @@ class AccountPasswordController extends Controller
             'must_change_password' => false,
         ]);
 
-        return redirect()->route('dashboard')->with('success', 'Password changed. You\'re all set.');
+        return redirect()->route('dashboard')->with('success', 'Thank you, your password has been changed. You\'re all set.');
     }
 }

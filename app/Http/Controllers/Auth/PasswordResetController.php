@@ -121,7 +121,7 @@ class PasswordResetController extends Controller
             ]);
         }
 
-        return redirect()->route('login')->with('success', 'Your password has been reset. You can sign in now.');
+        return redirect()->route('login')->with('success', 'Your password has been reset. You\'re welcome to sign in now.');
     }
 
     /* ---------------- OTP flow ---------------- */
@@ -174,7 +174,7 @@ class PasswordResetController extends Controller
 
         $this->applyNewPassword($user, $data['password'], $request);
 
-        return redirect()->route('login')->with('success', 'Your password has been reset. You can sign in now.');
+        return redirect()->route('login')->with('success', 'Your password has been reset. You\'re welcome to sign in now.');
     }
 
     /* ---------------- helpers ---------------- */

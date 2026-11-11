@@ -274,7 +274,7 @@ class RotaService
     public function publish(Rota $rota, User $by): array
     {
         if (! $this->canManage($by, $rota->department)) {
-            throw new RuntimeException('You can only publish rotas for your own department.');
+            throw new RuntimeException('Sorry, you can only publish rotas for your own department.');
         }
         $rota->load('assignments');
         $now = $this->cells($rota);

@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
-/** HR: approve / reject sensitive detail changes employees made in the portal. */
+/** HR: approve / revert sensitive detail changes employees made in the portal. */
 class ProfileChangeController extends Controller
 {
     public function index(Request $request)
@@ -25,14 +25,14 @@ class ProfileChangeController extends Controller
         $data = $request->validate(['review_note' => 'nullable|string|max:1000', 'fields' => 'nullable|array']);
 
         if ($change->status !== 'pending') {
-            return back()->with('error', 'This request was already handled.');
+            return back()->with('error', 'This request has already been handled, so no further action is needed.');
         }
 
         // HR may untick individual fields; those are dropped from the request.
         $keep = $request->has('fields') ? array_intersect_key($change->changes, array_flip($data['fields'] ?? [])) : $change->changes;
 
         if (! $keep) {
-            return back()->with('error', 'Tick at least one change to approve, or reject the request.');
+            return back()->with('error', 'Please tick at least one change to approve, or revert the request.');
         }
 
         DB::transaction(function () use ($change, $keep, $data, $request) {
@@ -61,7 +61,7 @@ class ProfileChangeController extends Controller
         $data = $request->validate(['review_note' => 'required|string|max:1000'], ['review_note.required' => 'Please say why, so the employee knows what to do.']);
 
         if ($change->status !== 'pending') {
-            return back()->with('error', 'This request was already handled.');
+            return back()->with('error', 'This request has already been handled, so no further action is needed.');
         }
 
         $change->update([
@@ -73,7 +73,7 @@ class ProfileChangeController extends Controller
 
         $this->notify($change);
 
-        return back()->with('success', 'Rejected. The employee has been emailed the reason.');
+        return back()->with('success', 'Thank you. The change has been reverted, and the employee has been emailed your note.');
     }
 
     /** Employee gets the decision; the rest of the HR team gets a copy for the record. */

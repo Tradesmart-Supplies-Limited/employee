@@ -42,7 +42,7 @@
         @if($summary['pending_days'] > 0)<small class="lt-pending">{{ $n($summary['pending_days']) }} day(s) on hold</small>@endif
     </div></div></div>
     <div class="col-6 col-xl-3"><div class="card shadow-sm border-0 h-100"><div class="card-body">
-        <small class="text-muted">Rejected ({{ now()->year }})</small>
+        <small class="text-muted">Reverted ({{ now()->year }})</small>
         <h3 class="mb-0">{{ $summary['rejected'] }}</h3>
     </div></div></div>
 </div>
@@ -52,7 +52,7 @@
         <form method="GET" class="d-flex gap-2 align-items-center">
             <select name="status" class="form-select form-select-sm" style="max-width:180px" onchange="this.form.submit()">
                 <option value="">All statuses</option>
-                @foreach(['Pending' => 'In progress', 'Approved' => 'Approved', 'Rejected' => 'Rejected'] as $s => $label)
+                @foreach(['Pending' => 'In progress', 'Approved' => 'Approved', 'Rejected' => 'Reverted'] as $s => $label)
                     <option value="{{ $s }}" @selected(request('status') === $s)>{{ $label }}</option>
                 @endforeach
             </select>

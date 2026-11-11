@@ -7,19 +7,22 @@
     $finalStep = $leave->finalStep();
     $byLabel  = $finalStep ? \App\Models\LeaveRequest::STEPS[$finalStep]['label'] : 'HR';
     $byName   = $leave->final_decider_name ?? $byLabel;
+    $word     = $approved ? 'approved' : 'reverted';
+    $myStepUntouched = in_array($audience, $leave->chain(), true) && blank($leave->{$audience . '_decision'});
+    $canOverride = ! $approved && $finalStep && in_array($audience, array_slice($leave->chain(), array_search($finalStep, $leave->chain(), true) + 1), true);
 @endphp
 
-@section('title', 'Leave ' . strtolower($leave->status))
+@section('title', 'Leave ' . $word)
 
 @section('preheader')
-{{ $leave->employee_name }}'s {{ $leave->leave_type }} leave has been {{ strtolower($leave->status) }}
+{{ $leave->employee_name }}'s {{ $leave->leave_type }} leave has been {{ $word }}
 @endsection
 
 @section('heading')
     @if($audience === 'employee')
-        {!! $approved ? 'Your leave is approved &#127881;' : 'Your leave request was not approved' !!}
+        {!! $approved ? 'Your leave is approved &#127881;' : 'An update on your leave request' !!}
     @else
-        {{ $leave->employee_name }}'s leave was {{ strtolower($leave->status) }}
+        {{ $leave->employee_name }}'s leave has been {{ $word }}
     @endif
 @endsection
 
@@ -34,16 +37,23 @@
             </p>
         @else
             <p style="margin:0;">
-                {{ $byName }} ({{ $byLabel }}) has declined your {{ $leave->leave_type }} leave request. The reason is below.
-                Your leave balance has not changed. Please talk to your supervisor or HR if you'd like to discuss it or apply for different dates.
+                Thank you for your {{ $leave->leave_type }} leave request. {{ $byName }} ({{ $byLabel }}) has reverted it for now, and has kindly shared the reason below.
+                Your leave balance has not changed. You're welcome to reply with a comment on the request, talk to your supervisor or HR, or apply again for different dates.
             </p>
         @endif
     @else
         <p style="margin:0;">
             Final decision by <strong>{{ $byName }}</strong> ({{ $byLabel }}):
-            <strong style="color:{{ $approved ? '#15803d' : '#b91c1c' }};">{{ $leave->status }}</strong>.
+            <strong style="color:{{ $approved ? '#15803d' : '#b91c1c' }};">{{ $leave->status_label }}</strong>.
             @if($approved && $leave->employee_id && (float) $leave->balance_deducted > 0)
                 {{ $num($leave->balance_deducted) }} day(s) were deducted; {{ $first }} has {{ $num($leave->days_balance) }} day(s) remaining.
+            @endif
+            @if(! $approved)
+                @if($canOverride)
+                    <br><br>No action is required from you, but you're welcome to add a comment. As an approver further up the chain, you may also <strong>override</strong> this decision and approve the request if you feel that's right.
+                @elseif($myStepUntouched)
+                    <br><br>No action is required from you, but you're welcome to add a comment on the request.
+                @endif
             @endif
         </p>
     @endif

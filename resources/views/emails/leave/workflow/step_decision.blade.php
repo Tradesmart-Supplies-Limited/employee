@@ -27,6 +27,9 @@
 @section('intro')
     @if($audience === 'employee')
         <p style="margin:0 0 10px;">Hi {{ $first }},</p>
+        @if($overridden)
+        <p style="margin:0 0 10px;">Good news: an earlier revert on your request has been overridden by {{ $leave->overridden_by_name }}, and your request is moving forward again.</p>
+        @endif
         <p style="margin:0;">
             {{ $decidedBy }} has <strong style="color:#15803d;">approved</strong> your {{ $leave->leave_type }} leave.
             It now goes to <strong>{{ $nextWho }}</strong>

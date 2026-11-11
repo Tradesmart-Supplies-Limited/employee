@@ -86,4 +86,10 @@
     </div>
 </div>
 
+<div class="card shadow-sm border-0 mt-3">
+    <div class="card-body">
+        @include('leave.partials.comments', ['canComment' => $canComment, 'commentUrl' => $commentUrl])
+    </div>
+</div>
+
 @endsection

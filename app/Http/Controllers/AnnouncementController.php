@@ -78,7 +78,7 @@ class AnnouncementController extends Controller
         $this->save($request, $announcement);
         $this->svc->emailDue();
 
-        return redirect()->route('announcements.show', $announcement)->with('success', 'Announcement updated.');
+        return redirect()->route('announcements.show', $announcement)->with('success', 'Thank you, the announcement has been updated.');
     }
 
     public function destroy(Request $request, Announcement $announcement)
@@ -89,7 +89,7 @@ class AnnouncementController extends Controller
         }
         $announcement->delete();
 
-        return redirect()->route('announcements.index')->with('success', 'Announcement deleted. Employees no longer see it.');
+        return redirect()->route('announcements.index')->with('success', 'The announcement has been removed, and staff will no longer see it.');
     }
 
     public function attachment(Announcement $announcement)

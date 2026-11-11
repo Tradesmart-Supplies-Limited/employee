@@ -31,6 +31,7 @@ class SendLeaveWorkflowEmail implements ShouldQueue
         private string $event,
         private string $audience,
         private string $email,
+        private ?int $commentId = null,
     ) {}
 
     public function handle(): void
@@ -43,7 +44,7 @@ class SendLeaveWorkflowEmail implements ShouldQueue
             return;
         }
 
-        Mail::to($this->email)->send(new LeaveWorkflowMail($leave, $this->event, $this->audience));
+        Mail::to($this->email)->send(new LeaveWorkflowMail($leave, $this->event, $this->audience, $this->commentId ? \App\Models\LeaveComment::find($this->commentId) : null));
 
         Log::info("SendLeaveWorkflowEmail: {$this->event} → {$this->audience} <{$this->email}>", [
             'leave_id' => $leave->id,

@@ -14,7 +14,7 @@ class LeaveRequest extends Model
     | APPROVAL CHAIN
     |--------------------------------------------------------------------------
     | Employee submits → each step in the chain approves in turn → the last
-    | step's approval is final and updates the balance. A rejection at any
+    | step's approval is final and updates the balance. A revert at any
     | step ends the request. The chain is fixed when the request is submitted
     | (see LeaveApprovalSetting); older requests use supervisor → HR.
     */
@@ -37,7 +37,7 @@ class LeaveRequest extends Model
         self::STAGE_HR         => ['label' => 'Awaiting HR',         'color' => 'info',    'icon' => 'bi-building-check'],
         self::STAGE_DIRECTOR   => ['label' => 'Awaiting Management', 'color' => 'primary', 'icon' => 'bi-briefcase'],
         self::STAGE_APPROVED   => ['label' => 'Approved',            'color' => 'success', 'icon' => 'bi-check-circle'],
-        self::STAGE_REJECTED   => ['label' => 'Rejected',            'color' => 'danger',  'icon' => 'bi-x-circle'],
+        self::STAGE_REJECTED   => ['label' => 'Reverted',            'color' => 'danger',  'icon' => 'bi-arrow-counterclockwise'],
     ];
 
     protected $fillable = [
@@ -94,6 +94,12 @@ class LeaveRequest extends Model
         'hr_acted_at',
         'balance_deducted',
 
+        // A higher approver overrode a revert made at an earlier step
+        'overridden_step',
+        'overridden_by',
+        'overridden_by_name',
+        'overridden_at',
+
         // Approval chain + Management
         'approval_chain',
         'current_step',
@@ -136,6 +142,7 @@ class LeaveRequest extends Model
         'director_signature_date'   => 'date',
         'director_acted_at'         => 'datetime',
         'approval_chain'            => 'array',
+        'overridden_at'             => 'datetime',
         'days_available'            => 'decimal:1',
         'days_balance'              => 'decimal:1',
         'balance_deducted'          => 'decimal:1',
@@ -174,6 +181,35 @@ class LeaveRequest extends Model
     public function hrActor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'hr_acted_by');
+    }
+
+    /** The comment thread (oldest first). */
+    public function comments()
+    {
+        return $this->hasMany(LeaveComment::class)->oldest()->oldest('id');
+    }
+
+    /**
+     * Stored decisions keep their original values (Approved / Rejected / Skipped);
+     * people see "Reverted" instead of "Rejected".
+     */
+    public static function decisionLabel(?string $decision): ?string
+    {
+        return match ($decision) {
+            'Rejected' => 'Reverted',
+            default    => $decision,
+        };
+    }
+
+    public function getStatusLabelAttribute(): string
+    {
+        return self::decisionLabel($this->status) ?? (string) $this->status;
+    }
+
+    /** Was this step's revert overridden by a higher approver? */
+    public function wasOverridden(string $step): bool
+    {
+        return $this->overridden_step === $step && $this->{$step . '_decision'} === 'Rejected';
     }
 
     public function directorActor(): BelongsTo
@@ -415,7 +451,7 @@ class LeaveRequest extends Model
     | TRACKER
     |--------------------------------------------------------------------------
     | Returns the 4 steps shown in the stage tracker (dashboards + emails).
-    | state: done | current | declined | skipped | cancelled | upcoming
+    | state: done | current | declined | overridden | skipped | cancelled | upcoming
     */
     public function timeline(): array
     {
@@ -444,15 +480,18 @@ class LeaveRequest extends Model
             if ($r['decision'] === 'Approved') {
                 $state = 'done';
                 $note = $last ? 'Approved (final)' : 'Approved';
+            } elseif ($r['decision'] === 'Rejected' && $this->wasOverridden($step)) {
+                $state = 'overridden';
+                $note = 'Reverted, then overridden by ' . ($this->overridden_by_name ?: 'a higher approver');
             } elseif ($r['decision'] === 'Rejected') {
                 $state = 'declined';
-                $note = 'Rejected';
+                $note = 'Reverted';
             } elseif ($r['decision'] === 'Skipped') {
                 $state = 'skipped';
                 $note = $r['comments'] ?: 'Skipped';
             } elseif ($this->isFinal()) {
                 $state = $this->status === 'Rejected' ? 'cancelled' : 'skipped';
-                $note = $this->status === 'Rejected' ? 'Not needed' : 'Decided at another step';
+                $note = $this->status === 'Rejected' ? 'No action required' : 'Decided at another step';
             } elseif ($step === $current) {
                 $state = 'current';
                 $note = 'Waiting for approval';
@@ -471,7 +510,7 @@ class LeaveRequest extends Model
                     'supervisor' => $this->assigned_supervisor_name ?? 'Supervisor',
                     default      => $meta['who'],
                 },
-                'when'  => in_array($state, ['done', 'declined'], true) ? $fmt($r['at']) : null,
+                'when'  => in_array($state, ['done', 'declined', 'overridden'], true) ? $fmt($r['at']) : null,
                 'note'  => $note,
             ];
         }
@@ -495,7 +534,7 @@ class LeaveRequest extends Model
                 'key' => 'balance', 'title' => 'Balance updated', 'icon' => 'bi-wallet2',
                 'state' => $this->status === 'Rejected' ? 'cancelled' : 'upcoming',
                 'who' => null, 'when' => null,
-                'note' => $this->status === 'Rejected' ? 'No change to balance' : 'On final approval',
+                'note' => $this->status === 'Rejected' ? 'No change to the balance' : 'On final approval',
             ];
         }
 

@@ -263,7 +263,7 @@
                 <div class="db-stage">
                     <a href="{{ route('leave.index', ['stage' => 'awaiting_supervisor']) }}" style="--c:#d97706"><b>{{ $leavePipeline['awaiting_supervisor'] }}</b><small>Supervisor</small></a>
                     <a href="{{ route('leave.index', ['stage' => 'awaiting_hr']) }}" style="--c:#0891b2"><b>{{ $leavePipeline['awaiting_hr'] }}</b><small>HR</small></a>
-                    <a href="{{ route('leave.index', ['stage' => 'awaiting_director']) }}" style="--c:#6366f1"><b>{{ $leavePipeline['awaiting_director'] }}</b><small>Director</small></a>
+                    <a href="{{ route('leave.index', ['stage' => 'awaiting_director']) }}" style="--c:#6366f1"><b>{{ $leavePipeline['awaiting_director'] }}</b><small>Management</small></a>
                     <a href="{{ route('leave.manage.index') }}" style="--c:#16a34a"><b>{{ $leavePipeline['approved_month'] }}</b><small>Approved</small></a>
                     <a href="{{ route('leave.manage.index') }}" style="--c:#dc2626"><b>{{ $leavePipeline['rejected_month'] }}</b><small>Rejected</small></a>
                 </div>
@@ -271,7 +271,7 @@
                 @forelse($leaveInProgress as $l)
                     <a href="{{ route('leave.show', $l) }}" class="d-flex justify-content-between align-items-center gap-2 py-2 border-bottom text-decoration-none" style="color:inherit">
                         <span class="small" style="min-width:0"><span class="fw-semibold d-block text-truncate">{{ $l->employee_name }}</span><span class="hr-muted">{{ $l->leave_type }} · {{ $l->date_from?->format('d M') }}–{{ $l->date_to?->format('d M') }} · {{ $l->total_days }}d</span></span>
-                        @php $chip = ['supervisor' => ['#fef3c7', '#92400e', 'Supervisor'], 'hr' => ['#e0f2fe', '#075985', 'With HR'], 'director' => ['#e0e7ff', '#3730a3', 'Director']][$l->currentStep()] ?? ['#e0f2fe', '#075985', 'Pending']; @endphp
+                        @php $chip = ['supervisor' => ['#fef3c7', '#92400e', 'Supervisor'], 'hr' => ['#e0f2fe', '#075985', 'With HR'], 'director' => ['#e0e7ff', '#3730a3', 'Management']][$l->currentStep()] ?? ['#e0f2fe', '#075985', 'Pending']; @endphp
                         <span class="hr-chip" style="--bg:{{ $chip[0] }};--c:{{ $chip[1] }}">{{ $chip[2] }}</span>
                     </a>
                 @empty

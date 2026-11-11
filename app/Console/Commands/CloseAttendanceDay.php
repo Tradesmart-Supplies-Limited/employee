@@ -33,6 +33,11 @@ class CloseAttendanceDay extends Command
             return self::SUCCESS;
         }
 
+        // Management still clocked in from an earlier day: clocked out at midnight.
+        if ($n = \App\Models\ManagementAttendance::closeOpenDays()) {
+            $this->info("Clocked out {$n} Management session(s) at midnight.");
+        }
+
         $done = $att->runIfDue();
         if (! $done) {
             $this->info('Nothing to close: every finished day is already closed.');

@@ -29,7 +29,7 @@ class PortalAccounts
         $email = $employee->company_email ?: $employee->personal_email;
 
         if (! $email) {
-            throw new RuntimeException('Add a company or personal email to this employee before creating a portal account.');
+            throw new RuntimeException('Please add a company or personal email to this employee before creating a portal account.');
         }
 
         if (User::where('email', $email)->exists()) {
@@ -58,7 +58,7 @@ class PortalAccounts
     /** @return array{user: User, password: string, emailed: bool} */
     public function reset(Employee $employee, string $actorName): array
     {
-        $user = $employee->user ?? throw new RuntimeException('This employee has no portal account.');
+        $user = $employee->user ?? throw new RuntimeException('This employee doesn\'t have a portal account yet.');
 
         $temp = $this->tempPassword();
 
@@ -72,7 +72,7 @@ class PortalAccounts
 
     public function remove(Employee $employee, string $actorName): void
     {
-        $user = $employee->user ?? throw new RuntimeException('This employee has no portal account.');
+        $user = $employee->user ?? throw new RuntimeException('This employee doesn\'t have a portal account yet.');
         $email = $user->email;
 
         $user->delete();

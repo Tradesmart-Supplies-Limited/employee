@@ -64,7 +64,7 @@
                                     @if(in_array($l->supervisor_decision, ['Approved', 'Rejected'], true))
                                         <span class="{{ $l->supervisor_decision === 'Approved' ? 'text-success' : 'text-danger' }}">
                                             <i class="bi {{ $l->supervisor_decision === 'Approved' ? 'bi-hand-thumbs-up' : 'bi-hand-thumbs-down' }}"></i>
-                                            {{ $l->supervisor_decision === 'Approved' ? 'Approved' : 'Rejected' }}
+                                            {{ $l->supervisor_decision === 'Approved' ? 'Approved' : 'Reverted' }}
                                         </span>
                                     @else
                                         <span class="text-muted">Step skipped</span>

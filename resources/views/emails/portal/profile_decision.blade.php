@@ -2,11 +2,11 @@
 
 @php use App\Support\EmployeeFields as F; @endphp
 
-@section('title', $ok ? 'Change approved' : 'Change not approved')
+@section('title', $ok ? 'Change approved' : 'Change reverted')
 @section('tag', 'Self-service')
-@section('preheader', $ok ? 'Your updated details are now on your record.' : 'HR did not approve your requested change.')
+@section('preheader', $ok ? 'Your updated details are now on your record.' : 'HR has reverted your requested change for now, with a note.')
 
-@section('heading', $ok ? 'Your updated details are approved ✓' : 'Your requested change wasn\'t approved')
+@section('heading', $ok ? 'Your updated details are approved ✓' : 'An update on your requested change')
 
 @section('body')
     <p style="margin:0 0 12px;">Hi {{ $employee->first_name }},</p>
@@ -15,7 +15,7 @@
         @if($ok)
             HR has approved the change to your <strong>{{ collect(array_keys($change->changes))->map(fn ($f) => F::label($f))->implode(', ') }}</strong>. Your record now shows the new details.
         @else
-            HR did not approve the change to your <strong>{{ collect(array_keys($change->changes))->map(fn ($f) => F::label($f))->implode(', ') }}</strong>. Your record is unchanged.
+            Thank you for updating your details. HR has reverted the change to your <strong>{{ collect(array_keys($change->changes))->map(fn ($f) => F::label($f))->implode(', ') }}</strong> for now, so your record is unchanged. The note below explains why; you're welcome to submit it again with the suggested correction.
         @endif
     </p>
     @if($change->review_note)
@@ -27,5 +27,5 @@
 @endsection
 
 @section('footnote')
-    Questions? Reply to HR or speak to your supervisor.
+    If you have any questions, please reply to HR or speak to your supervisor. Thank you.
 @endsection

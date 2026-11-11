@@ -58,8 +58,8 @@
             <button class="btn btn-success btn-sm" form="approve-{{ $req->id }}"><i class="bi bi-check2"></i> Approve ticked changes</button>
             <form method="POST" action="{{ route('profile-changes.reject', $req) }}" class="d-flex gap-2 ms-auto flex-wrap">
                 @csrf
-                <input type="text" name="review_note" class="form-control form-control-sm" style="max-width:280px" placeholder="Reason for rejecting (required)" required>
-                <button class="btn btn-outline-danger btn-sm"><i class="bi bi-x-lg"></i> Reject</button>
+                <input type="text" name="review_note" class="form-control form-control-sm" style="max-width:280px" placeholder="Kindly add a reason for reverting (required)" required>
+                <button class="btn btn-outline-danger btn-sm"><i class="bi bi-arrow-counterclockwise"></i> Revert</button>
             </form>
         </div>
     </div>
@@ -78,7 +78,7 @@
                         <tr>
                             <td>{{ $r->employee?->full_name }}</td>
                             <td class="small">{{ collect(array_keys($r->changes))->map(fn ($f) => F::label($f))->implode(', ') }}</td>
-                            <td><span class="badge {{ ['approved' => 'bg-success', 'rejected' => 'bg-danger'][$r->status] ?? 'bg-secondary' }}">{{ ucfirst($r->status) }}</span>{!! $r->review_note ? '<div class="small text-muted">' . e($r->review_note) . '</div>' : '' !!}</td>
+                            <td><span class="badge {{ ['approved' => 'bg-success', 'rejected' => 'bg-danger'][$r->status] ?? 'bg-secondary' }}">{{ $r->status === 'rejected' ? 'Reverted' : ($r->status === 'cancelled' ? 'Withdrawn' : ucfirst($r->status)) }}</span>{!! $r->review_note ? '<div class="small text-muted">' . e($r->review_note) . '</div>' : '' !!}</td>
                             <td class="small">{{ $r->reviewer?->name ?? ($r->status === 'cancelled' ? 'Withdrawn by employee' : '—') }}</td>
                             <td class="small">{{ optional($r->reviewed_at ?? $r->updated_at)->format('d M Y H:i') }}</td>
                         </tr>

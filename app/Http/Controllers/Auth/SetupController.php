@@ -79,10 +79,10 @@ class SetupController extends Controller
         ]);
 
         if (! $this->sendCode($request)) {
-            return redirect()->route('setup')->with('error', 'We couldn\'t send the email. Check the MAIL_ settings in your .env file, then use "Send a new code".');
+            return redirect()->route('setup')->with('error', 'Sorry, we couldn\'t send the email. Please check the MAIL_ settings in your .env file, then use "Send a new code".');
         }
 
-        return redirect()->route('setup')->with('status', 'Code sent. Check your inbox.');
+        return redirect()->route('setup')->with('status', 'A code is on its way. Please check your inbox.');
     }
 
     /** Send a new code (after the cool-down). */
@@ -96,7 +96,7 @@ class SetupController extends Controller
             return redirect()->route('setup');
         }
         if (isset($s['sent_at']) && time() - $s['sent_at'] < self::RESEND_SECONDS) {
-            return redirect()->route('setup')->with('error', 'Please wait a minute before asking for another code.');
+            return redirect()->route('setup')->with('error', 'Please wait a minute before asking for another code. Thank you for your patience.');
         }
 
         return redirect()->route('setup')->with(...($this->sendCode($request)
@@ -138,7 +138,7 @@ class SetupController extends Controller
         unset($s['code_hash']);
         $request->session()->put('setup', $s);
 
-        return redirect()->route('setup')->with('status', 'Email confirmed.');
+        return redirect()->route('setup')->with('status', 'Thank you, your email is confirmed.');
     }
 
     /** Step 3 → done: choose a password, create the Admin and sign in. */
@@ -178,7 +178,7 @@ class SetupController extends Controller
         $request->session()->forget('setup');
 
         if (! $user) {
-            return redirect()->route('login')->with('error', 'Setup was already finished. Sign in instead.');
+            return redirect()->route('login')->with('error', 'Setup is already complete. Please sign in instead.');
         }
 
         Auth::login($user);
@@ -213,7 +213,7 @@ class SetupController extends Controller
     private function closed()
     {
         return User::exists()
-            ? redirect()->route('login')->with('status', 'The system is already set up. Sign in, or ask HR for a login.')
+            ? redirect()->route('login')->with('status', 'The system is already set up. Please sign in, or ask HR for a login.')
             : null;
     }
 

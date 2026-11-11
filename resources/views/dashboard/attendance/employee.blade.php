@@ -91,7 +91,7 @@
                             <span class="ec-photo d-flex align-items-center justify-content-center" style="background:var(--admin-surface-soft,#f1f5f9)"><i class="bi bi-person at-muted"></i></span>
                         @endif
                         <div class="flex-grow-1" style="min-width:0">
-                            <div class="fw-semibold small">{{ $s->scanned_at->format('D d M · H:i') }} <span class="badge {{ ['in' => 'bg-success', 'out' => 'bg-primary', 'rejected' => 'bg-danger'][$s->action] ?? 'bg-secondary' }}">{{ strtoupper($s->action) }}</span></div>
+                            <div class="fw-semibold small">{{ $s->scanned_at->format('D d M · H:i') }} <span class="badge {{ ['in' => 'bg-success', 'out' => 'bg-primary', 'rejected' => 'bg-danger'][$s->action] ?? 'bg-secondary' }}">{{ $s->action === 'rejected' ? 'NOT RECORDED' : strtoupper($s->action) }}</span></div>
                             <div class="small at-muted text-truncate" title="{{ $s->message }}">{{ $s->message }}</div>
                             <div class="small at-muted">{{ $s->kiosk?->name ?? ($s->method === 'qr' ? 'Kiosk' : ucfirst($s->method)) }}</div>
                         </div>

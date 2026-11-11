@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Log;
  * Events:
  *   submitted      – the request was made
  *   step_decision  – a step approved and the request moved on to the next approver
- *   final_decision – approved at the last step, or rejected at any step
+ *   final_decision – approved at the last step, or reverted at any step
  *
  * Audiences:
  *   employee   – the applicant
@@ -38,6 +38,7 @@ class LeaveNotifier
     public const SUBMITTED      = 'submitted';
     public const STEP_DECISION  = 'step_decision';
     public const FINAL_DECISION = 'final_decision';
+    public const COMMENT        = 'comment';
 
     /** @deprecated older name for STEP_DECISION */
     public const SUPERVISOR_DECISION = self::STEP_DECISION;
@@ -72,7 +73,10 @@ class LeaveNotifier
         }
 
         $supervisorInvolved = $leave->inChain('supervisor') && $leave->supervisor_decision !== 'Skipped';
-        $directorInvolved = $leave->inChain('director') && filled($leave->director_decision) && $leave->director_decision !== 'Skipped';
+        // Management hears the final outcome when they took part, and also after
+        // a revert (so they can comment, or override it).
+        $directorInvolved = $leave->inChain('director') && $leave->director_decision !== 'Skipped'
+            && (filled($leave->director_decision) || $leave->status === 'Rejected');
 
         if ($supervisorInvolved && ($event !== self::STEP_DECISION || $leave->lastDecidedStep() === 'supervisor')) {
             foreach (self::supervisorEmails($leave) as $email) {
@@ -91,6 +95,38 @@ class LeaveNotifier
         }
 
         Log::info("LeaveNotifier: {$event} for leave {$leave->id}", ['to' => $sent]);
+    }
+
+    /**
+     * A new comment: tell the applicant and everyone in the chain, except the author.
+     */
+    public static function comment(LeaveRequest $leave, \App\Models\LeaveComment $comment): void
+    {
+        $leave->loadMissing(['employee', 'supervisorEmployee.user', 'supervisorUser']);
+        $author = strtolower((string) $comment->user?->email);
+        $sent = [$author => true];
+
+        $queue = function (?string $email, string $audience) use (&$sent, $leave, $comment) {
+            $email = strtolower(trim((string) $email));
+            if ($email === '' || ! filter_var($email, FILTER_VALIDATE_EMAIL) || isset($sent[$email])) {
+                return;
+            }
+            $sent[$email] = $audience;
+            self::deliver(new SendLeaveWorkflowEmail($leave->id, self::COMMENT, $audience, $email, $comment->id));
+        };
+
+        $queue($leave->email, 'employee');
+        foreach ($leave->chain() as $step) {
+            if ($leave->{$step . '_decision'} === 'Skipped') {
+                continue;
+            }
+            foreach (self::stepEmails($leave, $step) as $email) {
+                $queue($email, $step);
+            }
+        }
+
+        unset($sent[$author]);
+        Log::info("LeaveNotifier: comment {$comment->id} on leave {$leave->id}", ['to' => $sent]);
     }
 
     /** @return string[] the people who decide $step */

@@ -21,6 +21,11 @@ class User extends Authenticatable
         'role',
         'employee_id',
         'must_change_password',
+        'photo_path',
+        'job_title',
+        'phone',
+        'office_location',
+        'bio',
     ];
 
     protected $hidden = [
@@ -65,6 +70,19 @@ class User extends Authenticatable
     public function hasFullAccess(): bool
     {
         return in_array($this->roleKey(), Roles::FULL, true);
+    }
+
+    /** Profile photo (Management portal) — null when none is set. */
+    public function getPhotoUrlAttribute(): ?string
+    {
+        return $this->photo_path ? asset('storage/' . $this->photo_path) : null;
+    }
+
+    public function getInitialsAttribute(): string
+    {
+        $p = preg_split('/\s+/', trim((string) $this->name)) ?: ['?'];
+
+        return strtoupper(mb_substr($p[0] ?? '', 0, 1) . (count($p) > 1 ? mb_substr(end($p), 0, 1) : ''));
     }
 
     public function isDirector(): bool

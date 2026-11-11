@@ -48,7 +48,7 @@ class PortalAccountController extends Controller
             return back()->with('error', $e->getMessage());
         }
 
-        return back()->with('success', 'Portal access removed. HR has been notified.');
+        return back()->with('success', 'Portal access has been removed, and HR has been informed.');
     }
 
     private function respond(array $result, string $prefix)

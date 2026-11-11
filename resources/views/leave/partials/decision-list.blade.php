@@ -14,8 +14,9 @@
             {{ $i + 1 }}. {{ $meta['title'] }}@if($isLast) <span class="badge text-bg-light border ms-1">final</span>@endif
         </small>
         @if(in_array($r['decision'], ['Approved', 'Rejected'], true))
-            <span class="{{ $r['decision'] === 'Approved' ? 'text-success' : 'text-danger' }} fw-semibold">
-                <i class="bi {{ $r['decision'] === 'Approved' ? 'bi-check-circle' : 'bi-x-circle' }}"></i> {{ $r['decision'] }}
+            @php $ov = $leave->wasOverridden($step); @endphp
+            <span class="{{ $r['decision'] === 'Approved' ? 'text-success' : ($ov ? 'text-warning-emphasis' : 'text-danger') }} fw-semibold">
+                <i class="bi {{ $r['decision'] === 'Approved' ? 'bi-check-circle' : ($ov ? 'bi-arrow-repeat' : 'bi-arrow-counterclockwise') }}"></i> {{ \App\Models\LeaveRequest::decisionLabel($r['decision']) }}@if($ov), then overridden by {{ $leave->overridden_by_name }}@endif
             </span>
             <div class="small text-muted">{{ $r['name'] }}@if($r['at']) · {{ \Illuminate\Support\Carbon::parse($r['at'])->format('d M Y') }}@endif</div>
             @if($r['comments'])
@@ -25,7 +26,7 @@
             <span class="text-muted"><i class="bi bi-skip-forward"></i> Skipped</span>
             @if($r['comments'])<div class="small text-muted">{{ $r['comments'] }}</div>@endif
         @elseif($leave->isFinal())
-            <span class="text-muted"><i class="bi bi-dash-circle"></i> Not needed</span>
+            <span class="text-muted"><i class="bi bi-dash-circle"></i> No action required</span>
         @elseif($step === $current)
             <span class="text-warning fw-semibold"><i class="bi bi-hourglass-split"></i> Waiting for approval</span>
             <div class="small text-muted">

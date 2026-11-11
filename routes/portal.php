@@ -68,12 +68,14 @@ Route::middleware(['auth', 'portal'])
             Route::get('leave/create', [Portal\LeaveController::class, 'create'])->name('leave.create');
             Route::post('leave', [Portal\LeaveController::class, 'store'])->name('leave.store');
             Route::get('leave/{leave}', [Portal\LeaveController::class, 'show'])->name('leave.show');
+            Route::post('leave/{leave}/comments', [Portal\LeaveController::class, 'comment'])->name('leave.comment');
             Route::delete('leave/{leave}', [Portal\LeaveController::class, 'destroy'])->name('leave.destroy');
 
             // Team approvals (for employees who supervise others)
             Route::get('team-leave', [Portal\TeamLeaveController::class, 'index'])->name('team-leave.index');
             Route::get('team-leave/{leave}', [Portal\TeamLeaveController::class, 'show'])->name('team-leave.show');
             Route::post('team-leave/{leave}/decision', [Portal\TeamLeaveController::class, 'decide'])->name('team-leave.decide');
+            Route::post('team-leave/{leave}/comments', [Portal\TeamLeaveController::class, 'comment'])->name('team-leave.comment');
 
             // Overtime
             Route::get('overtime', [Portal\OvertimeController::class, 'index'])->name('overtime.index');

@@ -199,7 +199,7 @@
     {{-- =====================================================
          APPROVAL CHAIN — one section per step (Supervisor → HR → Management).
          The last step's approval is final and updates the balance;
-         a rejection at any step ends the request.
+         a revert at any step ends the request, unless a higher approver overrides it.
     ====================================================== --}}
     @php
         $n = fn ($v) => $v === null ? '—' : rtrim(rtrim(number_format((float) $v, 1), '0'), '.');
@@ -210,7 +210,7 @@
     <div class="lv-section">
         <div class="lv-section-heading">
             Approval chain
-            <span class="lv-heading-note">({{ $leave->chain_label }} · a rejection at any step ends the request)</span>
+            <span class="lv-heading-note">({{ $leave->chain_label }} · a revert at any step ends the request, unless a higher approver overrides it)</span>
         </div>
         <div class="lv-chain">
             <span class="lv-chain-pill is-done"><i class="bi bi-person"></i> Employee</span>
@@ -219,6 +219,7 @@
                     $d = $leave->{$step . '_decision'};
                     $cls = match (true) {
                         $d === 'Approved' => 'is-done',
+                        $d === 'Rejected' && $leave->wasOverridden($step) => 'is-warn',
                         $d === 'Rejected' => 'is-no',
                         $d === 'Skipped'  => 'is-skip',
                         $step === $current => 'is-now',
@@ -249,11 +250,14 @@
             </div>
 
             @if(in_array($r['decision'], ['Approved', 'Rejected'], true))
-                @php $ok = $r['decision'] === 'Approved'; @endphp
-                <div class="lv-decision {{ $ok ? 'lv-decision--ok' : 'lv-decision--no' }}">
-                    <i class="bi {{ $ok ? ($isLast ? 'bi-patch-check-fill' : 'bi-hand-thumbs-up-fill') : 'bi-x-octagon-fill' }}"></i>
+                @php $ok = $r['decision'] === 'Approved'; $wasOverridden = $leave->wasOverridden($step); @endphp
+                <div class="lv-decision {{ $ok ? 'lv-decision--ok' : ($wasOverridden ? 'lv-decision--warn' : 'lv-decision--no') }}">
+                    <i class="bi {{ $ok ? ($isLast ? 'bi-patch-check-fill' : 'bi-hand-thumbs-up-fill') : ($wasOverridden ? 'bi-arrow-repeat' : 'bi-arrow-counterclockwise') }}"></i>
                     <div>
-                        <div class="fw-semibold">{{ $ok ? ($isLast ? 'Approved (final)' : 'Approved') : 'Rejected' }}</div>
+                        <div class="fw-semibold">
+                            {{ $ok ? ($isLast ? 'Approved (final)' : 'Approved') : 'Reverted' }}
+                            @if($wasOverridden)<span class="small fw-normal">· overridden by {{ $leave->overridden_by_name }} on {{ $leave->overridden_at?->timezone(config('attendance.timezone', 'Africa/Lusaka'))->format('d M Y') }}</span>@endif
+                        </div>
                         <div class="small text-muted">
                             {{ $r['name'] }}@if($r['position']) · {{ $r['position'] }}@endif
                             @if($r['at']) · {{ \Illuminate\Support\Carbon::parse($r['at'])->format('d M Y, H:i') }}@endif
@@ -263,10 +267,39 @@
                         @endif
                     </div>
                 </div>
+                @if($overrideStep && $leave->status === 'Rejected' && $leave->finalStep() === $step)
+                    @php $ovLast = $leave->isLastStep($overrideStep); $ovNext = null; foreach (array_slice($leave->chain(), array_search($overrideStep, $leave->chain(), true) + 1) as $x) { if ($leave->{$x . '_decision'} !== 'Skipped') { $ovNext = $x; break; } } @endphp
+                    <form method="POST" action="{{ route('leave.override', $leave->id) }}" class="lv-override mt-3"
+                          onsubmit="return confirm('Override this revert and approve the request{{ $ovLast || ! $ovNext ? ' (final)' : '' }}?')">
+                        @csrf
+                        <div class="fw-semibold mb-1"><i class="bi bi-arrow-repeat me-1"></i> Override this decision</div>
+                        <div class="small text-muted mb-2">
+                            As {{ \App\Models\LeaveRequest::STEPS[$overrideStep]['label'] }}, you're further up the approval chain, so you may override this revert and approve the request.
+                            @if($ovNext) It will then continue to {{ \App\Mail\LeaveWorkflowMail::who($ovNext) }}. @else This will be the final approval and the balance will be updated. @endif
+                            The original decision stays on record.
+                        </div>
+                        <textarea name="override_reason" rows="2" class="lv-textarea" required placeholder="A short note explaining the override (shared with everyone involved)">{{ old('override_reason') }}</textarea>
+                        @if(! $ovNext && $insufficient)
+                            <label class="d-flex gap-2 align-items-start small text-danger mt-2">
+                                <input type="checkbox" name="override_balance" value="1" class="mt-1">
+                                <span>Approve anyway: the balance will go to {{ $n($balanceAfter) }} days</span>
+                            </label>
+                        @endif
+                        <button class="btn btn-sm btn-warning mt-2"><i class="bi bi-arrow-repeat me-1"></i> Override and approve</button>
+                    </form>
+                @endif
             @elseif($r['decision'] === 'Skipped')
                 <div class="text-muted small"><i class="bi bi-skip-forward me-1"></i>Skipped. {{ $r['comments'] }}</div>
             @elseif($leave->isFinal())
-                <div class="text-muted small"><i class="bi bi-dash-circle me-1"></i>Not needed — the request was decided at another step.</div>
+                <div class="lv-noaction">
+                    <i class="bi bi-chat-heart me-1"></i>
+                    @if($leave->status === 'Rejected')
+                        No action required, but you're welcome to <a href="#comments">add a comment</a>.
+                        @if($overrideStep === $step) As an approver further up the chain, you may also override the revert above. @endif
+                    @else
+                        No action required: the request was decided at another step.
+                    @endif
+                </div>
             @elseif($step === $actingStep)
                 @if($step !== $current)
                     <div class="alert alert-light border small py-2 mb-3">
@@ -286,7 +319,7 @@
 
                 <form method="POST" action="{{ route('leave.decide', $leave->id) }}" class="lv-step-form"
                       data-confirm-approve="{{ $isLast ? 'Give final approval' . ($employee && $leave->isDeductible() ? ' and deduct ' . $n($leave->total_days) . ' day(s) from the balance' : '') . '?' : 'Approve and send to ' . \App\Mail\LeaveWorkflowMail::who($nextAfter) . '?' }}"
-                      data-confirm-reject="Reject this leave request? This ends the request.">
+                      data-confirm-reject="Revert this leave request? The applicant will be informed kindly, with your reason.">
                     @csrf
                     <input type="hidden" name="step" value="{{ $step }}">
 
@@ -297,12 +330,12 @@
                         </label>
                         <label class="lv-choice lv-choice--no">
                             <input type="radio" name="decision" value="Rejected" @checked(old('decision') === 'Rejected')>
-                            <span><i class="bi bi-hand-thumbs-down"></i> Reject</span>
+                            <span><i class="bi bi-arrow-counterclockwise"></i> Revert</span>
                         </label>
                     </div>
 
                     <div class="lv-field mt-3">
-                        <label class="lv-field-label" for="comments-{{ $step }}">Comments <span class="lv-hint">(required when rejecting)</span></label>
+                        <label class="lv-field-label" for="comments-{{ $step }}">Comments <span class="lv-hint">(kindly add a reason when reverting)</span></label>
                         <textarea name="comments" id="comments-{{ $step }}" rows="3" class="lv-textarea">{{ old('comments') }}</textarea>
                     </div>
 
@@ -393,6 +426,13 @@
     </script>
     @endpush
 
+
+    {{-- =====================================================
+         COMMENTS (everyone in the approval chain + the applicant)
+    ====================================================== --}}
+    <div class="lv-section">
+        @include('leave.partials.comments', ['canComment' => $canComment, 'commentUrl' => route('leave.comment', $leave->id)])
+    </div>
 
     {{-- FOOTER NOTE --}}
     <div class="lv-footer-note">
@@ -713,12 +753,17 @@
 }
 
 /* ---- Workflow additions ---- */
+.lv-decision--warn { border-color: rgba(245,158,11,.45) !important; background: rgba(245,158,11,.08) !important; }
+.lv-decision--warn > i { color: #d97706 !important; }
+.lv-override { padding: 12px 14px; border-radius: 10px; border: 1px dashed rgba(245,158,11,.6); background: rgba(245,158,11,.05); }
+.lv-noaction { font-size: .86rem; padding: 10px 12px; border-radius: 10px; background: var(--admin-surface-soft, #f8fafc); border: 1px solid var(--admin-border, #e2e8f0); color: var(--admin-muted, #64748b); }
 .lv-chain { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .lv-chain-sep { color: var(--admin-muted, #94a3b8); font-size: .75rem; }
 .lv-chain-pill { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px; font-size: .8rem; font-weight: 600;
     background: var(--admin-surface-2, #f1f5f9); color: var(--admin-muted, #64748b); border: 1px solid var(--admin-border, #e2e8f0); }
 .lv-chain-pill.is-done { background: rgba(22,163,74,.12); color: #15803d; border-color: rgba(22,163,74,.35); }
 .lv-chain-pill.is-no   { background: rgba(220,38,38,.1); color: #b91c1c; border-color: rgba(220,38,38,.35); }
+.lv-chain-pill.is-warn { background: rgba(245,158,11,.12); color: #b45309; border-color: rgba(245,158,11,.45); }
 .lv-chain-pill.is-skip { border-style: dashed; text-decoration: line-through; opacity: .75; }
 .lv-chain-pill.is-now  { background: rgba(var(--brand-rgb, 24,95,165), .12); color: var(--brand-text, #185FA5); border-color: rgba(var(--brand-rgb, 24,95,165), .45); }
 html[data-theme=dark] .lv-chain-pill.is-done { color: #4ade80; }

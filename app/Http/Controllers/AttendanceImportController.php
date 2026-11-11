@@ -38,7 +38,7 @@ class AttendanceImportController extends Controller
         $from = Carbon::parse($data['from'], AttendanceService::tz())->startOfDay();
         $to = Carbon::parse($data['to'], AttendanceService::tz())->startOfDay();
         if ($from->diffInDays($to) + 1 > AttendanceImporter::MAX_TEMPLATE_DAYS) {
-            return back()->withInput()->with('error', 'Pick at most ' . AttendanceImporter::MAX_TEMPLATE_DAYS . ' days per timesheet.');
+            return back()->withInput()->with('error', 'Please pick at most ' . AttendanceImporter::MAX_TEMPLATE_DAYS . ' days per timesheet.');
         }
 
         $rows = $this->importer->templateRows($from, $to, $data['department'] ?? null);

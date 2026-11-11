@@ -147,7 +147,7 @@ a.lm-kpi:hover { border-color: var(--c); }
         <div class="lm-kpi" style="--c:#0ea5e9"><div class="l">Days remaining</div><div class="v">{{ $n($k['balance_total']) }}</div><div class="s">avg {{ $n($k['avg_balance']) }} per person</div></div>
         <a class="lm-kpi" style="--c:#f59e0b" href="{{ route('leave.index', ['stage' => 'awaiting_supervisor']) }}"><div class="l">Pending requests</div><div class="v">{{ $k['pending'] }}</div><div class="s">{{ $k['awaiting_supervisor'] }} supervisor · {{ $k['awaiting_hr'] }} HR · {{ $k['awaiting_director'] ?? 0 }} Management</div></a>
         <a class="lm-kpi" style="--c:#16a34a" href="{{ route('leave.index', ['stage' => 'approved']) }}"><div class="l">Approved</div><div class="v">{{ $k['approved'] }}</div><div class="s">{{ $n($k['taken_all']) }} days, all types</div></a>
-        <a class="lm-kpi" style="--c:#dc2626" href="{{ route('leave.index', ['stage' => 'rejected']) }}"><div class="l">Rejected</div><div class="v">{{ $k['rejected'] }}</div><div class="s">approval rate {{ $k['approval_rate'] === null ? '—' : $k['approval_rate'] . '%' }}</div></a>
+        <a class="lm-kpi" style="--c:#dc2626" href="{{ route('leave.index', ['stage' => 'rejected']) }}"><div class="l">Reverted</div><div class="v">{{ $k['rejected'] }}</div><div class="s">approval rate {{ $k['approval_rate'] === null ? '—' : $k['approval_rate'] . '%' }}</div></a>
         <div class="lm-kpi" style="--c:#7c3aed"><div class="l">Avg decision time</div><div class="v">{{ $k['avg_turnaround_h'] === null ? '—' : ($k['avg_turnaround_h'] >= 48 ? $n($k['avg_turnaround_h'] / 24) . 'd' : $n($k['avg_turnaround_h']) . 'h') }}</div><div class="s">submit → HR decision</div></div>
         <a class="lm-kpi" style="--c:#dc2626" href="{{ route('leave.manage.index', $qs(['flag' => 'low'])) }}"><div class="l">Low / negative</div><div class="v">{{ $k['low_balance'] }} <span class="fs-6 text-danger">/ {{ $k['negative_balance'] }}</span></div><div class="s">≤ {{ $n(config('leave.low_balance_threshold')) }} days left / below 0</div></a>
     </div>
@@ -165,7 +165,7 @@ a.lm-kpi:hover { border-color: var(--c); }
                             @if($row['approved'] > 0)<span class="seg ap" style="height: {{ $row['approved'] / $maxMonth * 150 }}px"></span>@endif
                             @if($row['pending'] > 0)<span class="seg pe" style="height: {{ $row['pending'] / $maxMonth * 150 }}px"></span>@endif
                             @if($tot > 0)<span class="val">{{ $n($tot) }}</span>@endif
-                            <span class="tip">{{ $row['label'] }}: {{ $n($row['approved']) }} approved · {{ $n($row['pending']) }} pending · {{ $n($row['rejected']) }} rejected</span>
+                            <span class="tip">{{ $row['label'] }}: {{ $n($row['approved']) }} approved · {{ $n($row['pending']) }} pending · {{ $n($row['rejected']) }} reverted</span>
                         </div>
                     @endforeach
                 </div>
@@ -175,7 +175,7 @@ a.lm-kpi:hover { border-color: var(--c); }
                 <details class="mt-2 small">
                     <summary class="text-muted">Show as table</summary>
                     <div class="table-responsive"><table class="table table-sm mt-2 mb-0">
-                        <thead><tr><th>Month</th><th class="text-end">Approved</th><th class="text-end">Pending</th><th class="text-end">Rejected</th></tr></thead>
+                        <thead><tr><th>Month</th><th class="text-end">Approved</th><th class="text-end">Pending</th><th class="text-end">Reverted</th></tr></thead>
                         <tbody>@foreach($r->monthly as $row)<tr><td>{{ $row['label'] }}</td><td class="text-end">{{ $n($row['approved']) }}</td><td class="text-end">{{ $n($row['pending']) }}</td><td class="text-end">{{ $n($row['rejected']) }}</td></tr>@endforeach</tbody>
                     </table></div>
                 </details>
@@ -215,7 +215,7 @@ a.lm-kpi:hover { border-color: var(--c); }
             <div class="lm-card h-100">
                 <h2><i class="bi bi-tags"></i> By leave type <span class="sub">days · {{ $year }}</span></h2>
                 @forelse($r->byType as $t)
-                    <div class="lm-hbar" title="{{ $t['type'] }}: {{ $n($t['approved']) }} approved, {{ $n($t['pending']) }} pending days · {{ $t['requests'] }} request(s), {{ $t['rejected'] }} rejected">
+                    <div class="lm-hbar" title="{{ $t['type'] }}: {{ $n($t['approved']) }} approved, {{ $n($t['pending']) }} pending days · {{ $t['requests'] }} request(s), {{ $t['rejected'] }} reverted">
                         <span>{{ $t['type'] }} @if($t['deductible'])<i class="bi bi-wallet2 text-muted" title="Reduces the balance"></i>@endif</span>
                         <span class="track">
                             <span style="width: {{ $t['approved'] / $maxType * 100 }}%; background:#16a34a"></span>
@@ -313,7 +313,7 @@ a.lm-kpi:hover { border-color: var(--c); }
                         <th class="text-end">{!! $sortLink('pending_days', 'Pending d') !!}</th>
                         <th class="text-end">{!! $sortLink('balance', 'Balance') !!}</th>
                         <th>{!! $sortLink('utilization', 'Used') !!}</th>
-                        <th class="text-center" title="Approved / Pending / Rejected requests">A / P / R</th>
+                        <th class="text-center" title="Approved / Pending / Reverted requests">A / P / R</th>
                         <th>Status</th>
                         <th></th>
                     </tr>

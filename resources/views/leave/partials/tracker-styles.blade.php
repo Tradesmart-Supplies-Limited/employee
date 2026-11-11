@@ -55,6 +55,9 @@
 .lt-step.is-declined .lt-dot  { background: var(--lt-declined); border-color: var(--lt-declined); color: #fff; }
 .lt-step.is-skipped .lt-dot   { background: var(--lt-track); border-color: var(--lt-muted); color: var(--lt-sub); border-style: dashed; }
 .lt-step.is-cancelled .lt-dot { opacity: .55; }
+.lt-step.is-overridden .lt-dot { background: #f59e0b; border-color: #f59e0b; color: #fff; }
+.lt-step.is-overridden .lt-note { color: #b45309; }
+.lt-mini-seg.is-overridden { background: #f59e0b; }
 .lt-step.is-current .lt-dot   {
     border-color: var(--lt-current); color: var(--lt-current);
     box-shadow: 0 0 0 0 rgba(245, 158, 11, .45);

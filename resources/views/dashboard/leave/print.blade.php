@@ -558,12 +558,12 @@
                 <label class="lv-approval-option">
                     <input type="radio" name="supervisor_decision" value="Rejected" class="lv-radio"
                         {{ $leave->supervisor_decision === 'Rejected' ? 'checked' : '' }}>
-                    <span>Rejected</span>
+                    <span>Reverted</span>
                 </label>
             </div>
 
             <div class="lv-field mt-3">
-                <label class="lv-field-label" for="supervisor_comments">Comments / reason(s) for rejection</label>
+                <label class="lv-field-label" for="supervisor_comments">Comments / reason(s) for reverting</label>
                 <textarea name="supervisor_comments" id="supervisor_comments" rows="1"
                     class="lv-textarea">{{ old('supervisor_comments', $leave->supervisor_comments) }}</textarea>
             </div>
@@ -689,7 +689,7 @@
                 </label>
                 <label class="lv-approval-option">
                     <input type="radio" class="lv-radio" disabled {{ $leave->director_decision === 'Rejected' ? 'checked' : '' }}>
-                    <span>Rejected</span>
+                    <span>Reverted</span>
                 </label>
             </div>
 

@@ -37,7 +37,7 @@
         <p style="margin:0;">
             <strong>{{ $leave->employee_name }}</strong> has applied for
             <strong>{{ $days }} day(s)</strong> of {{ $leave->leave_type }} leave.
-            Please <strong>approve or reject</strong> it.
+            Could you kindly <strong>approve or revert</strong> it?
             @if($leave->isLastStep($next))
                 Yours is the final decision.
             @else

@@ -75,7 +75,7 @@ class PayslipMailController extends Controller
 
         if ($payrolls->isEmpty()) {
             \Log::warning('sendBulk: No payslips found for payroll run ID: ' . $run->id);
-            return back()->with('error', 'No payslips found for this run.');
+            return back()->with('error', 'We couldn\'t find any payslips for this run yet.');
         }
 
         $dispatched = 0;

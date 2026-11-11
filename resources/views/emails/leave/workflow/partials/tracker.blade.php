@@ -3,8 +3,9 @@
     $palette = [
         'done'      => ['bg' => '#16a34a', 'fg' => '#ffffff', 'mark' => '&#10003;', 'text' => '#15803d'],
         'current'   => ['bg' => '#f59e0b', 'fg' => '#ffffff', 'mark' => '&#8226;&#8226;&#8226;', 'text' => '#b45309'],
-        'declined'  => ['bg' => '#dc2626', 'fg' => '#ffffff', 'mark' => '&#10005;', 'text' => '#b91c1c'],
+        'declined'  => ['bg' => '#dc2626', 'fg' => '#ffffff', 'mark' => '&#8634;', 'text' => '#b91c1c'],
         'skipped'   => ['bg' => '#cbd5e1', 'fg' => '#475569', 'mark' => '&#8211;', 'text' => '#64748b'],
+        'overridden' => ['bg' => '#f59e0b', 'fg' => '#ffffff', 'mark' => '&#8635;', 'text' => '#b45309'],
         'cancelled' => ['bg' => '#e2e8f0', 'fg' => '#64748b', 'mark' => '&#8211;', 'text' => '#94a3b8'],
         'upcoming'  => ['bg' => '#e2e8f0', 'fg' => '#64748b', 'mark' => null,       'text' => '#94a3b8'],
     ];

@@ -8,7 +8,7 @@ use Illuminate\Mail\Mailable;
 /**
  * Every leave workflow email.
  *
- * $event    : submitted | step_decision | final_decision
+ * $event    : submitted | step_decision | final_decision | comment
  *            (older queued "supervisor_decision" jobs are read as step_decision)
  * $audience : employee  | supervisor | hr | director
  *
@@ -20,6 +20,7 @@ class LeaveWorkflowMail extends Mailable
         public LeaveRequest $leave,
         public string $event,
         public string $audience,
+        public ?\App\Models\LeaveComment $comment = null,
     ) {}
 
     public function build()
@@ -40,6 +41,8 @@ class LeaveWorkflowMail extends Mailable
                 'next'        => $next,
                 'myTurn'      => $next !== null && $next === $this->audience,
                 'stepWho'     => fn (?string $s) => self::who($s),
+                'comment'     => $this->comment,
+                'overridden'  => $this->leave->overridden_step && $this->leave->overridden_at && $this->leave->overridden_at->gt(now()->subMinutes(10)),
                 'leave'       => $this->leave,
                 'audience'    => $this->audience,
                 'steps'       => $this->leave->timeline(),
@@ -70,21 +73,29 @@ class LeaveWorkflowMail extends Mailable
         $myTurn = $next !== null && $next === $this->audience;
         $decided = $l->lastDecidedStep();
 
+        $fresh = $l->overridden_at && $l->overridden_at->gt(now()->subMinutes(10));
+
         return match ($this->event) {
             'submitted' => match (true) {
-                $this->audience === 'employee' => "Leave application received — {$what}",
-                $myTurn                        => "Action required: {$who}'s leave application",
-                default                        => "New leave application: {$who} ({$what})",
+                $this->audience === 'employee' => "We have received your leave application: {$what}",
+                $myTurn                        => "Your approval, please: {$who}'s leave application",
+                default                        => "New leave application from {$who} ({$what})",
             },
             'step_decision' => match (true) {
-                $this->audience === 'employee' => ucfirst(self::who($decided)) . " approved your leave — now with " . self::who($next),
-                $myTurn                        => "Action required: approve {$who}'s leave ({$what})",
-                $this->audience === $decided   => "Recorded: you approved {$who}'s leave",
+                $this->audience === 'employee' && $fresh => "Good news: your leave is moving forward again ({$what})",
+                $this->audience === 'employee' => ucfirst(self::who($decided)) . " has approved your leave. It is now with " . self::who($next),
+                $myTurn                        => "Your approval, please: {$who}'s leave ({$what})",
+                $this->audience === $decided   => "Thank you: your approval of {$who}'s leave is recorded",
                 default                        => "{$who}'s leave is now with " . self::who($next),
             },
+            'comment' => $this->audience === 'employee'
+                ? "New comment on your leave request ({$what})"
+                : "New comment on {$who}'s leave request",
             default => match ($this->audience) {
-                'employee' => "Your leave has been " . strtolower($l->status) . " — {$what}",
-                default    => "{$who}'s leave was " . strtolower($l->status),
+                'employee' => $l->status === 'Approved'
+                    ? "Your leave has been approved: {$what}"
+                    : "Update on your leave request: it has been reverted ({$what})",
+                default    => "{$who}'s leave has been " . ($l->status === 'Approved' ? 'approved' : 'reverted'),
             },
         };
     }
@@ -110,8 +121,10 @@ class LeaveWorkflowMail extends Mailable
     {
         $next = $this->leave->currentStep();
 
-        return $this->event !== 'final_decision' && $next !== null && $next === $this->audience
-            ? 'Review and approve'
-            : 'View application';
+        return match (true) {
+            $this->event === 'comment' => 'View and reply',
+            $this->event !== 'final_decision' && $next !== null && $next === $this->audience => 'Review the request',
+            default => 'View the request',
+        };
     }
 }

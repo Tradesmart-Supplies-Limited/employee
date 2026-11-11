@@ -308,6 +308,11 @@ Route::middleware(['auth', 'staff', 'password.change'])->group(function () {
     // Who may decide which step is checked by LeaveWorkflow::canAct()
     Route::post('/leave/{leave}/decide', [LeaveController::class, 'decide'])
         ->middleware('perm:leave.view')->name('leave.decide');
+    // Comments (anyone in the chain) and overriding a revert (a higher approver) — checked in LeaveWorkflow
+    Route::post('/leave/{leave}/comments', [LeaveController::class, 'comment'])
+        ->middleware('perm:leave.view')->name('leave.comment');
+    Route::post('/leave/{leave}/override', [LeaveController::class, 'override'])
+        ->middleware('perm:leave.view')->name('leave.override');
     Route::patch('/leave/{leave}/supervisor', [LeaveController::class, 'updateSupervisor'])
         ->middleware('perm:leave.supervise')->name('leave.supervisor.update');
 
@@ -442,3 +447,4 @@ Route::middleware(['auth', 'staff', 'perm:full'])->prefix('payroll')->name('payr
 
 
 require __DIR__ . '/portal.php';
+require __DIR__ . '/management.php';

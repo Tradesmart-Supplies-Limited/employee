@@ -8,6 +8,7 @@ use App\Services\LeaveDayCalculator;
 use App\Services\LeaveWorkflow;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use RuntimeException;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
@@ -109,7 +110,7 @@ class LeaveController extends Controller
 
         if ($overlap) {
             return back()->withInput()->withErrors([
-                'date_from' => 'You already have a pending or approved leave request overlapping these dates.',
+                'date_from' => 'It looks like you already have a pending or approved leave request for some of these dates. Please choose different dates, or withdraw the other request first.',
             ]);
         }
 
@@ -119,7 +120,7 @@ class LeaveController extends Controller
 
         if ($days < 1) {
             return back()->withInput()->withErrors([
-                'date_to' => 'Every day you selected is a Sunday or public holiday, so there are no leave days to take.',
+                'date_to' => 'Good news: every day you selected is a Sunday or public holiday, so there are no leave days to take.',
             ]);
         }
 
@@ -131,7 +132,7 @@ class LeaveController extends Controller
             if ($days > $available) {
                 return back()->withInput()->withErrors([
                     'date_to' => sprintf(
-                        'You are requesting %d day(s) but only have %s day(s) available%s.',
+                        'This request is for %d day(s), and you have %s day(s) available%s. Please shorten the dates, or speak to HR if you need more time.',
                         $days,
                         rtrim(rtrim(number_format(max($available, 0), 1), '0'), '.'),
                         $employee->leavePendingDays() > 0 ? ' after your other pending requests' : ''
@@ -184,16 +185,31 @@ class LeaveController extends Controller
 
         return redirect()
             ->route('portal.leave.show', $leave)
-            ->with('success', 'Leave request submitted. You will be emailed when it is reviewed.');
+            ->with('success', 'Thank you, your leave request has been submitted. We\'ll email you at every step.');
     }
 
     public function show(Request $request, LeaveRequest $leave)
     {
         $this->authorizeOwner($request, $leave);
 
-        $leave->load(['supervisorEmployee', 'supervisorUser', 'employee']);
+        $leave->load(['supervisorEmployee', 'supervisorUser', 'employee', 'comments']);
 
-        return view('portal.leave.show', compact('leave'));
+        return view('portal.leave.show', compact('leave') + ['canComment' => true, 'commentUrl' => route('portal.leave.comment', $leave)]);
+    }
+
+    /** The applicant replies on their own request. */
+    public function comment(Request $request, LeaveRequest $leave)
+    {
+        $this->authorizeOwner($request, $leave);
+        $data = $request->validate(['body' => 'required|string|max:3000'], ['body.required' => 'Please write a comment before sending.']);
+
+        try {
+            $this->workflow->comment($leave, $request->user(), $data['body']);
+        } catch (RuntimeException $e) {
+            return back()->withInput()->with('error', $e->getMessage());
+        }
+
+        return redirect()->to(route('portal.leave.show', $leave) . '#comments')->with('success', 'Thank you, your comment has been added and your approvers have been informed.');
     }
 
     /** Employees can withdraw a request only while it is still pending. */
@@ -202,7 +218,7 @@ class LeaveController extends Controller
         $this->authorizeOwner($request, $leave);
 
         if ($leave->isFinal()) {
-            return back()->with('error', 'Only requests still awaiting a final decision can be withdrawn.');
+            return back()->with('error', 'Only requests that are still awaiting a decision can be withdrawn.');
         }
 
         if ($leave->supporting_document) {
@@ -213,7 +229,7 @@ class LeaveController extends Controller
 
         return redirect()
             ->route('portal.leave.index')
-            ->with('success', 'Leave request withdrawn.');
+            ->with('success', 'Your leave request has been withdrawn.');
     }
 
     /** Day rules from the form, or the company defaults if employees may not change them. */

@@ -141,7 +141,7 @@ class RotaController extends Controller
         $this->authorizeRota($request, $rota);
         $prev = $this->rotas->find($rota->department, Carbon::parse($rota->week_start->toDateString())->subWeek());
         if (! $prev) {
-            return back()->with('error', 'There is no rota for the week before to copy.');
+            return back()->with('error', 'There isn\'t a rota for the previous week to copy yet. You\'re welcome to start this one from scratch.');
         }
         $n = $this->rotas->copyInto($rota, $prev);
 
@@ -159,12 +159,12 @@ class RotaController extends Controller
     {
         $this->authorizeRota($request, $rota);
         if ($rota->is_published) {
-            return back()->with('error', 'Published rotas can\'t be deleted. Move it back to draft first.');
+            return back()->with('error', 'A published rota can\'t be deleted. Please move it back to draft first.');
         }
         $dept = $rota->department;
         $rota->delete();
 
-        return redirect($this->r('index', ['department' => $dept]))->with('success', 'Draft rota deleted.');
+        return redirect($this->r('index', ['department' => $dept]))->with('success', 'The draft rota has been deleted.');
     }
 
     /** Data for the "TSL shift schedule" sheet layout (also used in the portal). */

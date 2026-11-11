@@ -103,7 +103,7 @@ class UserController extends Controller
         $me = $request->user();
         $this->guardAdminRole($me, $user->roleKey());
         if ($user->is($me)) {
-            return back()->with('error', 'Use "Forgot password" on the sign-in page to change your own password.');
+            return back()->with('error', 'To change your own password, please use "Forgot password" on the sign-in page.');
         }
 
         $password = $this->tempPassword();
@@ -133,15 +133,15 @@ class UserController extends Controller
         $oldRole = $user->roleKey();
 
         if ($user->is($me) && $newRole !== $oldRole) {
-            return back()->with('error', 'You can\'t change your own role. Ask another Admin.');
+            return back()->with('error', 'For safety, your own role can only be changed by another Admin.');
         }
         $this->guardAdminRole($me, $oldRole);
         $this->guardAdminRole($me, $newRole);
         if ($oldRole === Roles::ADMIN && $newRole !== Roles::ADMIN && $this->adminCount() <= 1) {
-            return back()->with('error', 'This is the only Admin. Make someone else an Admin first.');
+            return back()->with('error', 'This is the only Admin. Please make someone else an Admin first.');
         }
         if ($newRole === Roles::EMPLOYEE && empty($data['employee_id'])) {
-            return back()->with('error', 'An Employee login must be linked to an employee record.');
+            return back()->with('error', 'An Employee login needs to be linked to an employee record. Please choose one.');
         }
 
         $user->update([
@@ -159,11 +159,11 @@ class UserController extends Controller
     {
         $me = $request->user();
         if ($user->is($me)) {
-            return back()->with('error', 'You can\'t remove your own login.');
+            return back()->with('error', 'For safety, your own login can only be removed by another Admin.');
         }
         $this->guardAdminRole($me, $user->roleKey());
         if ($user->roleKey() === Roles::ADMIN && $this->adminCount() <= 1) {
-            return back()->with('error', 'This is the only Admin and can\'t be removed.');
+            return back()->with('error', 'This is the only Admin, so it can\'t be removed. Please add another Admin first.');
         }
 
         $name = $user->name;

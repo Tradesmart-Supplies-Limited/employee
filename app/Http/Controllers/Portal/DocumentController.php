@@ -74,7 +74,7 @@ class DocumentController extends Controller
 
         abort_unless($doc, 404);
         if ($doc->uploaded_by !== 'employee' || ! config('portal.employees_can_delete_own_documents', true)) {
-            return back()->with('error', 'Documents added by HR can only be removed by HR.');
+            return back()->with('error', 'Documents added by HR can only be removed by HR. Please ask them if it needs to go.');
         }
 
         $employee->detachDocument($index);

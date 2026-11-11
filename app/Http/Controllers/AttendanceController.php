@@ -108,7 +108,7 @@ class AttendanceController extends Controller
         ]);
         $date = $this->date($request->input('date'), AttendanceService::today());
         if ($date->gt(AttendanceService::today())) {
-            return back()->with('error', 'You can\'t record attendance for a future date.');
+            return back()->with('error', 'Sorry, attendance can\'t be recorded for a future date. Please pick today or an earlier day.');
         }
 
         $saved = 0;

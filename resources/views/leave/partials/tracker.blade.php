@@ -1,7 +1,7 @@
 {{-- Full 4-step stage tracker. Usage: @include('leave.partials.tracker', ['leave' => $leave]) --}}
 @include('leave.partials.tracker-styles')
 @php
-    $icons = ['done' => 'bi-check-lg', 'declined' => 'bi-x-lg', 'skipped' => 'bi-skip-forward', 'cancelled' => 'bi-dash-lg'];
+    $icons = ['done' => 'bi-check-lg', 'declined' => 'bi-arrow-counterclockwise', 'overridden' => 'bi-arrow-repeat', 'skipped' => 'bi-skip-forward', 'cancelled' => 'bi-dash-lg'];
 @endphp
 <div class="lt" role="list" aria-label="Leave application progress">
     @foreach($leave->timeline() as $step)

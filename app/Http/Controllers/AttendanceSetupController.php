@@ -143,13 +143,13 @@ class AttendanceSetupController extends Controller
         $date = $request->filled('date') ? Carbon::parse($request->input('date'), AttendanceService::tz()) : AttendanceService::today();
         $to = $request->user()?->email;
         if (! $to) {
-            return back()->with('error', 'Your account has no email address.');
+            return back()->with('error', 'Your account doesn\'t have an email address yet. Please add one to receive the test report.');
         }
 
         try {
             Mail::to($to)->send(new AttendanceDailyReport($this->att->reportData($date), $this->att->reportCsv($date), true));
         } catch (\Throwable $e) {
-            return back()->with('error', 'Could not send: ' . $e->getMessage());
+            return back()->with('error', 'Sorry, the email couldn\'t be sent: ' . $e->getMessage());
         }
 
         return back()->with('success', "Test report for {$date->format('d M Y')} sent to {$to}.");
@@ -161,7 +161,7 @@ class AttendanceSetupController extends Controller
         $request->validate(['date' => ['required', 'date']]);
         $date = Carbon::parse($request->input('date'), AttendanceService::tz())->startOfDay();
         if (! $date->lt(AttendanceService::today())) {
-            return back()->with('error', 'Only finished days can be closed. Today closes automatically at midnight.');
+            return back()->with('error', 'Only finished days can be closed. Today will close automatically at midnight, so no action is needed.');
         }
         $res = $this->att->closeDay($date);
         $sent = $this->att->sendReport($date, null, true);
@@ -221,7 +221,7 @@ class AttendanceSetupController extends Controller
         }
         $kiosk->update($data);
 
-        return back()->with('success', 'Kiosk updated.');
+        return back()->with('success', 'Thank you, the kiosk has been updated.');
     }
 
     public function regenerateKiosk(AttendanceKiosk $kiosk)

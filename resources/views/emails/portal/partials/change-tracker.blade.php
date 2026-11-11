@@ -4,7 +4,7 @@
     $steps = [
         ['Submitted', true, '#16a34a'],
         ['HR review', $stage !== 'submitted', $stage === 'review' ? '#d97706' : '#16a34a'],
-        [$final ? ucfirst($stage) : 'Decision', $final, ['approved' => '#16a34a', 'rejected' => '#dc2626', 'withdrawn' => '#64748b'][$stage] ?? '#cbd5e1'],
+        [$final ? ($stage === 'rejected' ? 'Reverted' : ucfirst($stage)) : 'Decision', $final, ['approved' => '#16a34a', 'rejected' => '#dc2626', 'withdrawn' => '#64748b'][$stage] ?? '#cbd5e1'],
     ];
 @endphp
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:4px 0 18px;">

@@ -54,7 +54,7 @@ class LeaveManagementController extends Controller
         $year = $report->filters['year'];
 
         return $this->csv("leave-balances-{$year}.csv",
-            ['EIN', 'Employee', 'Department', 'Branch', 'Position', 'Supervisor', 'Entitlement', 'Taken (deductible)', 'Other leave taken', 'Pending days', 'Balance', 'Utilisation %', 'Approved', 'Pending', 'Rejected', 'On leave today', 'Next leave'],
+            ['EIN', 'Employee', 'Department', 'Branch', 'Position', 'Supervisor', 'Entitlement', 'Taken (deductible)', 'Other leave taken', 'Pending days', 'Balance', 'Utilisation %', 'Approved', 'Pending', 'Reverted', 'On leave today', 'Next leave'],
             $report->employees->map(fn ($r) => [
                 $r->employee->employee_id, $r->name, $r->employee->department, $r->employee->branch, $r->employee->position,
                 $r->employee->supervisor_name, $r->entitlement, $r->taken, $r->other_taken, $r->pending_days, $r->balance,
@@ -83,11 +83,11 @@ class LeaveManagementController extends Controller
                 'LV-' . str_pad($l->id, 5, '0', STR_PAD_LEFT), $l->employee_name, $l->employee_number, $l->employee?->department,
                 $l->leave_type . ($l->other_leave_type ? " ({$l->other_leave_type})" : ''),
                 $l->date_from->format('Y-m-d'), $l->date_to->format('Y-m-d'), $l->total_days, $l->calendar_days,
-                optional($l->return_date)->format('Y-m-d'), $l->stage_label, $l->status,
+                optional($l->return_date)->format('Y-m-d'), $l->stage_label, $l->status_label,
                 implode(' > ', array_map(fn ($s) => LeaveRequest::STEPS[$s]['label'], $l->chain())),
-                $l->assigned_supervisor_name, $l->supervisor_decision, optional($l->supervisor_acted_at)->format('Y-m-d H:i'),
-                $l->hr_decision, $l->hr_name, optional($l->hr_acted_at)->format('Y-m-d H:i'), $l->hr_comments,
-                $l->director_decision, $l->director_name, optional($l->director_acted_at)->format('Y-m-d H:i'), $l->director_comments,
+                $l->assigned_supervisor_name, LeaveRequest::decisionLabel($l->supervisor_decision), optional($l->supervisor_acted_at)->format('Y-m-d H:i'),
+                LeaveRequest::decisionLabel($l->hr_decision), $l->hr_name, optional($l->hr_acted_at)->format('Y-m-d H:i'), $l->hr_comments,
+                LeaveRequest::decisionLabel($l->director_decision), $l->director_name, optional($l->director_acted_at)->format('Y-m-d H:i'), $l->director_comments,
                 $l->balance_deducted, $l->days_balance, $l->created_at->format('Y-m-d H:i'),
             ])
         );
@@ -300,7 +300,7 @@ class LeaveManagementController extends Controller
             try {
                 $this->workflow->approve($leave->fresh(), $request->user(), $data['hr_comments'] ?? 'Recorded and approved by HR', $request->boolean('override_balance'));
             } catch (RuntimeException $e) {
-                return redirect()->route('leave.show', $leave)->with('error', 'Leave recorded but NOT approved: ' . $e->getMessage());
+                return redirect()->route('leave.show', $leave)->with('error', 'The leave has been recorded, but it couldn\'t be approved yet: ' . $e->getMessage());
             }
 
             return redirect()->route('leave.show', $leave)->with('success', "Leave recorded and approved for {$employee->full_name}. The balance is updated and they've been emailed.");
@@ -363,7 +363,7 @@ class LeaveManagementController extends Controller
 
         $holiday->delete();
 
-        return back()->with('success', 'Holiday removed.');
+        return back()->with('success', 'The holiday has been removed.');
     }
 
     /* ===================== helpers ===================== */

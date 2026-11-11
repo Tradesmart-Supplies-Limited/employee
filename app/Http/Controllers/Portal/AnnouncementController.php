@@ -53,6 +53,6 @@ class AnnouncementController extends Controller
         $e = $request->user()->employee;
         Announcement::visibleTo($e)->each(fn ($a) => $this->svc->markRead($a, $e));
 
-        return back()->with('success', 'All announcements marked as read.');
+        return back()->with('success', 'All announcements have been marked as read.');
     }
 }

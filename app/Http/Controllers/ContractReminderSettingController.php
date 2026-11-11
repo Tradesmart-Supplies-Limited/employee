@@ -48,7 +48,7 @@ class ContractReminderSettingController extends Controller
             ->unique()->values()->all();
 
         if (empty($recipients)) {
-            return back()->withInput()->with('error', 'Enter at least one valid recipient email address.');
+            return back()->withInput()->with('error', 'Please enter at least one valid recipient email address.');
         }
 
         $daysBefore = collect(preg_split('/[,;\s]+/', $validated['days_before'] ?? ''))
@@ -73,7 +73,7 @@ class ContractReminderSettingController extends Controller
             'is_active'              => $request->boolean('is_active'),
         ]);
 
-        return back()->with('success', 'Contract reminder settings saved.');
+        return back()->with('success', 'Thank you, the contract reminder settings have been saved.');
     }
 
     /** Run the check now. Never sends the same reminder twice. */
@@ -92,13 +92,13 @@ class ContractReminderSettingController extends Controller
     public function sendTest(ContractReminderSetting $setting)
     {
         if (empty($setting->recipients)) {
-            return back()->with('error', 'Add at least one recipient email before sending a test.');
+            return back()->with('error', 'Please add at least one recipient email before sending a test.');
         }
 
         $items = $this->monitor->items(null, 90, 60, $setting)->take(15);
 
         if ($items->isEmpty()) {
-            return back()->with('error', 'No contract or probation dates in the next 90 days to preview.');
+            return back()->with('error', 'There are no contract or probation dates in the next 90 days to preview, so nothing needs attention right now.');
         }
 
         Mail::to($setting->recipients)->send(new ContractEndingReminder($this->monitor->rows($items), 'Preview of the next 90 days', 'test'));

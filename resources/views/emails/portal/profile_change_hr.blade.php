@@ -2,6 +2,7 @@
 
 @php
     $status = $change?->status;
+    $statusWord = $status === 'rejected' ? 'reverted' : $status;
     $stage = match ($event) { 'decided' => $status, 'withdrawn' => 'withdrawn', default => $pending ? 'review' : null };
 @endphp
 
@@ -11,7 +12,7 @@
 
 @section('heading')
     @if($event === 'decided')
-        {{ $employee->full_name }}'s change was {{ $status }}
+        {{ $employee->full_name }}'s change was {{ $statusWord }}
     @elseif($event === 'withdrawn')
         {{ $employee->full_name }} withdrew their change request
     @elseif($pending)
@@ -29,7 +30,7 @@
     @if($event === 'submitted' && $pending)
         <p style="margin:0 0 14px;"><strong>The changes under "Waiting for your approval" are on hold.</strong> Check them against a supporting document (new NRC, bank letter, marriage certificate…) before approving. The employee has been told HR is reviewing.</p>
     @elseif($event === 'decided')
-        <p style="margin:0 0 14px;">{{ $actor ?? 'HR' }} {{ $status }} this request {{ $change?->reviewed_at ? 'on ' . $change->reviewed_at->format('d M Y H:i') : '' }}. The employee has been emailed. This copy is for the HR team's records.</p>
+        <p style="margin:0 0 14px;">{{ $actor ?? 'HR' }} {{ $statusWord }} this request {{ $change?->reviewed_at ? 'on ' . $change->reviewed_at->format('d M Y H:i') : '' }}. The employee has been emailed. This copy is for the HR team's records.</p>
     @elseif($event === 'withdrawn')
         <p style="margin:0 0 14px;">Nothing needs doing: the record was not changed.</p>
     @else

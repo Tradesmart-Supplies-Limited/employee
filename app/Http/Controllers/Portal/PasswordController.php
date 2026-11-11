@@ -29,6 +29,6 @@ class PasswordController extends Controller
 
         return redirect()
             ->route('portal.dashboard')
-            ->with('success', 'Password changed successfully.');
+            ->with('success', 'Thank you, your password has been changed.');
     }
 }

@@ -67,7 +67,7 @@
                         </label>
                         <input type="radio" class="btn-check" name="supervisor_decision" id="decReject" value="Rejected" @checked(old('supervisor_decision') === 'Rejected')>
                         <label class="btn btn-outline-danger text-start" for="decReject">
-                            <i class="bi bi-hand-thumbs-down me-1"></i> Reject
+                            <i class="bi bi-arrow-counterclockwise me-1"></i> Revert
                         </label>
                     </div>
                     <label class="form-label small text-muted">Comments <span id="reqHint">(optional)</span></label>
@@ -76,7 +76,7 @@
                     <small class="text-muted d-block mt-2">
                         Approval chain: {{ $leave->chain_label }}.
                         @if($n2 = $leave->nextStepAfter('supervisor')) If you approve, it goes to {{ \App\Models\LeaveRequest::STEPS[$n2]['who'] }} next. @else Your approval is final. @endif
-                        Rejecting ends the request.
+                        Reverting ends the request (a higher approver may override it).
                     </small>
                 </form>
             </div>
@@ -86,7 +86,7 @@
             document.querySelectorAll('input[name="supervisor_decision"]').forEach(r => r.addEventListener('change', () => {
                 const reject = document.getElementById('decReject').checked;
                 document.getElementById('supComments').required = reject;
-                document.getElementById('reqHint').textContent = reject ? '(required: why not?)' : '(optional)';
+                document.getElementById('reqHint').textContent = reject ? '(kindly add a short reason)' : '(optional)';
             }));
             </script>
             @endpush
@@ -95,7 +95,7 @@
                 <div class="card-body">
                     @if($leave->supervisor_decision)
                         <div class="fw-semibold {{ $leave->supervisor_decision === 'Approved' ? 'text-success' : 'text-danger' }}">
-                            You {{ $leave->supervisor_decision === 'Approved' ? 'approved' : 'rejected' }} this request
+                            You {{ $leave->supervisor_decision === 'Approved' ? 'approved' : 'reverted' }} this request
                         </div>
                         <small class="text-muted">{{ optional($leave->supervisor_acted_at)->format('d M Y, H:i') }}</small>
                         @if($leave->supervisor_comments)
@@ -107,7 +107,7 @@
                     <hr>
                     <small class="text-muted d-block">Final decision</small>
                     @if($leave->isFinal())
-                        <strong class="{{ $leave->status === 'Approved' ? 'text-success' : 'text-danger' }}">{{ $leave->status }}</strong>
+                        <strong class="{{ $leave->status === 'Approved' ? 'text-success' : 'text-danger' }}">{{ $leave->status_label }}</strong>
                         @if($leave->final_decider_name) by {{ $leave->final_decider_name }} @endif
                     @else
                         <span class="text-warning"><i class="bi bi-hourglass-split"></i> {{ $leave->stage_label }}</span>
@@ -115,6 +115,12 @@
                 </div>
             </div>
         @endif
+    </div>
+</div>
+
+<div class="card shadow-sm border-0 mt-3">
+    <div class="card-body">
+        @include('leave.partials.comments', ['canComment' => $canComment, 'commentUrl' => $commentUrl])
     </div>
 </div>
 

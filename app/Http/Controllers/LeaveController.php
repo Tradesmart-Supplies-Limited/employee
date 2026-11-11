@@ -138,7 +138,7 @@ class LeaveController extends Controller
 
         return redirect()
             ->back()
-            ->with('success', 'Leave request submitted. A confirmation email is on its way.');
+            ->with('success', 'Thank you, your leave request has been submitted. A confirmation email is on its way.');
     }
 
     /**
@@ -189,6 +189,9 @@ class LeaveController extends Controller
 
         return view('dashboard.leave.show', [
             'actingStep'   => $this->workflow->actingStep($leave, request()->user()),
+            'overrideStep' => $this->workflow->overrideStep($leave, request()->user()),
+            'canComment'   => $this->workflow->canComment($leave, request()->user()),
+            'comments'     => $leave->comments()->get(),
             'leave'        => $leave,
             'employee'     => $employee,
             'balance'      => $balance,
@@ -199,8 +202,8 @@ class LeaveController extends Controller
 
     /**
      * One approval step: the supervisor, HR or the Director approves or
-     * rejects. Approval at the last step is final and deducts the balance;
-     * a rejection at any step ends the request. Who may decide which step
+     * reverts. Approval at the last step is final and deducts the balance;
+     * a revert at any step ends the request (a higher approver may override it). Who may decide which step
      * is checked in LeaveWorkflow::canAct().
      */
     public function decide(Request $request, LeaveRequest $leave)
@@ -211,7 +214,7 @@ class LeaveController extends Controller
             'comments'         => 'nullable|required_if:decision,Rejected|string|max:5000',
             'override_balance' => 'nullable|boolean',
         ], [
-            'comments.required_if' => 'Please give a reason for the rejection.',
+            'comments.required_if' => 'Kindly add a short reason, so the applicant understands why it was reverted.',
         ]);
 
         $this->authorizeLeave($leave);
@@ -226,7 +229,7 @@ class LeaveController extends Controller
             'supervisor_decision' => 'required|in:Approved,Rejected',
             'supervisor_comments' => 'nullable|required_if:supervisor_decision,Rejected|string|max:5000',
         ], [
-            'supervisor_comments.required_if' => 'Please give a reason when rejecting.',
+            'supervisor_comments.required_if' => 'Kindly add a short reason, so the applicant understands why it was reverted.',
         ]);
 
         $this->authorizeLeave($leave);
@@ -250,13 +253,13 @@ class LeaveController extends Controller
         return $this->record($request, $leave, $step, 'Approved', $data['hr_comments'] ?? null);
     }
 
-    /** Reject at whichever step is yours. */
+    /** Revert at whichever step is yours. */
     public function reject(Request $request, LeaveRequest $leave)
     {
         $data = $request->validate([
             'hr_comments' => 'required|string|max:5000',
         ], [
-            'hr_comments.required' => 'Please give a reason for the rejection.',
+            'hr_comments.required' => 'Kindly add a short reason, so the applicant understands why it was reverted.',
         ]);
 
         $step = $this->workflow->actingStep($leave, $request->user());
@@ -278,10 +281,45 @@ class LeaveController extends Controller
         $label = LeaveRequest::STEPS[$step]['title'];
 
         return back()->with('success', match (true) {
-            $leave->status === 'Rejected' => "Leave rejected at {$label}. The employee and everyone involved have been notified.",
-            $leave->status === 'Approved' => 'Leave approved (final). The balance has been updated and everyone has been notified.',
-            default => "{$label} recorded. It has moved on to " . LeaveRequest::STEPS[$leave->currentStep()]['who'] . ' — they have been emailed.',
+            $leave->status === 'Rejected' => "Thank you. The request has been reverted at the {$label} step, and the applicant and everyone in the approval chain have been informed.",
+            $leave->status === 'Approved' => 'Thank you. The leave is now approved, the balance has been updated, and everyone has been informed.',
+            default => "Thank you, your {$label} is recorded. It has moved on to " . LeaveRequest::STEPS[$leave->currentStep()]['who'] . ', who has been emailed.',
         });
+    }
+
+    /** Add a comment (anyone in the chain, or the applicant). */
+    public function comment(Request $request, LeaveRequest $leave)
+    {
+        $data = $request->validate(['body' => 'required|string|max:3000'], ['body.required' => 'Please write a comment before sending.']);
+        $this->authorizeLeave($leave);
+
+        try {
+            $this->workflow->comment($leave, $request->user(), $data['body']);
+        } catch (RuntimeException $e) {
+            return back()->withInput()->with('error', $e->getMessage());
+        }
+
+        return redirect()->to(route('leave.show', $leave) . '#comments')->with('success', 'Thank you, your comment has been added and everyone involved has been informed.');
+    }
+
+    /** A higher approver overrides a revert made at an earlier step. */
+    public function override(Request $request, LeaveRequest $leave)
+    {
+        $data = $request->validate([
+            'override_reason'  => 'required|string|max:5000',
+            'override_balance' => 'nullable|boolean',
+        ], ['override_reason.required' => 'Please add a short note explaining the override, so everyone understands the change.']);
+        $this->authorizeLeave($leave);
+
+        try {
+            $leave = $this->workflow->override($leave, $request->user(), $data['override_reason'], $request->boolean('override_balance'));
+        } catch (RuntimeException $e) {
+            return back()->withInput()->with('error', $e->getMessage());
+        }
+
+        return back()->with('success', $leave->status === 'Approved'
+            ? 'Thank you. The revert has been overridden and the leave is now approved. Everyone involved has been informed.'
+            : 'Thank you. The revert has been overridden and the request has moved on to ' . LeaveRequest::STEPS[$leave->currentStep()]['who'] . '.');
     }
 
     /**
@@ -299,7 +337,7 @@ class LeaveController extends Controller
 
         return redirect()
             ->route('leave.index')
-            ->with('success', 'Leave request deleted.');
+            ->with('success', 'The leave request has been deleted.');
     }
 
     /**
@@ -321,7 +359,7 @@ class LeaveController extends Controller
             'days_accrued', 'days_available', 'days_requested', 'days_balance', 'hr_name', 'hr_position',
         ]));
 
-        return back()->with('success', 'HR record updated successfully.');
+        return back()->with('success', 'Thank you, the HR record has been updated.');
     }
 
     public function print($id)
