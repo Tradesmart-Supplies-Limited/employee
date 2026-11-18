@@ -18,6 +18,7 @@
 .rg-table input[type=time] { width: 112px; }
 .rg-table .form-select { width: 128px; }
 .rg-row.dirty { background: #fffbeb; }
+.rg-locked td { background: var(--admin-surface-soft, #f8fafc); }
 .rg-save { position: sticky; bottom: 0; z-index: 5; background: var(--admin-surface, #fff); border-top: 1px solid var(--admin-border, #e2e8f0); padding: .8rem 1.1rem; display: flex; gap: .6rem; align-items: center; flex-wrap: wrap; border-radius: 0 0 14px 14px; box-shadow: 0 -6px 16px rgba(15,23,42,.06); }
 </style>
 
@@ -44,7 +45,20 @@
             <thead class="table-light"><tr><th>Employee</th><th>Now</th><th>Time in</th><th>Time out</th><th>Status</th><th>Notes</th></tr></thead>
             <tbody>
                 @forelse($rows as $r)
-                    @php $rec = $r->record; $id = $r->employee->id; @endphp
+                    @php $rec = $r->record; $id = $r->employee->id; $locked = ! auth()->user()?->canEditAttendanceOf($r->employee); @endphp
+                    @if($locked)
+                    <tr class="rg-locked">
+                        <td>
+                            <div class="fw-semibold">{{ $r->employee->full_name }} <span class="badge rounded-pill bg-light text-secondary border ms-1">You</span></div>
+                            <div class="small at-muted">{{ $r->employee->employee_id }}{{ $r->employee->department ? ' · ' . $r->employee->department : '' }}</div>
+                        </td>
+                        <td>@include('dashboard.attendance.partials.chip', ['status' => $r->status])</td>
+                        <td>{{ $rec?->in_time ?: '—' }}</td>
+                        <td>{{ $rec?->out_time ?: '—' }}</td>
+                        <td colspan="2" class="small at-muted"><i class="bi bi-lock me-1"></i> Your own record. Kindly ask HR if a time needs correcting.{{ $rec?->notes ? ' · ' . $rec->notes : '' }}</td>
+                    </tr>
+                    @continue
+                    @endif
                     <tr class="rg-row" data-blank="{{ ! $rec ? 1 : 0 }}">
                         <td>
                             <div class="fw-semibold">{{ $r->employee->full_name }}</div>

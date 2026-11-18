@@ -114,12 +114,18 @@ class AttendanceController extends Controller
         $saved = 0;
         $cleared = 0;
         $errors = [];
+        $ownBlocked = false;
+        $user = $request->user();
         $employees = Employee::whereIn('id', array_keys($request->input('entries', [])))->get()->keyBy('id');
 
         foreach ($request->input('entries', []) as $id => $e) {
             $emp = $employees[$id] ?? null;
-            if (! $emp || ! $request->user()?->canSeeEmployee($emp)) {
+            if (! $emp || ! $user?->canSeeEmployee($emp)) {
                 continue; // managers can only change their own department
+            }
+            if (! $user->canEditAttendanceOf($emp)) {
+                $ownBlocked = true; // managers and supervisors can't change their own times
+                continue;
             }
             $inRaw = trim((string) ($e['in'] ?? ''));
             $outRaw = trim((string) ($e['out'] ?? ''));
@@ -164,6 +170,9 @@ class AttendanceController extends Controller
         }
 
         $msg = $saved || $cleared ? "Saved {$saved} " . ($saved === 1 ? 'entry' : 'entries') . ($cleared ? ", cleared {$cleared}" : '') . ' for ' . $date->format('d M Y') . '.' : 'Nothing changed.';
+        if ($ownBlocked) {
+            $errors[] = 'Your own attendance can\'t be changed from here. Kindly ask HR to correct it for you.';
+        }
 
         return redirect()->route('attendance.register', ['date' => $date->toDateString(), 'department' => $request->input('department')])
             ->with($errors ? 'error' : 'success', $errors ? $msg . ' Not saved: ' . implode(' ', $errors) : $msg);
