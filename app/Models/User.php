@@ -177,6 +177,28 @@ class User extends Authenticatable
             || ($this->employee_id && $e->supervisor_employee_id === $this->employee_id);
     }
 
+    /** Is this employee record the one linked to this login? */
+    public function isOwnEmployee(?Employee $e): bool
+    {
+        return $e !== null && $this->employee_id !== null && (int) $this->employee_id === (int) $e->id;
+    }
+
+    /**
+     * Admin, HR and Management may correct their own attendance.
+     * Managers and supervisors may not: HR corrects it for them.
+     */
+    public function canEditOwnAttendance(): bool
+    {
+        return $this->hasFullAccess();
+    }
+
+    /** May this user change this employee's times in the attendance register? */
+    public function canEditAttendanceOf(?Employee $e): bool
+    {
+        return $this->canSeeEmployee($e)
+            && ($this->canEditOwnAttendance() || ! $this->isOwnEmployee($e));
+    }
+
     /** Employees who report directly to this admin / HR user. */
     public function supervisedEmployees(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
